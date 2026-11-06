@@ -6,7 +6,6 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
-from tests.fakes import FakeExecutor, ScriptedModel, fake_deps, intent, sql_reply
 
 from app.agent.charts import ChartConfig, choose_chart
 from app.agent.config import load_agent_config
@@ -17,6 +16,7 @@ from app.agent.state import AgentRequest, AgentState
 from app.core.enums import QuestionStatus, RoleName
 from app.core.errors import RetryableError
 from app.db.analytics import QueryResult
+from tests.fakes import FakeExecutor, ScriptedModel, fake_deps, intent, sql_reply
 
 S = QuestionStatus
 CHART = load_agent_config().answer.chart

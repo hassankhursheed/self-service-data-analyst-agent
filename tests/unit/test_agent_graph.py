@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from tests.fakes import CLEAR_INTENT, ScriptedModel, fake_deps
 
 import app.core.llm as llm_module
 from app.agent.graph import Agent, build_graph, build_nodes
@@ -22,6 +21,7 @@ from app.core.enums import (
 from app.core.yaml_config import ConfigFileError
 from app.safety.guardrails import GUARDRAILS_FILE, check_input, load_guardrails
 from app.safety.sql_policy import BLOCK_MESSAGES
+from tests.fakes import CLEAR_INTENT, ScriptedModel, fake_deps
 
 S, N = QuestionStatus, NodeName
 FULL_PATH = ["N-01", "N-02", "N-03", "N-05", "N-06", "N-07", "N-08", "N-10", "N-11"]

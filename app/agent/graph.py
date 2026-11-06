@@ -31,7 +31,7 @@ from app.agent.nodes.n07_validation import make_validation_node
 from app.agent.nodes.n08_execution import make_execution_node
 from app.agent.nodes.n09_repair import make_repair_node
 from app.agent.nodes.stubs import audit_and_metrics
-from app.agent.state import AgentRequest, AgentState
+from app.agent.state import AgentRequest, AgentState, ConversationTurn
 from app.agent.transitions import END as ROUTE_END
 from app.agent.transitions import ROUTES, next_node
 from app.core.enums import NodeName
@@ -97,16 +97,29 @@ class Agent:
     def _config(thread_id: str) -> RunnableConfig:
         return {"configurable": {"thread_id": thread_id}}
 
-    async def run(self, request: AgentRequest, *, thread_id: str | None = None) -> AgentState:
-        """Run a new question until it finishes or pauses for clarification."""
+    async def run(
+        self,
+        request: AgentRequest,
+        *,
+        thread_id: str | None = None,
+        history: list[ConversationTurn] | None = None,
+    ) -> AgentState:
+        """Run a new question until it finishes or pauses for clarification.
+
+        A fresh state is passed in every time, so nothing from an earlier question in the
+        same thread is reused except the explicit ``history`` (earlier questions only)."""
         thread_id = thread_id or str(uuid.uuid4())
         initial = AgentState(
             request=request,
             thread_id=thread_id,
+            history=list(history or []),
             graph_version=self.deps.agent_config.graph_version,
             prompt_versions=dict(self.deps.llm_config.prompts),
         )
-        await self.graph.ainvoke(initial, self._config(thread_id))
+        # Every field is passed explicitly: LangGraph only overwrites keys that are present,
+        # and a new question must not inherit the status or results of the previous one.
+        fresh = {name: getattr(initial, name) for name in AgentState.model_fields}
+        await self.graph.ainvoke(cast(Any, fresh), self._config(thread_id))
         return await self.state(thread_id)
 
     async def resume(self, thread_id: str, reply: str) -> AgentState:
@@ -116,6 +129,10 @@ class Agent:
             raise AppError(f"thread {thread_id} is not waiting for a clarification")
         await self.graph.ainvoke(Command(resume=reply), self._config(thread_id))
         return await self.state(thread_id)
+
+    async def has_thread(self, thread_id: str) -> bool:
+        snapshot = await self.graph.aget_state(self._config(thread_id))
+        return bool(snapshot.values)
 
     async def state(self, thread_id: str) -> AgentState:
         snapshot = await self.graph.aget_state(self._config(thread_id))

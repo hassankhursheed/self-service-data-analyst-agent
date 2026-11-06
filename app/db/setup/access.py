@@ -125,6 +125,12 @@ def setup_database_access(
             "ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA {app_schema} "
             "GRANT USAGE, SELECT ON SEQUENCES TO {app}",
             "REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON {app_schema}.alembic_version FROM {app}",
+            # Conversation state (LangGraph checkpointer tables, created by the seed).
+            "REVOKE ALL ON SCHEMA checkpoints FROM PUBLIC",
+            "GRANT USAGE ON SCHEMA checkpoints TO {app}",
+            "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checkpoints TO {app}",
+            "ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA checkpoints "
+            "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {app}",
             # Analytics role: read-only by default, with a backstop timeout.
             "ALTER ROLE {ro} SET default_transaction_read_only = on",
             "ALTER ROLE {ro} SET statement_timeout = {timeout}",

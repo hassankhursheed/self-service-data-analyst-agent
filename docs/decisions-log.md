@@ -211,3 +211,17 @@ What was chosen, what was rejected and why. Newest step last.
 | Chart spec | Neutral `{type, x, y, data}` from a pure rule function | Plotly figure JSON | The UI is now React; any chart library can draw a neutral spec. `plotly` removed from the dependencies. |
 | Chart rules | Metric card / line / bar / none with limits in config (30 bars, 400 points, 3 series); truncated results get no chart | Letting the model pick | Deterministic and testable (brief §17: simple, documented rules). |
 | Response model | `AgentResponse` built from the state with pagination | Returning the raw state | One stable shape for the API (Step 17) and UI; always includes SQL, description, assumptions, period and row count when answered. |
+
+## Step 15: Conversation Memory and Follow-ups
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Checkpointer | `AsyncPostgresSaver` with a psycopg pool as `app_rw`, `search_path=checkpoints`; tables created by the seed as owner | Calling `setup()` at runtime; storing checkpoints in `public` or `app` | `app_rw` needs no DDL rights; checkpoints are kept apart from Northwind and from Alembic-managed tables. |
+| Thread ID | `user:<user id>:conversation:<conversation id>`, built only after an ownership check | The conversation ID alone | Two layers: the ownership check, and a thread ID that differs per user even for a guessed conversation ID. |
+| Not found | `ConversationNotFound` for another user's conversation | `403 Forbidden` | Does not reveal that the conversation exists. |
+| Per-question state | Fresh state for every question with all fields passed explicitly; `steps` without a reducer | Reusing the thread's previous state | LangGraph only overwrites keys that are present; a new question must not inherit status, SQL or steps (found by a test: N-01 saw `ANSWERED -> RECEIVED`). |
+| Follow-up context | A short history (5 turns: question, standalone question, status, SQL, period) shown to the intent prompt (v2) | Re-running earlier SQL; full previous state | Brief §18: earlier SQL never skips validation; the model rewrites a standalone question and everything runs again. |
+| Interpreted question | `interpreted_question` + "Interpreted as: ..." notice, `interpreted_as` in the response | Silent rewriting | The user sees how the follow-up was understood. |
+| App tables | `app.conversations` and `app.questions` written by `ConversationService` (app role) | Writing them inside graph nodes | The graph stays storage-agnostic; Step 16 adds runs, steps and audit rows. |
+| Windows event loop | Selector loop via the `pytest_asyncio_loop_factories` hook | Proactor (default) | psycopg async does not support the Proactor loop. |
+| Validator fix | `AND` / `OR` connector nodes are not checked as functions | — | Found by the Germany follow-up test: sqlglot models `AND`/`OR` as function-like connector nodes, so `WHERE a AND b` was refused as a forbidden function. Regression tests added. |

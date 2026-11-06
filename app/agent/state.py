@@ -5,9 +5,8 @@ reducer), ready for the audit trail.
 """
 
 import datetime as dt
-import operator
 import uuid
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -60,6 +59,16 @@ class StepRecord(_Frozen):
     input_summary: dict[str, Any]
     output_summary: dict[str, Any]
     error_code: str | None = None
+
+
+class ConversationTurn(_Frozen):
+    """What a follow-up may build on: an earlier question and how it was answered."""
+
+    question: str
+    interpreted_question: str
+    status: QuestionStatus | None
+    sql: str | None = None
+    date_range_label: str | None = None
 
 
 class ClarificationRecord(_Frozen):
@@ -142,7 +151,13 @@ class AgentState(BaseModel):
     block_reason: BlockReason | None = None
     error: AgentErrorInfo | None = None
     usage: Usage = Usage()
-    steps: Annotated[list[StepRecord], operator.add] = Field(default_factory=list)
+    # One record per node of this question. A plain list (no reducer) so a new question in
+    # the same conversation thread starts with an empty list.
+    steps: list[StepRecord] = Field(default_factory=list)
+    # Earlier questions in this conversation (for follow-ups), newest last.
+    history: list[ConversationTurn] = []
+    # The standalone question N-03 rewrote a follow-up into, shown as "Interpreted as".
+    interpreted_question: str | None = None
     graph_version: str = ""
     prompt_versions: dict[str, str] = {}
     finished: bool = False

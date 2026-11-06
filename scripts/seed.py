@@ -10,7 +10,8 @@ Steps (each safe to run again):
 5. sync roles and the test users from config/test_users.yaml;
 6. create database login roles, grants and the secure views (docs/access-control.md);
 7. sync the semantic layer into the catalog tables and check it against the database;
-8. sync the business calendar (config/calendar.yaml).
+8. sync the business calendar (config/calendar.yaml);
+9. create the LangGraph checkpoint tables in schema ``checkpoints`` (before the grants).
 """
 
 import sys
@@ -24,6 +25,7 @@ from pydantic import BaseModel
 from app.core.config import PROJECT_ROOT, Settings, get_settings
 from app.core.yaml_config import ConfigFileError
 from app.db.setup.access import setup_database_access
+from app.db.setup.checkpoints import setup_checkpoint_tables
 from app.db.setup.northwind_data import (
     SeedError,
     apply_date_shift,
@@ -79,6 +81,7 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
 
     wait_for_database(settings)
     run_migrations()
+    setup_checkpoint_tables(settings)
     with psycopg.connect(settings.owner_conninfo(), autocommit=True) as conn:
         ensure_analytics_schema(conn)
         shifted_now = apply_date_shift(conn, settings.data_setup.date_shift_years)
