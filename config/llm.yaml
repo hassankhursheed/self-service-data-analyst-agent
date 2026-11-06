@@ -37,3 +37,4 @@ prompts:
   intent: v1
   sql_generation: v1
   sql_repair: v1
+  answer: v1

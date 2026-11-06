@@ -160,3 +160,5 @@ All limit values live in versioned config, not in code.
   `AgentDeps` (semantic loader, read-only executor, SQL policy, limits); see
   `docs/sql-generation.md`. N-10 and N-11 are still stubs. The checkpoint serializer only
   restores the app's own state types (`app/agent/checkpoint.py`).
+- Step 14: N-10 (`nodes/answer.py`) with the grounding check, chart rules and the response
+  model; see `docs/answers-and-charts.md`. Only N-11 is still a stub.

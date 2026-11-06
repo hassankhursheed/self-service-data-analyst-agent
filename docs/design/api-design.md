@@ -63,7 +63,8 @@ password and a disabled account, so the API does not reveal which usernames exis
 ```
 
 - `status`: `ANSWERED`, `CLARIFICATION_NEEDED`, `BLOCKED`, `REJECTED` or `FAILED`.
-- `chart.type`: `line`, `bar`, `metric_card` or `none`; `spec` is a Plotly figure as JSON.
+- `chart`: `{type: line | bar | metric_card | none, x, y, data, title, reason}`, a neutral
+  spec the Next.js UI draws (see `docs/answers-and-charts.md`).
 - `clarification` (when `CLARIFICATION_NEEDED`): `{"clarification_id": 12, "question": "...", "options": ["...", "..."]}`.
 - `block` (when `BLOCKED`): `{"reason_code": "WRITE_STATEMENT", "message": "..."}`.
 

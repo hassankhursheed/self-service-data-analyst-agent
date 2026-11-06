@@ -1,6 +1,6 @@
 # Agent graph settings. Bump graph_version when nodes, routing or transitions change;
 # it is recorded with every run (brief section 23).
-graph_version: "0.3.0"
+graph_version: "0.4.0"
 
 # N-03 / N-04 (brief section 14, docs/intent-and-clarification.md).
 intent:
@@ -27,3 +27,21 @@ sql:
   # Attempts when the database cannot be reached (connection errors only).
   db_connect_attempts: 3
   db_connect_backoff_seconds: 0.5
+
+# N-10 (brief section 17, docs/answers-and-charts.md).
+answer:
+  # Rows the LLM sees when writing the explanation.
+  rows_for_llm: 20
+  # Rows per page in the response table.
+  page_size: 50
+  # Regenerations when the explanation states a number not in the result; then a template.
+  max_regenerations: 1
+  low_confidence_label: >-
+    Low confidence: please check the SQL, the period and the assumptions before relying on
+    this answer.
+  empty_suggestion: >-
+    Try a broader question, for example a longer period or fewer filters.
+  chart:
+    max_bars: 30
+    max_line_points: 400
+    max_series: 3

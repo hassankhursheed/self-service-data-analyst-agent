@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.agent.charts import ChartConfig
 from app.core.config import PROJECT_ROOT
 from app.core.yaml_config import load_yaml_model
 
@@ -35,12 +36,24 @@ class SqlConfig(BaseModel):
     db_connect_backoff_seconds: float = Field(ge=0)
 
 
+class AnswerConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rows_for_llm: int = Field(ge=1, le=200)
+    page_size: int = Field(ge=1, le=500)
+    max_regenerations: int = Field(ge=0, le=2)
+    low_confidence_label: str
+    empty_suggestion: str
+    chart: ChartConfig
+
+
 class AgentConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     graph_version: str
     intent: IntentConfig
     sql: SqlConfig
+    answer: AnswerConfig
 
 
 def load_agent_config(path: Path = AGENT_CONFIG_FILE) -> AgentConfig:

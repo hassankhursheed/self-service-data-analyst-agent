@@ -7,10 +7,11 @@ reducer), ready for the audit trail.
 import datetime as dt
 import operator
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.agent.charts import ChartSpec
 from app.agent.intent import ClarificationDraft, IntentAnalysis
 from app.agent.sql_output import GeneratedSQL
 from app.core.context import UserContext
@@ -84,8 +85,15 @@ class BlockedQueryRecord(_Frozen):
 
 
 class Answer(_Frozen):
+    """What N-10 produced: explanation, SQL description and chart."""
+
     text: str
-    confidence: Confidence = Confidence.LOW
+    sql_description: str
+    chart: ChartSpec
+    grounded: bool
+    source: Literal["llm", "template", "empty"]
+    low_confidence_label: str | None = None
+    confidence: Confidence = Confidence.MEDIUM
 
 
 class AgentErrorInfo(_Frozen):

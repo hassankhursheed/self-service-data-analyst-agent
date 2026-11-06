@@ -23,6 +23,7 @@ _ROUTES = {
     "intent": "You analyse business questions",
     "sql": "You write PostgreSQL queries",
     "repair": "You fix a PostgreSQL query",
+    "answer": "You explain query results",
 }
 
 
@@ -40,6 +41,7 @@ def sql_reply(sql: str, tables: list[str], **fields: object) -> dict[str, Any]:
 
 
 DEFAULT_SQL = sql_reply("SELECT count(*) AS orders FROM orders", ["orders"])
+DEFAULT_ANSWER = {"explanation": "There were 830 orders.", "sql_description": "Counts orders."}
 
 
 class ScriptedModel:
@@ -52,11 +54,13 @@ class ScriptedModel:
         *intent: Reply,
         sql: Sequence[Reply] = (DEFAULT_SQL,),
         repair: Sequence[Reply] = (DEFAULT_SQL,),
+        answer: Sequence[Reply] = (DEFAULT_ANSWER,),
     ) -> None:
         self.scripts: dict[str, list[Reply]] = {
             "intent": list(intent),
             "sql": list(sql),
             "repair": list(repair),
+            "answer": list(answer),
         }
         self.calls_by_kind: dict[str, list[Sequence[BaseMessage]]] = {k: [] for k in _ROUTES}
 

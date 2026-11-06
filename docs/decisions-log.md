@@ -198,3 +198,16 @@ What was chosen, what was rejected and why. Newest step last.
 | Executor injection | `AgentDeps.executor` (default: pooled analytics engine) | Calling `run_readonly` inside the node | Unit tests use a fake executor; integration tests use the real role. |
 | Checkpoint serializer | Allow-list of the app's state types, collected from `AgentState` | Default (warns), or allow everything | LangGraph will refuse unregistered types; an explicit list avoids restoring arbitrary classes. |
 | Region synonyms | `region` and `sales region` map to `customers.country` in the semantic layer | No synonym | Found by the scenario 15 test: region questions need the customer country. |
+
+## Step 14: Grounded Answers and Charts
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| What the LLM sees | First 20 rows (config), role-allowed columns only, plus the SQL and period | The whole result | Brief §17 and §27: summarise top rows only and send no more data than needed. |
+| Grounding | Every number in the explanation must match a result value (rounding, separators, k/million), a derived percentage (value, fraction, share of column total, change between two values) or a context number (row count, top N, question, period) | Trusting the model; exact string matching | Catches invented numbers while allowing normal formatting; allowances are documented. Model-computed sums are rejected. |
+| Ungrounded answer | One regeneration with the bad numbers listed, then a template answer from the rows | Failing the question | The result is correct; only the wording is untrusted, so a plain answer is still useful. |
+| LLM failure at N-10 | Template answer, still `ANSWERED` | `FAILED` | Same reason: the rows are already safe and correct. |
+| Empty result | Fixed honest message with a suggestion, no LLM call | Asking the model | Nothing to explain; no risk of an invented number (scenario 21). |
+| Chart spec | Neutral `{type, x, y, data}` from a pure rule function | Plotly figure JSON | The UI is now React; any chart library can draw a neutral spec. `plotly` removed from the dependencies. |
+| Chart rules | Metric card / line / bar / none with limits in config (30 bars, 400 points, 3 series); truncated results get no chart | Letting the model pick | Deterministic and testable (brief §17: simple, documented rules). |
+| Response model | `AgentResponse` built from the state with pagination | Returning the raw state | One stable shape for the API (Step 17) and UI; always includes SQL, description, assumptions, period and row count when answered. |
