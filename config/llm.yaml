@@ -34,3 +34,4 @@ pricing:
 # Prompt name -> version used by the agent (files in config/prompts/<name>/<version>.yaml).
 prompts:
   system: v1
+  intent: v1

@@ -1,25 +1,15 @@
-"""Stub nodes N-03 to N-11. Each returns a fixed result until its own step replaces it.
+"""Stub nodes N-05 to N-11. Each returns a fixed result until its own step replaces it.
 
 They exist so the graph, routing and transitions can be tested end to end now. None of
 them calls the LLM or the database.
 """
 
 from app.agent.nodes.base import NodeUpdate, agent_node
-from app.agent.state import AgentState, Answer, GeneratedSQL, Intent
+from app.agent.state import AgentState, Answer, GeneratedSQL
 from app.core.enums import NodeName, QuestionStatus
 from app.db.analytics import QueryResult
 
 S = QuestionStatus
-
-
-@agent_node(NodeName.INTENT)
-async def intent_and_ambiguity(state: AgentState) -> NodeUpdate:
-    return {"status": S.UNDERSTOOD, "intent": Intent(summary=state.question)}
-
-
-@agent_node(NodeName.CLARIFICATION)
-async def clarification(state: AgentState) -> NodeUpdate:
-    return {"status": S.CLARIFICATION_NEEDED, "user_message": "Could you clarify your question?"}
 
 
 @agent_node(NodeName.CONTEXT)

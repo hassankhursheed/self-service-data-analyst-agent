@@ -3,6 +3,7 @@
 - ``RetryableError``: temporary failure (timeout, rate limit, 5xx, connection); retried
   with backoff, then recorded in AgentErrors.
 - ``NonRetryableError``: invalid request or authentication; fails at once.
+- ``MalformedOutput``: the LLM did not return valid structured output after one retry.
 - ``BudgetExceeded``: the question's token or cost budget is used up.
 - ``DbTimeout``: a database statement ran past its timeout.
 - ``ValidationBlocked``: a question or query was refused by a safety check.
@@ -32,6 +33,13 @@ class RetryableError(AppError):
 class NonRetryableError(AppError):
     code = "NON_RETRYABLE"
     user_message = "The AI service could not process this request."
+
+
+class MalformedOutput(NonRetryableError):
+    code = "MALFORMED_OUTPUT"
+    user_message = (
+        "I could not produce a reliable answer to this question. Please try rephrasing it."
+    )
 
 
 class BudgetExceeded(AppError):

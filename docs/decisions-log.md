@@ -168,3 +168,17 @@ What was chosen, what was rejected and why. Newest step last.
 | Classifier | Rules only, from `config/guardrails.yaml` | Small LLM classifier | Free, deterministic, testable; add a classifier only if evaluation shows misses. |
 | Data-change requests | Blocked at N-02 and again by the SQL validator | Only the validator | Cheaper (no LLM call) and gives a clear reason early. |
 | Commit messages | Short descriptive messages without "Step N" (user request); older messages rewritten locally | `Step N: <title>` | User preference; CLAUDE.md rule 9 updated. |
+
+## Step 12: Intent, Ambiguity and Clarification
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Structured output | Prompted JSON parsed and validated by Pydantic (`ainvoke_structured`), code fences tolerated | Provider tool-calling / `with_structured_output` | Works the same with any provider and with scripted test models; the validation error is sent back for the one regeneration. |
+| Who decides | The model describes the question; `decide()` applies fixed rules from config | Letting the model decide when to ask | Deterministic and testable; the model cannot talk itself out of asking. |
+| Blocking parts | Metric, entity, grouping always ask; time range and top N become stated defaults unless the agent is asking anyway | Asking about every missing part | Brief §14: ask when the answer would change; state minor assumptions ("this year", top 10). |
+| One combined question | Everything missing in one question with 2-4 options; model question used only when it has 2-4 options, otherwise a template | Several questions in a row | One clear question per round (brief §14). |
+| Rounds | 1, a second only if the reply is still unclear; then `FAILED` with guidance | Unlimited rounds; guessing after round 2 | No loops and no silent guessing. |
+| Pause | LangGraph `interrupt` in N-04, resume with `Command(resume=reply)`; N-04 hands back to N-03 | Ending the run and starting a new one | The same thread keeps the state, the audit trail and the budget. |
+| Checkpointer | In-memory for now | PostgreSQL now | Step 15 adds the PostgreSQL checkpointer and user-scoped threads. |
+| Node wiring | `AgentDeps` (LLM client, configs, calendar, semantic layer) passed when the graph is built | Globals inside nodes | Tests swap in a scripted model; no real LLM in unit tests. |
+| Budget across nodes | `BudgetTracker` continues from the usage already in the state | A new budget per node | The token and cost limit is per question (brief §22). |

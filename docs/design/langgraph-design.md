@@ -46,7 +46,7 @@ The state is a Pydantic model (`AgentState`). Nested types are Pydantic models t
 | N-01 Request Intake | token claims, `question`, `conversation_id` | `user_id`, `role`, `region`, `correlation_id`, `history` | `RECEIVED` | Invalid token, disabled user, no role or rate limit: `REJECTED` |
 | N-02 Input Guardrails | `question`, `role` | `guardrail_result` | `GUARDRAIL_CHECKED` (scope-override attempts are flagged and continue) | Injection, data change, personal data: `BLOCKED`; empty, too long, off-topic: `REJECTED` (docs/guardrails.md) |
 | N-03 Intent and Ambiguity | `question`, `history`, calendar config | `intent`, `date_range`, `assumptions` | `UNDERSTOOD` | Missing time range, metric, entity, grouping or top N: `CLARIFICATION_NEEDED` |
-| N-04 Clarification | `intent` | `clarification` (question and options) | waits for the user (interrupt) | The user's reply returns to N-03, then `UNDERSTOOD` |
+| N-04 Clarification | `pending_clarification` | `clarifications` (question, options, reply) | pauses with a LangGraph interrupt | The reply goes back to N-03, then `UNDERSTOOD`; still unclear after 2 rounds: `FAILED` |
 | N-05 Context Retrieval | `intent`, `role` | `context`, `verified_examples` | stays `UNDERSTOOD` | Nothing allowed for the role: `BLOCKED` |
 | N-06 SQL Generation | `question`, `intent`, `context`, `verified_examples`, `date_range` | `generated` | `SQL_GENERATED` | Malformed output: regenerate once; still malformed: `FAILED` |
 | N-07 SQL Validation and Policy | `generated.sql`, `role` | `validation` | `VALIDATED` | Not a single SELECT, DML/DDL, system catalog, disallowed table or column: `BLOCKED` |
@@ -150,4 +150,7 @@ All limit values live in versioned config, not in code.
   the transition, records the step, and turns unexpected errors into `FAILED` with a safe
   message. N-03 to N-11 are stubs with fixed results until their own steps.
 - `app/agent/graph.py`: the `StateGraph`, conditional edges built from `ROUTES` only, and
-  `run_agent(request)`. `config/agent.yaml` holds `graph_version`.
+  the `Agent` class (`run`, `resume`, `state`) with a checkpointer. `config/agent.yaml` holds
+  `graph_version` and the intent rules.
+- Step 12: N-03 (`nodes/n03_intent.py`) and N-04 (`nodes/n04_clarification.py`); see
+  `docs/intent-and-clarification.md`.

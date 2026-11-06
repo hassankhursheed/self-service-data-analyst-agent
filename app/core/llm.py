@@ -10,6 +10,8 @@
 """
 
 import asyncio
+import json
+import re
 import time
 from collections.abc import Awaitable, Callable, Sequence
 from functools import lru_cache
@@ -19,11 +21,16 @@ from typing import Any, Protocol
 import httpx
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
 from app.core.config import PROJECT_ROOT, Settings
-from app.core.errors import BudgetExceeded, NonRetryableError, RetryableError
+from app.core.errors import (
+    BudgetExceeded,
+    MalformedOutput,
+    NonRetryableError,
+    RetryableError,
+)
 from app.core.yaml_config import load_yaml_model
 
 LLM_CONFIG_FILE = PROJECT_ROOT / "config" / "llm.yaml"
@@ -138,18 +145,28 @@ class LLMCallRecord(_Strict):
 class BudgetTracker:
     """Tokens and estimated cost for one question, across all of its LLM calls."""
 
-    def __init__(self, budget: BudgetConfig, pricing: PricingConfig) -> None:
+    def __init__(
+        self,
+        budget: BudgetConfig,
+        pricing: PricingConfig,
+        *,
+        spent_input_tokens: int = 0,
+        spent_output_tokens: int = 0,
+        spent_cost_usd: float = 0.0,
+    ) -> None:
+        """``spent_*`` carry usage from earlier nodes of the same question."""
         self.budget = budget
         self.pricing = pricing
         self.calls: list[LLMCallRecord] = []
+        self._spent = (spent_input_tokens, spent_output_tokens, spent_cost_usd)
 
     @property
     def input_tokens(self) -> int:
-        return sum(c.input_tokens for c in self.calls)
+        return self._spent[0] + sum(c.input_tokens for c in self.calls)
 
     @property
     def output_tokens(self) -> int:
-        return sum(c.output_tokens for c in self.calls)
+        return self._spent[1] + sum(c.output_tokens for c in self.calls)
 
     @property
     def total_tokens(self) -> int:
@@ -157,7 +174,7 @@ class BudgetTracker:
 
     @property
     def cost_usd(self) -> float:
-        return sum(c.cost_usd for c in self.calls)
+        return self._spent[2] + sum(c.cost_usd for c in self.calls)
 
     def ensure_affordable(self, estimated_input: int, max_output: int) -> None:
         """Raise BudgetExceeded if a call of this size could exceed the budget."""
@@ -250,6 +267,61 @@ class LLMClient:
             return reply
         detail = last_error.detail if last_error else "no attempt was made"
         raise RetryableError(f"gave up after {attempts} attempts: {detail}")
+
+
+_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
+
+
+def extract_json(text: str) -> object:
+    """Parse a JSON object from a model reply (a surrounding code fence is allowed)."""
+    match = _FENCE.match(text)
+    body = match.group(1) if match else text.strip()
+    if not body.startswith("{"):
+        start, end = body.find("{"), body.rfind("}")
+        if start == -1 or end <= start:
+            raise ValueError("no JSON object in the reply")
+        body = body[start : end + 1]
+    return json.loads(body)
+
+
+class StructuredReply[M: BaseModel](BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    value: M
+    regenerations: int
+
+
+async def ainvoke_structured[M: BaseModel](
+    client: "LLMClient",
+    messages: Sequence[BaseMessage],
+    schema: type[M],
+    *,
+    budget: BudgetTracker,
+    node: str,
+    max_regenerations: int = 1,
+) -> StructuredReply[M]:
+    """Ask for JSON matching ``schema``; on malformed output regenerate (at most
+    ``max_regenerations`` times, sending the problem back), then raise MalformedOutput."""
+    conversation = list(messages)
+    problem = ""
+    for attempt in range(max_regenerations + 1):
+        reply = await client.ainvoke(conversation, budget=budget, node=node)
+        text = str(reply.content)
+        try:
+            return StructuredReply[M](
+                value=schema.model_validate(extract_json(text)), regenerations=attempt
+            )
+        except (ValueError, ValidationError) as exc:
+            problem = str(exc).splitlines()[0][:300]
+            conversation = [
+                *messages,
+                reply,
+                HumanMessage(
+                    "Your reply was not valid. Problem: "
+                    f"{problem}. Reply again with only one JSON object that matches the schema."
+                ),
+            ]
+    raise MalformedOutput(f"{node}: invalid structured output after regeneration: {problem}")
 
 
 def create_llm_client(settings: Settings, config: LLMConfig | None = None) -> LLMClient:
