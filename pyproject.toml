@@ -60,6 +60,8 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "ANN", "S", "PT", "ASYNC",
 [tool.ruff.lint.per-file-ignores]
 # pytest uses assert; tests use obviously fake credentials.
 "tests/**/*.py" = ["S101", "S105", "S106"]
+# Alembic writes long generated lines; the files are reviewed, not hand-formatted.
+"migrations/versions/*.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -77,7 +79,7 @@ markers = ["integration: needs a running PostgreSQL database"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["app", "tests"]
+files = ["app", "tests", "scripts", "migrations/env.py"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

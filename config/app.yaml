@@ -7,3 +7,11 @@ config_version: 1
 app:
   name: Self-Service Data Analyst Agent
   log_level: INFO
+
+# Connection pool for the application role (app/db/session.py).
+database:
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout_seconds: 30
+  pool_recycle_seconds: 1800
+  connect_timeout_seconds: 10

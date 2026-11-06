@@ -61,7 +61,12 @@ data/northwind/  public Northwind PostgreSQL dump (read-only source data)
 python -m venv .venv            # Python 3.12
 .venv/Scripts/activate          # Windows; use .venv/bin/activate elsewhere
 pip install -e ".[dev]"
-pytest
+cp .env.example .env            # then replace the placeholders
+docker compose up -d            # PostgreSQL 16 with Northwind (host port 5433)
+python scripts/db_check.py      # row counts of every Northwind table
+alembic upgrade head            # create the app schema
+python scripts/generate_erd.py  # after changing models
+pytest                          # integration tests skip if the database is down
 ruff check .
 ruff format --check .
 mypy
