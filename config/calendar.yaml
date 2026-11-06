@@ -1,0 +1,19 @@
+# Business calendar (brief section 10, docs/business-calendar.md).
+# Every time phrase is resolved against `reference_date` ("business today"), never against
+# the real current date. Bump `version` when anything here changes; the seed syncs it into
+# app.business_calendar_config and evaluation runs record it.
+version: 1
+
+# Last order date after the +27-year shift (docs/design/data-decisions.md).
+reference_date: 2025-05-06
+
+# Dates have no time component; the time zone is recorded for completeness.
+time_zone: UTC
+
+# First month of the fiscal year (1 = January, so fiscal year = calendar year).
+# Quarters are three-month blocks counted from this month. A fiscal year is named after
+# the calendar year in which it ends (FY2025 = the fiscal year ending in 2025).
+fiscal_year_start_month: 1
+
+# First day of the week for "this week" and "last week".
+week_start: monday

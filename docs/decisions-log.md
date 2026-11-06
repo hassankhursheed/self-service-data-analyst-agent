@@ -104,3 +104,16 @@ What was chosen, what was rejected and why. Newest step last.
 | `metric_definitions.description` | Added by a second migration | Storing descriptions elsewhere | Metric descriptions are part of the definition the agent reads. |
 | Join key name | `condition` | `on` | YAML 1.1 reads `on:` as the boolean `true`. |
 | Schema check | `check_semantic_schema` checks every table and column in `information_schema` and runs each metric with `LIMIT 0` | Checking names only | Catches renamed columns inside metric SQL too; the seed refuses to sync a layer that fails it. |
+
+## Step 8: Business Calendar and Date Resolution
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Reference date | `config/calendar.yaml` (2025-05-06), synced into `app.business_calendar_config` | The real current date; the brief's example 2025-12-31 | Repeatable answers and evaluation; 2025-05-06 is the last order date after the shift. |
+| "Last X" | The complete period just before the current one | "Last 3 months" as a rolling window | One rule for all periods; the brief's own example date gives "last quarter" = Q3 2025, which the docs and a test show. |
+| "Last N days" | Rolling and including business today | Excluding today | Matches the usual reading of "the last 7 days"; documented with an example. |
+| Future periods | Cut at business today and labelled "(to date)"; periods starting after it are unresolved | Returning empty future ranges | There is no data after business today; the user should be told, not shown zeros. |
+| Named month/quarter without a year | Most recent one that has started; the assumption is returned | Asking every time | Brief §14: answer minor assumptions but state them. |
+| Fiscal year naming | Named after the calendar year it ends in; plain years stay calendar years | Named after the start year | Common convention; identical while the fiscal year starts in January. |
+| Parser | Ordered regular expressions over a normalised phrase, no LLM and no date library | dateparser / LLM date parsing | Deterministic, fully unit-tested, and never falls back to the real date. Slash dates are rejected as ambiguous. |
+| Result type | `DateRange` or `UnresolvedPeriod` (discriminated by `status`) | Exceptions or None | The agent can branch on `status` and use the reason in a clarifying question. |
