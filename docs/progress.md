@@ -3,7 +3,7 @@
 The project is built in 26 steps. Titles for later steps are added when each step guide arrives.
 
 - [x] Step 1: Project Setup and Standing Rules (Week 1, brief sections 3, 5, 27)
-- [ ] Step 2: (title added when the guide arrives)
+- [x] Step 2: Design Checkpoint Documents (Week 1, brief sections 4, 5, 11, 19, 21, 32)
 - [ ] Step 3: (title added when the guide arrives)
 - [ ] Step 4: (title added when the guide arrives)
 - [ ] Step 5: (title added when the guide arrives)
@@ -31,12 +31,10 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 2 to 26.
-- Open questions to settle in the relevant steps:
-  - Region mapping: all 91 customers are in Europe or the Americas, so a continent-based
-    mapping leaves the `sales.other` (Rest of World) user with no data.
-  - Date shift and business reference date must be chosen together (orders run
-    1996-07-04 to 1998-05-06; the last month is partial).
-  - The brief calls Oct to Dec 2025 "last quarter" with business today 2025-12-31; the
-    calendar rule must define this explicitly.
+- Steps 3 to 26.
+- Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
+  reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
+- Still open:
   - The LLM provider is not chosen yet.
+  - Draft evaluation cases have 27 of the 60+ required; correct SQL is written in Step 22.
+  - Full business-calendar rules (beyond the key rules in data-decisions.md).
