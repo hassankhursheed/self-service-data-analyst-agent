@@ -1,0 +1,15 @@
+# Sales regions by customer country (docs/design/data-decisions.md, docs/data-setup.md).
+# An order belongs to its customer's region. A country missing here belongs to no
+# region, and the seed script fails if any customer country is unmapped.
+version: 1
+regions:
+  - code: EUROPE
+    name: Europe
+    countries: [Austria, Belgium, Denmark, Finland, France, Germany, Ireland, Italy, Norway,
+                Poland, Portugal, Spain, Sweden, Switzerland, UK]
+  - code: AMERICAS
+    name: Americas
+    countries: [USA, Canada, Mexico]
+  - code: ROW
+    name: Rest of World
+    countries: [Brazil, Argentina, Venezuela]

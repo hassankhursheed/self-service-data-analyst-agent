@@ -1,0 +1,32 @@
+# Test and demo users from brief section 7. Fictional accounts only.
+# Passwords are never stored here: each comes from the environment variable
+# DEMO_PASSWORD_<USERNAME> (dots become underscores), see .env.example.
+users:
+  - username: sales.europe
+    display_name: Sales Manager - Europe
+    role: sales_manager
+    region: EUROPE
+  - username: sales.americas
+    display_name: Sales Manager - Americas
+    role: sales_manager
+    region: AMERICAS
+  - username: sales.other
+    display_name: Sales Manager - Rest of World
+    role: sales_manager
+    region: ROW
+  - username: finance
+    display_name: Finance Analyst
+    role: finance_analyst
+  - username: operations
+    display_name: Operations Manager
+    role: operations_manager
+  - username: admin
+    display_name: Admin (Data Owner)
+    role: admin
+  - username: no.role
+    display_name: User Without Role
+    role: null
+  - username: disabled.user
+    display_name: Disabled Account
+    role: finance_analyst
+    is_active: false

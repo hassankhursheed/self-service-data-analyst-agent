@@ -25,8 +25,9 @@ Every date column is moved forward by exactly 27 years:
 Result: orders cover **2023-07-04 to 2025-05-06**.
 
 Implementation: `column + INTERVAL '27 years'`. PostgreSQL maps 29 February to
-28 February when the target year is not a leap year. The seed script reloads the original
-dump before shifting, so running it twice never shifts twice.
+28 February when the target year is not a leap year. The seed records the shift in
+`analytics.data_setup` in the same transaction, so it is applied exactly once (see
+`docs/data-setup.md`).
 
 Why whole years:
 - Months, quarters and seasonality stay exactly as in the source, so "last quarter"
