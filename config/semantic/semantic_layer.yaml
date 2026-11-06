@@ -178,3 +178,5 @@ synonyms:
   discontinued: column:products.discontinued
   reorder: column:products.reorder_level
   price: column:order_details.unit_price
+  region: column:customers.country
+  sales region: column:customers.country

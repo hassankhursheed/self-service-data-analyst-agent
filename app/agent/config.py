@@ -25,11 +25,22 @@ class IntentConfig(BaseModel):
     fallback_metric_options: list[str] = Field(min_length=2)
 
 
+class SqlConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    max_regenerations: int = Field(ge=0, le=2)
+    max_repair_attempts: int = Field(ge=0, le=5)
+    repair_error_max_chars: int = Field(gt=0)
+    db_connect_attempts: int = Field(ge=1, le=10)
+    db_connect_backoff_seconds: float = Field(ge=0)
+
+
 class AgentConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     graph_version: str
     intent: IntentConfig
+    sql: SqlConfig
 
 
 def load_agent_config(path: Path = AGENT_CONFIG_FILE) -> AgentConfig:

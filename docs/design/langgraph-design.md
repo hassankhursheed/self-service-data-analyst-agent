@@ -79,6 +79,7 @@ Any transition not in this table is rejected by the graph router and ends as `FA
 | `VALIDATED` | Query succeeds | `EXECUTED` | N-08 |
 | `VALIDATED` | Database error (not a timeout) | `EXECUTION_FAILED` | N-08 |
 | `VALIDATED` | Statement timeout | `FAILED` | N-08 |
+| `VALIDATED` | The database refused the query (permissions) | `BLOCKED` | N-08 |
 | `EXECUTION_FAILED` | `repair_attempts < 2` | `REPAIRING` | N-09 |
 | `EXECUTION_FAILED` | `repair_attempts = 2` | `FAILED` | N-09 |
 | `REPAIRING` | Repaired SQL produced | `SQL_GENERATED` | N-09 |
@@ -107,6 +108,7 @@ stateDiagram-v2
     VALIDATED --> EXECUTED: N-08 ok
     VALIDATED --> EXECUTION_FAILED: N-08 db error
     VALIDATED --> FAILED: N-08 timeout
+    VALIDATED --> BLOCKED: N-08 refused by database
     EXECUTION_FAILED --> REPAIRING: repairs below 2
     EXECUTION_FAILED --> FAILED: 2 repairs used
     REPAIRING --> SQL_GENERATED: N-09 repaired SQL
@@ -154,3 +156,7 @@ All limit values live in versioned config, not in code.
   `graph_version` and the intent rules.
 - Step 12: N-03 (`nodes/n03_intent.py`) and N-04 (`nodes/n04_clarification.py`); see
   `docs/intent-and-clarification.md`.
+- Step 13: N-05 to N-09 (`nodes/n05_context.py` ... `nodes/n09_repair.py`), wired through
+  `AgentDeps` (semantic loader, read-only executor, SQL policy, limits); see
+  `docs/sql-generation.md`. N-10 and N-11 are still stubs. The checkpoint serializer only
+  restores the app's own state types (`app/agent/checkpoint.py`).

@@ -182,3 +182,19 @@ What was chosen, what was rejected and why. Newest step last.
 | Checkpointer | In-memory for now | PostgreSQL now | Step 15 adds the PostgreSQL checkpointer and user-scoped threads. |
 | Node wiring | `AgentDeps` (LLM client, configs, calendar, semantic layer) passed when the graph is built | Globals inside nodes | Tests swap in a scripted model; no real LLM in unit tests. |
 | Budget across nodes | `BudgetTracker` continues from the usage already in the state | A new budget per node | The token and cost limit is per question (brief §22). |
+
+## Step 13: Context Retrieval, SQL Generation, Execution and Repair
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Semantic layer source | Loaded from the database copy for every question (file in unit tests) | Loading once at startup | Scenario 9: a changed definition is used without code changes or a restart; about 80 rows, cheap. |
+| Context check | `tables_used` / `metrics_used` outside the retrieved context count as malformed (regenerated once) | Trusting the model's lists | Keeps the model inside what the role was shown; the validator still checks the real SQL. |
+| Low confidence | Flag when the model says `low` or its period differs from the resolved one | Model's word only | A wrong period is the most likely silent error. |
+| What runs | Only the validator's `final_sql`, through `run_readonly` with the user context from the state | Running the model's SQL | One enforced path: validation, then the read-only role and session settings. |
+| Database refusal | `BLOCKED` (`DATABASE_REFUSED`), new transition `VALIDATED -> BLOCKED` | Repairing it | A refusal means a safety rule fired; it must not be "repaired" around. |
+| Timeout | `FAILED` with a clear message, no repair | Repairing timeouts | Repair rarely makes a slow query fast (scenario 20). |
+| Connection errors | Retried with backoff (`db_connect_attempts`), then `FAILED` | Crashing; retrying query errors | Brief section 22: survive connection failures; query errors go to repair instead. |
+| Repair loop | N-09 sends the SQL that ran plus the error, returns via `REPAIRING` to N-07; max 2 repairs | Executing repaired SQL directly | Repaired SQL is always validated again; no loops beyond the limit. |
+| Executor injection | `AgentDeps.executor` (default: pooled analytics engine) | Calling `run_readonly` inside the node | Unit tests use a fake executor; integration tests use the real role. |
+| Checkpoint serializer | Allow-list of the app's state types, collected from `AgentState` | Default (warns), or allow everything | LangGraph will refuse unregistered types; an explicit list avoids restoring arbitrary classes. |
+| Region synonyms | `region` and `sales region` map to `customers.country` in the semantic layer | No synonym | Found by the scenario 15 test: region questions need the customer country. |

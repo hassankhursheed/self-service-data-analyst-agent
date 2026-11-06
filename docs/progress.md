@@ -14,9 +14,9 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 10: LLM Client, Retries, Timeouts and Budgets (Week 2, brief sections 22, 27)
 - [x] Step 11: LangGraph State, Transitions, Intake and Guardrails (Week 2, brief sections 4, 5, 11)
 - [x] Step 12: Intent, Ambiguity and Clarification (Week 2, brief section 14)
-- [ ] Step 13: (title added when the guide arrives)
-- [ ] Step 14: (title added when the guide arrives)
-- [ ] Step 15: (title added when the guide arrives)
+- [x] Step 13: Context Retrieval, SQL Generation, Execution and Repair (Week 2, brief sections 12, 13, 15)
+- [ ] Step 14: Grounded Answers and Charts (guide received)
+- [ ] Step 15: Conversation Memory and Follow-ups (guide received)
 - [ ] Step 16: (title added when the guide arrives)
 - [ ] Step 17: (title added when the guide arrives)
 - [ ] Step 18: (title added when the guide arrives)
@@ -31,7 +31,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 13 to 26 (Step 13 plan is waiting for approval; guides for Steps 14-15 received).
+- Steps 14 to 26 (guides for Steps 14 and 15 received).
 - For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
   and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
   semantic layer does not describe are refused by the validator; add them to the YAML if
