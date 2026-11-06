@@ -17,6 +17,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from psycopg.conninfo import make_conninfo
 from pydantic import BaseModel, ConfigDict, SecretStr
 from pydantic_settings import (
     BaseSettings,
@@ -58,6 +59,13 @@ class Settings(BaseSettings):
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"
+    # PostgreSQL server and owner credentials (used by Docker Compose, seed and migrations;
+    # never by the running agent).
+    postgres_host: str = "localhost"
+    postgres_port: int = 5433
+    postgres_db: str = "northwind"
+    postgres_user: str
+    postgres_password: SecretStr
     # Two separate database roles (brief section 27): the application role for app data,
     # and a read-only analytics role for the agent.
     app_database_url: SecretStr
@@ -68,6 +76,17 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_api_key: SecretStr | None = None
     langsmith_project: str = "self-service-data-analyst-agent"
+
+    def owner_conninfo(self) -> str:
+        """libpq connection string for the database owner (seed, migrations, checks)."""
+        return make_conninfo(
+            host=self.postgres_host,
+            port=self.postgres_port,
+            dbname=self.postgres_db,
+            user=self.postgres_user,
+            password=self.postgres_password.get_secret_value(),
+        )
+
 
     @classmethod
     def settings_customise_sources(

@@ -36,3 +36,16 @@ What was chosen, what was rejected and why. Newest step last.
 | Statement timeout | `FAILED` with a clear message, no repair | Treating a timeout as repairable | Repairing usually cannot make a slow query fast; scenario 20 wants a clear message. |
 | Login errors | Same `INVALID_CREDENTIALS` for unknown user, wrong password, disabled user | Distinct messages | Does not reveal which usernames exist. |
 | Diagram check | Rendered every Mermaid block with `mmdc` (Mermaid CLI 11, installed outside the repo) | Visual check only | Proves the syntax renders, as the step requires. |
+
+## Step 3: Docker Compose and Northwind Load
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Image | `postgres:16` with a named volume `pgdata` | Bind-mounted data folder | Named volumes are portable and `down -v` resets cleanly. |
+| Loading | Mount the dump into `docker-entrypoint-initdb.d` (first start only) | A separate load container | Built into the image; runs once per empty volume. |
+| Schema | Northwind stays in `public`, as in the dump | Moving it to a dedicated schema | No edits to the public dump; `app` schema is separate (Step 4). |
+| Host port | `5433` by default (`POSTGRES_PORT`) | `5432` | A local PostgreSQL service already uses 5432 on the dev machine. |
+| Health check | `pg_isready -h 127.0.0.1` (TCP) | Socket `pg_isready` | During first-start loading PostgreSQL listens only on a socket, so TCP stays unhealthy until data is loaded. |
+| Owner settings | `POSTGRES_*` variables shared by Compose and `Settings` | A separate owner DSN | One set of variables for the container and the scripts. |
+| Line endings | `.gitattributes` forces LF for `.sql`, `.py`, `.yml` | Relying on `core.autocrlf` | The dump is read inside a Linux container. |
+| Integration tests | Marker `integration`; skip automatically when the database is unreachable | Always run | Unit tests stay runnable without Docker. Expected row counts are exact; the two customer-demographics tables are empty in the source dump. |

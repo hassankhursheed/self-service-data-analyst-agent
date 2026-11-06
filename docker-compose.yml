@@ -1,0 +1,28 @@
+name: data-analyst-agent
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-northwind}
+    ports:
+      # Host port defaults to 5433 so it does not clash with a local PostgreSQL on 5432.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Loaded once, on first start with an empty volume, into the public schema.
+      - ./data/northwind/northwind.sql:/docker-entrypoint-initdb.d/01-northwind.sql:ro
+    healthcheck:
+      # TCP check: during first-start loading PostgreSQL only listens on a local socket,
+      # so this stays unhealthy until the Northwind data is fully loaded.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  pgdata:

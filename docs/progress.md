@@ -4,7 +4,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 - [x] Step 1: Project Setup and Standing Rules (Week 1, brief sections 3, 5, 27)
 - [x] Step 2: Design Checkpoint Documents (Week 1, brief sections 4, 5, 11, 19, 21, 32)
-- [ ] Step 3: (title added when the guide arrives)
+- [x] Step 3: Docker Compose and Northwind Load (Week 1, brief sections 6, 29)
 - [ ] Step 4: (title added when the guide arrives)
 - [ ] Step 5: (title added when the guide arrives)
 - [ ] Step 6: (title added when the guide arrives)
@@ -31,7 +31,10 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 3 to 26.
+- Steps 4 to 26.
+- From Step 3, for later steps: database roles (`app_rw`, `agent_login`, `*_ro`), RLS,
+  the date shift and region mapping are not applied yet. Locally `APP_DATABASE_URL` points
+  at the owner account until the `app_rw` role exists.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
   reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
 - Still open:

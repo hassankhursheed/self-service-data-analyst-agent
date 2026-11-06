@@ -5,6 +5,7 @@ from typing import get_args
 
 import pytest
 import yaml
+from psycopg.conninfo import conninfo_to_dict
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from app.core.config import CONFIG_FILE, PROJECT_ROOT, Settings
@@ -13,6 +14,8 @@ DUMMY_ENV = {
     "APP_DATABASE_URL": "postgresql+asyncpg://app:dummy@localhost:5432/test",
     "ANALYTICS_DATABASE_URL": "postgresql+asyncpg://ro:dummy@localhost:5432/test",
     "JWT_SECRET_KEY": "dummy-jwt-secret-for-tests",
+    "POSTGRES_USER": "dummy_owner",
+    "POSTGRES_PASSWORD": "dummy-owner-password",
 }
 
 
@@ -84,8 +87,22 @@ def test_missing_secret_fails_fast(clean_env: pytest.MonkeyPatch) -> None:
 def test_secret_values_are_masked(clean_env: pytest.MonkeyPatch) -> None:
     settings = _load()
     text = repr(settings) + str(settings)
-    for value in DUMMY_ENV.values():
-        assert value not in text
+    secret_names = {path[0].upper() for path in _secret_paths(Settings)}
+    for key, value in DUMMY_ENV.items():
+        if key in secret_names:
+            assert value not in text
+
+
+def test_owner_conninfo_uses_owner_settings(clean_env: pytest.MonkeyPatch) -> None:
+    clean_env.setenv("POSTGRES_PORT", "6000")
+    settings = _load()
+    assert conninfo_to_dict(settings.owner_conninfo()) == {
+        "host": "localhost",
+        "port": "6000",
+        "dbname": "northwind",
+        "user": "dummy_owner",
+        "password": "dummy-owner-password",
+    }
 
 
 def test_yaml_holds_no_secret_settings() -> None:

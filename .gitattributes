@@ -1,0 +1,9 @@
+# Keep LF line endings for files read inside Linux containers and by tools.
+* text=auto
+*.sql text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.pdf binary
+*.png binary
