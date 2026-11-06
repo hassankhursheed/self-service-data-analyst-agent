@@ -10,7 +10,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 6: Database Roles, Row-Level Security and Sensitive Columns (Week 1, brief sections 12, 13, 27)
 - [x] Step 7: Semantic Layer (Week 1, brief section 9)
 - [x] Step 8: Business Calendar and Date Resolution (Week 1, brief section 10)
-- [ ] Step 9: (title added when the guide arrives)
+- [x] Step 9: SQL Safety Validator (Week 1, brief section 12)
 - [ ] Step 10: (title added when the guide arrives)
 - [ ] Step 11: (title added when the guide arrives)
 - [ ] Step 12: (title added when the guide arrives)
@@ -31,10 +31,11 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 9 to 26 (Step 9 plan is waiting for approval).
-- For later steps: SQL validation (allow-lists from `config/access_policy.yaml`) must
-  reject `SET`, `set_config` and system catalogs before execution; the database already
-  refuses them, but validation gives the user a clear reason. The LLM provider and the `checkpoints` schema grants are still to come.
+- Steps 10 to 26.
+- For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
+  and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
+  semantic layer does not describe are refused by the validator; add them to the YAML if
+  eval questions need them. The LLM provider and the `checkpoints` schema grants are still to come.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
   reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
 - Still open:

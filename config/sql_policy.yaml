@@ -1,0 +1,78 @@
+# SQL safety policy (brief section 12, docs/sql-safety.md). Versioned; recorded with runs.
+version: 1
+
+# User question length (characters, after trimming spaces).
+max_question_length: 500
+
+# LIMIT added when the generated query has none, and the highest LIMIT allowed.
+default_limit: 200
+max_limit: 1000
+
+# Allow-list of functions, by sqlglot expression key (how sqlglot names each function
+# after parsing PostgreSQL). Anything not listed is blocked, so a forgotten dangerous
+# function is still refused. Examples: date_trunc -> timestamptrunc, to_char -> timetostr,
+# date_part/extract -> extract, string_agg -> groupconcat, position -> strposition.
+allowed_functions:
+  # aggregates
+  - count
+  - sum
+  - avg
+  - min
+  - max
+  - stddev
+  - variance
+  - percentilecont
+  - percentiledisc
+  - groupconcat
+  - arrayagg
+  - logicalor
+  - logicaland
+  # window functions
+  - rownumber
+  - rank
+  - denserank
+  - ntile
+  - cumedist
+  - percentrank
+  - lag
+  - lead
+  - firstvalue
+  - lastvalue
+  # conditional and null handling
+  - case
+  - if
+  - coalesce
+  - nullif
+  - greatest
+  - least
+  - exists
+  # numbers
+  - round
+  - abs
+  - ceil
+  - floor
+  - pow
+  - sqrt
+  # dates (relative to stored dates only; the real current date is not allowed)
+  - cast
+  - extract
+  - timestamptrunc
+  - datetrunc
+  - timetostr
+  # text
+  - lower
+  - upper
+  - initcap
+  - length
+  - concat
+  - substring
+  - trim
+  - replace
+  - left
+  - right
+  - splitpart
+  - strposition
+
+# Functions sqlglot does not know by name (parsed as "anonymous"), allowed by name.
+allowed_anonymous_functions:
+  - make_date
