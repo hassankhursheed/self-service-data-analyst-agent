@@ -1,0 +1,44 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.streamlit/secrets.toml
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Caches and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Local data dumps and database files (data/northwind/northwind.sql stays tracked)
+*.dump
+*.pgdump
+*.backup
+*.sql.gz
+data/dumps/
+data/local/
+pgdata/
+
+# Logs, editors, OS
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Personal Claude Code settings
+.claude/settings.local.json
+CLAUDE.local.md
