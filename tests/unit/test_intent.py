@@ -225,9 +225,9 @@ async def test_malformed_output_twice_fails_safely() -> None:
 async def test_llm_usage_is_recorded_in_the_state() -> None:
     agent = Agent(fake_deps(ScriptedModel(REVENUE_LAST_QUARTER)))
     state = await agent.run(request("Revenue last quarter"))
-    # One intent call plus one SQL generation call, 50 in / 20 out each, added up.
-    assert state.usage.input_tokens == 100
-    assert state.usage.output_tokens == 40
+    # Intent, SQL generation and answer calls, 50 in / 20 out each, added up.
+    assert state.usage.input_tokens == 150
+    assert state.usage.output_tokens == 60
     assert state.usage.cost_usd > 0
 
 
