@@ -32,7 +32,7 @@ flowchart LR
 
         subgraph pg["PostgreSQL"]
             northwind[("public: Northwind tables (read-only to the app)")]
-            analytics[("analytics: country-to-region map")]
+            analytics[("analytics: region map; sales_ro / finance_ro / operations_ro: secure views")]
             appdb[("app: application schema")]
             checkpoints[("checkpoints: LangGraph state")]
         end
@@ -76,8 +76,8 @@ flowchart LR
 | A7 | A database error goes to N-09, which repairs the SQL (max 2 attempts) and sends it back through validation. |
 | A8 | N-05 reads the semantic catalog, metric definitions, business calendar and verified examples. |
 | A9 | N-02, N-03, N-06, N-09 and N-10 call the LLM with schema, definitions and only the result rows needed; no sensitive personal data. |
-| A10 | N-08 runs SQL with the read-only login, `SET LOCAL ROLE` and `SET LOCAL app.region` from the token, a statement timeout and a row limit. |
-| A11 | Row-level security policies on Northwind tables look up the user's region in the country-to-region map. |
+| A10 | N-08 runs SQL as the read-only `analytics_ro` login against the role's secure views, with `SET LOCAL app.user_role`, `app.user_region` (from the token), a statement timeout and a row limit. |
+| A11 | The secure views read Northwind tables with only the allowed columns and keep a sales manager's rows by looking up the region map. |
 | A12 | N-11 writes the audit trail, per-node steps, latency, tokens, cost and the final status. |
 | A13 | The PostgreSQL checkpointer stores conversation state per user and session, so follow-ups work. |
 | A14 | Every run is traced in LangSmith; the trace is linked to the question by correlation ID. |
@@ -91,6 +91,6 @@ flowchart LR
 - **Graph nodes** each do one job (see `langgraph-design.md`) and are tested on their own.
 - **Safety is enforced twice:** in code (N-07 validation) and in the database (read-only
   login, row-level security, column grants). The prompt is never the only control.
-- **Two database logins:** `app_rw` for application data and `agent_login` (read-only)
+- **Two database logins:** `app_rw` for application data and `analytics_ro` (read-only)
   for Northwind queries. The agent process never holds write credentials for Northwind.
 - **Secrets** come from environment variables only (see `.env.example`).

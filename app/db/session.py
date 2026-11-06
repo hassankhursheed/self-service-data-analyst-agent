@@ -24,6 +24,20 @@ def create_app_engine(settings: Settings) -> AsyncEngine:
     )
 
 
+def create_analytics_engine(settings: Settings) -> AsyncEngine:
+    """Pooled async engine for the read-only ``ANALYTICS_DATABASE_URL`` (agent queries)."""
+    pool = settings.database
+    return create_async_engine(
+        settings.analytics_database_url.get_secret_value(),
+        pool_size=pool.pool_size,
+        max_overflow=pool.max_overflow,
+        pool_timeout=pool.pool_timeout_seconds,
+        pool_recycle=pool.pool_recycle_seconds,
+        pool_pre_ping=True,
+        connect_args={"timeout": pool.connect_timeout_seconds},
+    )
+
+
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     """Session factory; objects stay usable after commit (no implicit reloads)."""
     return async_sessionmaker(engine, expire_on_commit=False)
