@@ -44,7 +44,7 @@ The state is a Pydantic model (`AgentState`). Nested types are Pydantic models t
 | Node | Input fields | Output fields | Success status | Failure path |
 | --- | --- | --- | --- | --- |
 | N-01 Request Intake | token claims, `question`, `conversation_id` | `user_id`, `role`, `region`, `correlation_id`, `history` | `RECEIVED` | Invalid token, disabled user, no role or rate limit: `REJECTED` |
-| N-02 Input Guardrails | `question`, `role` | `guardrail_result` | `GUARDRAIL_CHECKED` | Too long, empty, prompt injection, off-topic, PII request: `BLOCKED` |
+| N-02 Input Guardrails | `question`, `role` | `guardrail_result` | `GUARDRAIL_CHECKED` (scope-override attempts are flagged and continue) | Injection, data change, personal data: `BLOCKED`; empty, too long, off-topic: `REJECTED` (docs/guardrails.md) |
 | N-03 Intent and Ambiguity | `question`, `history`, calendar config | `intent`, `date_range`, `assumptions` | `UNDERSTOOD` | Missing time range, metric, entity, grouping or top N: `CLARIFICATION_NEEDED` |
 | N-04 Clarification | `intent` | `clarification` (question and options) | waits for the user (interrupt) | The user's reply returns to N-03, then `UNDERSTOOD` |
 | N-05 Context Retrieval | `intent`, `role` | `context`, `verified_examples` | stays `UNDERSTOOD` | Nothing allowed for the role: `BLOCKED` |
@@ -64,9 +64,10 @@ Any transition not in this table is rejected by the graph router and ends as `FA
 | From | Condition | To | Node |
 | --- | --- | --- | --- |
 | (start) | Token valid, user active, role assigned, under rate limit | `RECEIVED` | N-01 |
-| (start) | Auth failure, no role or rate limit | `REJECTED` | N-01 |
+| (start) | Disabled user, no role, admin, sales manager without region (rate limit later) | `REJECTED` | N-01 |
 | `RECEIVED` | Input passes all guardrails | `GUARDRAIL_CHECKED` | N-02 |
-| `RECEIVED` | Input blocked by a guardrail | `BLOCKED` | N-02 |
+| `RECEIVED` | Injection, data-change or personal-data request | `BLOCKED` | N-02 |
+| `RECEIVED` | Empty, too long or off-topic | `REJECTED` | N-02 |
 | `GUARDRAIL_CHECKED` | Intent is clear (minor assumptions allowed) | `UNDERSTOOD` | N-03 |
 | `GUARDRAIL_CHECKED` | Answer would change depending on a missing part | `CLARIFICATION_NEEDED` | N-03 |
 | `CLARIFICATION_NEEDED` | User replies (via `POST /clarify`) | `UNDERSTOOD` | N-04, N-03 |
@@ -94,6 +95,7 @@ stateDiagram-v2
     [*] --> REJECTED: N-01 auth, no role, rate limit
     RECEIVED --> GUARDRAIL_CHECKED: N-02 pass
     RECEIVED --> BLOCKED: N-02 block
+    RECEIVED --> REJECTED: N-02 off-topic or length
     GUARDRAIL_CHECKED --> UNDERSTOOD: N-03 clear
     GUARDRAIL_CHECKED --> CLARIFICATION_NEEDED: N-03 ambiguous
     CLARIFICATION_NEEDED --> UNDERSTOOD: user reply
@@ -134,3 +136,18 @@ All limit values live in versioned config, not in code.
 - A follow-up ("now only for Germany") runs the whole graph again from N-01. `history`
   supplies the earlier intent and SQL, but guardrails, validation and access rules are
   applied again. Earlier approval never carries over.
+
+## Implementation (Step 11)
+
+- `app/agent/state.py`: `AgentState` (Pydantic) with `AgentRequest` (identity from the
+  token, never from the question), typed slots for later nodes, and `steps`, which grows by
+  one `StepRecord` per node (start, end, duration, input and output summaries, error code).
+- `app/agent/transitions.py`: `ALLOWED` (the table above as data), `check_transition`
+  (raises `IllegalTransition`; any running status may go to `FAILED`; final statuses never
+  change; intermediate statuses such as `REPAIRING` are passed as `via`) and `ROUTES`,
+  the next node for each (node, status). `next_node` is the graph's only router.
+- `app/agent/nodes/`: one module per node. `base.agent_node` wraps every node: it checks
+  the transition, records the step, and turns unexpected errors into `FAILED` with a safe
+  message. N-03 to N-11 are stubs with fixed results until their own steps.
+- `app/agent/graph.py`: the `StateGraph`, conditional edges built from `ROUTES` only, and
+  `run_agent(request)`. `config/agent.yaml` holds `graph_version`.

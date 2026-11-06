@@ -12,7 +12,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 8: Business Calendar and Date Resolution (Week 1, brief section 10)
 - [x] Step 9: SQL Safety Validator (Week 1, brief section 12)
 - [x] Step 10: LLM Client, Retries, Timeouts and Budgets (Week 2, brief sections 22, 27)
-- [ ] Step 11: (title added when the guide arrives)
+- [x] Step 11: LangGraph State, Transitions, Intake and Guardrails (Week 2, brief sections 4, 5, 11)
 - [ ] Step 12: (title added when the guide arrives)
 - [ ] Step 13: (title added when the guide arrives)
 - [ ] Step 14: (title added when the guide arrives)
@@ -31,7 +31,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 11 to 26 (Step 11 plan is waiting for approval).
+- Steps 12 to 26.
 - For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
   and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
   semantic layer does not describe are refused by the validator; add them to the YAML if

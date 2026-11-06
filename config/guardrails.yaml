@@ -1,0 +1,59 @@
+# Input guardrails for N-02 (brief sections 4 and 13, docs/guardrails.md).
+# Patterns are case-insensitive regular expressions matched against the question.
+version: 1
+
+# Attempts to change the assistant itself: BLOCKED.
+prompt_injection:
+  - 'system\s+prompt'
+  - '\b(reveal|show|print|repeat|tell me)\b.{0,30}\b(your|the)\s+(prompt|instructions|rules|guidelines)\b'
+  - '\byou\s+are\s+now\b'
+  - '\bact\s+as\s+(an?\s+)?(admin|administrator|dba|developer|superuser|root|system)\b'
+  - '\bpretend\s+(to\s+be|you\s+are)\b'
+  - '\b(developer|god|dan)\s+mode\b'
+  - '\bjailbreak'
+  - '\bsudo\b'
+  - '\bignore\b.{0,40}\binstructions\b.{0,40}\b(say|write|print|output|respond)\b'
+  - '\bnew\s+instructions\b'
+
+# Attempts to widen the user's data scope: flagged and recorded, but the question
+# continues. The database still returns only what the user may see (brief section 13,
+# scenario 15), and the answer carries the notice below.
+scope_override:
+  - '\b(ignore|disregard|forget|override|bypass|skip)\b.{0,30}\b(rules|restrictions|filters?|limits|permissions|access|security)\b'
+  - '\b(all|every|other|another|any)\s+regions?\b'
+  - '\bwithout\s+(any\s+)?(restrictions|filters?|limits)\b'
+  - '\bas\s+(an?\s+)?(admin|administrator|finance|superuser)\b'
+scope_override_notice: >-
+  Your data access is set by your account and can't be changed by the question,
+  so the results only include data you are allowed to see.
+
+# Requests to change data: BLOCKED (the SQL validator would also refuse them).
+write_request:
+  - '\b(delete|drop|truncate|insert|wipe|erase|purge)\b'
+  - '\b(update|alter|modify|overwrite)\b.{0,40}\b(orders?|customers?|products?|prices?|tables?|data|records?|rows?|stock|suppliers?|employees?|database)\b'
+  - '\bremove\b.{0,30}\b(orders?|customers?|products?|tables?|data|records?|rows?|suppliers?|employees?)\b'
+  - '\bset\b.{0,40}\bto\s+\d'
+
+# Requests for personal data. Blocked when the role may not see the listed column
+# (config/access_policy.yaml); a null table means never available to anyone.
+personal_data:
+  - {pattern: '\bhome\s+(address|addresses)\b', table: employees, column: address}
+  - {pattern: '\b(employees?|staff|sales\s+reps?)\b.{0,40}\baddress(es)?\b', table: employees, column: address}
+  - {pattern: '\b(birth\s*days?|birth\s+dates?|date\s+of\s+birth|born)\b', table: employees, column: birth_date}
+  - {pattern: '\b(employees?|staff)\b.{0,40}\bage\b', table: employees, column: birth_date}
+  - {pattern: '\b(home|personal|private)\s+(phone|number|telephone)s?\b', table: employees, column: home_phone}
+  - {pattern: '\b(employees?|staff)\b.{0,40}\b(notes|photos?|pictures?)\b', table: employees, column: notes}
+  - {pattern: '\bcustomers?\b.{0,40}\bcontacts?\b', table: customers, column: contact_name}
+  - {pattern: '\bcontact\s+(names?|persons?|people|details)\b', table: customers, column: contact_name}
+  - {pattern: '\bcustomers?\b.{0,40}\b(phones?|telephones?|fax)\b', table: customers, column: phone}
+  - {pattern: '\bsuppliers?\b.{0,40}\b(contacts?|phones?)\b', table: suppliers, column: contact_name}
+  - {pattern: '\b(salary|salaries|ssn|social\s+security|passport|bank\s+account|credit\s+card)\b', table: null, column: null}
+
+# Requests that are not about Northwind data: REJECTED politely.
+off_topic:
+  - '\b(write|compose|create|generate)\b.{0,30}\b(poem|song|story|essay|haiku|lyrics|limerick|novel)\b'
+  - '\b(tell|say)\b.{0,15}\bjoke\b'
+  - '\b(recipe|weather|horoscope|lottery)\b'
+  - '\btranslate\b'
+  - '\b(write|generate)\b.{0,30}\b(code|program|script|python|javascript|function)\b'
+  - '\bwho\s+(won|is\s+the\s+president)\b'

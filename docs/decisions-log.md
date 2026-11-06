@@ -153,3 +153,18 @@ What was chosen, what was rejected and why. Newest step last.
 | Errors | `app/core/errors.py`: `RetryableError`, `NonRetryableError`, `BudgetExceeded`, `DbTimeout`, `ValidationBlocked`, each with a code and a safe user message | Raw provider exceptions | Later steps map errors to statuses and AgentErrors consistently. |
 | Prompts | YAML files `config/prompts/<name>/<version>.yaml` with declared input variables (checked against the template) and `name@version` refs; versions chosen in `llm.yaml` | Long strings in Python | Standing rule 8; versions are recorded with each run. |
 | Tracing | LangSmith only through `LANGSMITH_*` environment variables, read by LangChain | Enabling tracing in code | Brief §27: configuration by environment only; off by default. |
+
+## Step 11: LangGraph State, Transitions, Intake and Guardrails
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| State | One Pydantic `AgentState`; `steps` appended through a LangGraph reducer | TypedDict state; one big dict | Validated types between nodes (standing rule 3); every node's record is kept. |
+| Transitions | Table `ALLOWED` plus `check_transition` in a shared node wrapper; routing only from `ROUTES` | Free conditional edges per node | A node cannot skip validation or loop freely (brief §11); tests prove routes and the table agree. |
+| Errors in nodes | Wrapper turns unexpected errors into `FAILED` with a safe message; `IllegalTransition` is raised | Letting exceptions escape; swallowing illegal transitions | Users never see stack traces (brief §22); an illegal transition is a bug and must surface. |
+| N-01 | Rejects disabled users, users with no role, admins and sales managers without a region before any LLM call | Rejecting only no-role users | Brief §2: admins have no business questions by default; a region-scoped role without a region has no data. |
+| N-02 outcome | Empty, too long, off-topic: REJECTED; injection, data change, personal data: BLOCKED | Everything BLOCKED | REJECTED = not a business question; BLOCKED = safety event counted on the dashboard. |
+| Scope-widening phrases | Flagged and continued with a notice; the database enforces the region | Blocking them (Step 11 plan) | Brief §13 and scenario 15 require the "all regions" prompt to still return only the user's region. Found while building; documented in docs/guardrails.md. |
+| Personal data | Role-aware rules tied to columns in the access policy | Blocking any contact-related words | Sales managers may see their customers' contacts; operations may see supplier contacts. |
+| Classifier | Rules only, from `config/guardrails.yaml` | Small LLM classifier | Free, deterministic, testable; add a classifier only if evaluation shows misses. |
+| Data-change requests | Blocked at N-02 and again by the SQL validator | Only the validator | Cheaper (no LLM call) and gives a clear reason early. |
+| Commit messages | Short descriptive messages without "Step N" (user request); older messages rewritten locally | `Step N: <title>` | User preference; CLAUDE.md rule 9 updated. |
