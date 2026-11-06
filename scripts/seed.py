@@ -9,7 +9,8 @@ Steps (each safe to run again):
 4. sync the sales-region mapping;
 5. sync roles and the test users from config/test_users.yaml;
 6. create database login roles, grants and the secure views (docs/access-control.md);
-7. sync the semantic layer into the catalog tables and check it against the database.
+7. sync the semantic layer into the catalog tables and check it against the database;
+8. sync the business calendar (config/calendar.yaml).
 """
 
 import sys
@@ -32,6 +33,8 @@ from app.db.setup.northwind_data import (
 )
 from app.db.setup.users import load_test_users, sync_roles, sync_test_users
 from app.safety.access_policy import load_access_policy
+from app.semantic.calendar import load_calendar
+from app.semantic.calendar_store import sync_calendar
 from app.semantic.catalog import load_semantic_layer_file, sync_semantic_layer
 from app.semantic.schema_check import check_semantic_schema
 
@@ -46,6 +49,8 @@ class SeedSummary(BaseModel):
     semantic_version: int
     semantic_catalog_rows: int
     metrics: int
+    calendar_version: int
+    reference_date: str
 
 
 def wait_for_database(settings: Settings) -> None:
@@ -70,6 +75,7 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
     regions = load_regions()
     users = load_test_users()
     layer = load_semantic_layer_file()
+    calendar = load_calendar()
 
     wait_for_database(settings)
     run_migrations()
@@ -84,6 +90,7 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
         if problems:
             raise SeedError("semantic layer does not match the database: " + "; ".join(problems))
         semantic = sync_semantic_layer(conn, layer)
+        calendar_version = sync_calendar(conn, calendar)
     return SeedSummary(
         date_shift_years=settings.data_setup.date_shift_years,
         date_shift_applied_now=shifted_now,
@@ -94,6 +101,8 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
         semantic_version=semantic["version"],
         semantic_catalog_rows=semantic["catalog_rows"],
         metrics=semantic["metrics"],
+        calendar_version=calendar_version,
+        reference_date=calendar.reference_date.isoformat(),
     )
 
 
@@ -113,6 +122,9 @@ def main() -> int:
     print(
         f"  semantic layer:  v{summary.semantic_version}, "
         f"{summary.semantic_catalog_rows} catalog rows, {summary.metrics} metrics"
+    )
+    print(
+        f"  calendar:        v{summary.calendar_version}, business today {summary.reference_date}"
     )
     return 0
 

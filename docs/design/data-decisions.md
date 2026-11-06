@@ -49,7 +49,7 @@ The brief's 2025-12-31 is an example only. With a whole-year shift it would leav
 May to December 2025 without data, so "last quarter" and "last month" would return
 nothing.
 
-Key calendar rules (details are finalised in the business-calendar step):
+Key calendar rules (the full list is in `docs/business-calendar.md`):
 
 | Term | Rule | Resolves to on 2025-05-06 |
 | --- | --- | --- |
