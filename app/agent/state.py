@@ -12,12 +12,22 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.intent import ClarificationDraft, IntentAnalysis
+from app.agent.sql_output import GeneratedSQL
 from app.core.context import UserContext
-from app.core.enums import BlockReason, Confidence, NodeName, QuestionStatus, RegionCode, RoleName
+from app.core.enums import (
+    BlockReason,
+    BlockStage,
+    Confidence,
+    NodeName,
+    QuestionStatus,
+    RegionCode,
+    RoleName,
+)
 from app.db.analytics import QueryResult
 from app.safety.guardrails import GuardrailResult
 from app.safety.sql_validator import SqlValidationResult
 from app.semantic.calendar import DateRange
+from app.semantic.models import SemanticLayer
 from app.semantic.retriever import RetrievedContext
 
 
@@ -63,12 +73,14 @@ class ClarificationRecord(_Frozen):
     answered_at: dt.datetime | None = None
 
 
-class GeneratedSQL(_Frozen):
-    sql: str
-    tables_used: list[str] = []
-    metrics_used: list[str] = []
-    assumptions: list[str] = []
-    confidence: Confidence = Confidence.LOW
+class BlockedQueryRecord(_Frozen):
+    """A refusal, ready for the blocked_queries table (Step 16)."""
+
+    stage: BlockStage
+    reason_code: BlockReason
+    reason_text: str
+    sql: str | None = None
+    detail: str | None = None
 
 
 class Answer(_Frozen):
@@ -103,11 +115,18 @@ class AgentState(BaseModel):
     assumptions: list[str] = []
     top_n: int | None = None
     date_range: DateRange | None = None
+    semantic: SemanticLayer | None = None
     context: RetrievedContext | None = None
+    # Hook for verified examples (Step 20); always empty until then.
+    verified_examples: list[str] = []
     generated: GeneratedSQL | None = None
     regeneration_attempts: int = 0
     validation: SqlValidationResult | None = None
     execution: QueryResult | None = None
+    executed_sql: str | None = None
+    last_db_error: str | None = None
+    low_confidence: bool = False
+    blocked: BlockedQueryRecord | None = None
     repair_attempts: int = 0
     answer: Answer | None = None
     user_message: str | None = None

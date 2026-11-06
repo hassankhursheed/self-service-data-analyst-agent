@@ -1,20 +1,36 @@
 """Everything the nodes need from outside the state, passed in once when the graph is built.
 
-Tests build ``AgentDeps`` with a fake LLM; the app uses ``default_deps()``.
+Tests build ``AgentDeps`` with a scripted LLM, a fake executor and a fixed semantic layer;
+the app uses ``default_deps()``.
 """
 
-from dataclasses import dataclass
+import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from functools import lru_cache
 
-from langchain_core.messages import BaseMessage, SystemMessage
+import psycopg
+from langchain_core.messages import BaseMessage
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.agent.config import AgentConfig, get_agent_config
 from app.agent.state import AgentState, Usage
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
+from app.core.context import UserContext
 from app.core.llm import BudgetTracker, LLMClient, LLMConfig, create_llm_client, get_llm_config
 from app.core.prompts import load_prompt
+from app.db.analytics import QueryResult, run_readonly
+from app.db.session import create_analytics_engine
+from app.safety.sql_policy import SqlPolicy, get_sql_policy
 from app.semantic.calendar import CalendarConfig, load_calendar
-from app.semantic.catalog import load_semantic_layer_file
+from app.semantic.catalog import load_active_semantic_layer
 from app.semantic.models import SemanticLayer
+
+# (sql, user, timeout_ms, row_limit) -> rows. The default runs through analytics_ro.
+Executor = Callable[[str, UserContext, int, int], Awaitable[QueryResult]]
+SemanticLoader = Callable[[], Awaitable[SemanticLayer]]
+Sleep = Callable[[float], Awaitable[None]]
 
 
 @dataclass(frozen=True)
@@ -23,7 +39,12 @@ class AgentDeps:
     llm_config: LLMConfig
     agent_config: AgentConfig
     calendar: CalendarConfig
-    semantic: SemanticLayer
+    load_semantic: SemanticLoader
+    executor: Executor
+    sql_policy: SqlPolicy
+    statement_timeout_ms: int
+    row_limit: int
+    sleep: Sleep = field(default=asyncio.sleep)
 
     def budget_for(self, state: AgentState) -> BudgetTracker:
         """The question's budget, continuing from what earlier nodes already spent."""
@@ -52,15 +73,45 @@ def usage_of(budget: BudgetTracker) -> Usage:
     )
 
 
+def database_semantic_loader(settings: Settings) -> SemanticLoader:
+    """Read the active semantic layer from the database for every question (app role)."""
+    url = make_url(settings.app_database_url.get_secret_value()).set(drivername="postgresql")
+    conninfo = url.render_as_string(hide_password=False)
+
+    def load() -> SemanticLayer:
+        with psycopg.connect(conninfo, connect_timeout=5) as conn:
+            return load_active_semantic_layer(conn)
+
+    async def load_async() -> SemanticLayer:
+        return await asyncio.to_thread(load)
+
+    return load_async
+
+
+def analytics_executor(settings: Settings) -> Executor:
+    """Run validated SQL through the read-only analytics role (one pooled engine)."""
+
+    @lru_cache
+    def engine() -> AsyncEngine:
+        return create_analytics_engine(settings)
+
+    async def execute(sql: str, user: UserContext, timeout_ms: int, row_limit: int) -> QueryResult:
+        return await run_readonly(sql, user, timeout_ms, row_limit, engine=engine())
+
+    return execute
+
+
 def default_deps() -> AgentDeps:
-    """Production wiring: real LLM client, config files and the semantic layer file."""
+    """Production wiring: real LLM, database semantic layer and read-only executor."""
+    settings = get_settings()
     return AgentDeps(
-        llm=create_llm_client(get_settings()),
+        llm=create_llm_client(settings),
         llm_config=get_llm_config(),
         agent_config=get_agent_config(),
         calendar=load_calendar(),
-        semantic=load_semantic_layer_file(),
+        load_semantic=database_semantic_loader(settings),
+        executor=analytics_executor(settings),
+        sql_policy=get_sql_policy(),
+        statement_timeout_ms=settings.analytics.default_statement_timeout_ms,
+        row_limit=settings.analytics.default_row_limit,
     )
-
-
-__all__ = ["AgentDeps", "SystemMessage", "default_deps", "usage_of"]

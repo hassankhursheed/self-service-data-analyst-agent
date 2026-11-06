@@ -299,18 +299,23 @@ async def ainvoke_structured[M: BaseModel](
     budget: BudgetTracker,
     node: str,
     max_regenerations: int = 1,
+    check: Callable[[M], None] | None = None,
 ) -> StructuredReply[M]:
     """Ask for JSON matching ``schema``; on malformed output regenerate (at most
-    ``max_regenerations`` times, sending the problem back), then raise MalformedOutput."""
+    ``max_regenerations`` times, sending the problem back), then raise MalformedOutput.
+
+    ``check`` may raise ValueError for replies that parse but are not acceptable (for
+    example a table outside the allowed context); that counts as malformed too."""
     conversation = list(messages)
     problem = ""
     for attempt in range(max_regenerations + 1):
         reply = await client.ainvoke(conversation, budget=budget, node=node)
         text = str(reply.content)
         try:
-            return StructuredReply[M](
-                value=schema.model_validate(extract_json(text)), regenerations=attempt
-            )
+            value = schema.model_validate(extract_json(text))
+            if check is not None:
+                check(value)
+            return StructuredReply[M](value=value, regenerations=attempt)
         except (ValueError, ValidationError) as exc:
             problem = str(exc).splitlines()[0][:300]
             conversation = [

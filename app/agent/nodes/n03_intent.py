@@ -8,6 +8,7 @@ from app.core.enums import NodeName, QuestionStatus, RoleName
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.prompts import load_prompt
+from app.semantic.models import SemanticLayer
 
 S = QuestionStatus
 UNCLEAR_MESSAGE = (
@@ -16,17 +17,17 @@ UNCLEAR_MESSAGE = (
 )
 
 
-def _metrics_text(deps: AgentDeps, role: RoleName) -> str:
+def _metrics_text(layer: SemanticLayer, role: RoleName) -> str:
     lines = [
         f"- {name}: {m.description}" + (f" (also: {', '.join(m.synonyms)})" if m.synonyms else "")
-        for name, m in deps.semantic.metrics.items()
+        for name, m in layer.metrics.items()
         if role in m.allowed_roles
     ]
     return "\n".join(lines) or "- (none)"
 
 
-def _tables_text(deps: AgentDeps, role: RoleName) -> str:
-    return ", ".join(t for t, d in deps.semantic.tables.items() if role in d.allowed_roles)
+def _tables_text(layer: SemanticLayer, role: RoleName) -> str:
+    return ", ".join(t for t, d in layer.tables.items() if role in d.allowed_roles)
 
 
 def _clarifications_text(state: AgentState) -> str:
@@ -42,12 +43,13 @@ def make_intent_node(deps: AgentDeps) -> NodeFn:
         if state.user is None:
             raise AppError("intent reached without a user context")
         prompt = load_prompt("intent", deps.llm_config.prompts["intent"])
+        layer = await deps.load_semantic()
         messages = [
             *deps.system_messages(),
             *prompt.to_chat_prompt().format_messages(
                 business_today=deps.calendar.reference_date.isoformat(),
-                metrics=_metrics_text(deps, state.user.role),
-                tables=_tables_text(deps, state.user.role),
+                metrics=_metrics_text(layer, state.user.role),
+                tables=_tables_text(layer, state.user.role),
                 question=state.question,
                 clarifications=_clarifications_text(state),
             ),

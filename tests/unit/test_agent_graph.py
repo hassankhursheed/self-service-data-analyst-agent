@@ -298,7 +298,7 @@ async def test_a_valid_question_reaches_the_stubbed_later_nodes() -> None:
     assert state.execution is not None
     assert state.finished is True
     assert state.graph_version
-    assert state.prompt_versions == {"system": "v1", "intent": "v1"}
+    assert set(state.prompt_versions) == {"system", "intent", "sql_generation", "sql_repair"}
 
 
 async def test_every_node_records_timing_and_summaries() -> None:

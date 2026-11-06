@@ -17,21 +17,19 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
+from app.agent.checkpoint import checkpoint_serializer
 from app.agent.deps import AgentDeps, default_deps
 from app.agent.nodes.base import NodeFn
 from app.agent.nodes.n01_intake import request_intake
 from app.agent.nodes.n02_guardrails import input_guardrails
 from app.agent.nodes.n03_intent import make_intent_node
 from app.agent.nodes.n04_clarification import make_clarification_node
-from app.agent.nodes.stubs import (
-    answer_and_visualization,
-    audit_and_metrics,
-    context_retrieval,
-    execution,
-    repair,
-    sql_generation,
-    sql_validation,
-)
+from app.agent.nodes.n05_context import make_context_node
+from app.agent.nodes.n06_sql_generation import make_sql_generation_node
+from app.agent.nodes.n07_validation import make_validation_node
+from app.agent.nodes.n08_execution import make_execution_node
+from app.agent.nodes.n09_repair import make_repair_node
+from app.agent.nodes.stubs import answer_and_visualization, audit_and_metrics
 from app.agent.state import AgentRequest, AgentState
 from app.agent.transitions import END as ROUTE_END
 from app.agent.transitions import ROUTES, next_node
@@ -47,11 +45,11 @@ def build_nodes(deps: AgentDeps) -> dict[NodeName, NodeFn]:
         NodeName.GUARDRAILS: input_guardrails,
         NodeName.INTENT: make_intent_node(deps),
         NodeName.CLARIFICATION: make_clarification_node(),
-        NodeName.CONTEXT: context_retrieval,
-        NodeName.SQL_GENERATION: sql_generation,
-        NodeName.VALIDATION: sql_validation,
-        NodeName.EXECUTION: execution,
-        NodeName.REPAIR: repair,
+        NodeName.CONTEXT: make_context_node(deps),
+        NodeName.SQL_GENERATION: make_sql_generation_node(deps),
+        NodeName.VALIDATION: make_validation_node(deps),
+        NodeName.EXECUTION: make_execution_node(deps),
+        NodeName.REPAIR: make_repair_node(deps),
         NodeName.ANSWER: answer_and_visualization,
         NodeName.AUDIT: audit_and_metrics,
     }
@@ -90,7 +88,9 @@ class Agent:
         checkpointer: BaseCheckpointSaver[Any] | None = None,
     ) -> None:
         self.deps = deps or default_deps()
-        self.graph = build_graph(self.deps, checkpointer or InMemorySaver())
+        self.graph = build_graph(
+            self.deps, checkpointer or InMemorySaver(serde=checkpoint_serializer())
+        )
 
     @staticmethod
     def _config(thread_id: str) -> RunnableConfig:

@@ -1,6 +1,6 @@
 # Agent graph settings. Bump graph_version when nodes, routing or transitions change;
 # it is recorded with every run (brief section 23).
-graph_version: "0.2.0"
+graph_version: "0.3.0"
 
 # N-03 / N-04 (brief section 14, docs/intent-and-clarification.md).
 intent:
@@ -15,3 +15,15 @@ intent:
   max_regenerations: 1
   # Used when the model does not offer metric options.
   fallback_metric_options: [revenue, number_of_orders]
+
+# N-06 to N-09 (brief sections 12, 13, 15; docs/sql-generation.md).
+sql:
+  # Regenerations after malformed structured output (N-06 and N-09).
+  max_regenerations: 1
+  # Repairs after a database error; one more failure ends the question as FAILED.
+  max_repair_attempts: 2
+  # Database error text sent back to the model is cut to this length.
+  repair_error_max_chars: 500
+  # Attempts when the database cannot be reached (connection errors only).
+  db_connect_attempts: 3
+  db_connect_backoff_seconds: 0.5

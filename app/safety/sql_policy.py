@@ -62,6 +62,12 @@ BLOCK_MESSAGES: dict[BlockReason, str] = {
     BlockReason.WRITE_REQUEST: "I can only read data, so I can't change, add or delete anything.",
     BlockReason.PERSONAL_DATA_REQUEST: "That personal information is not available to your role.",
     BlockReason.NO_DATA_ACCESS: "Your account has no access to business data.",
+    BlockReason.NO_ALLOWED_DATA: (
+        "I could not find data your role may use to answer this question."
+    ),
+    BlockReason.DATABASE_REFUSED: (
+        "The database refused this query for your role, so it was not run."
+    ),
     BlockReason.EMPTY_SQL: "No query was produced for this question.",
     BlockReason.PARSE_ERROR: "The generated query could not be read, so it was not run.",
     BlockReason.MULTIPLE_STATEMENTS: "Only one query can run at a time.",
