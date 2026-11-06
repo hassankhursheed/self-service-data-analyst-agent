@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any
 
+from langgraph.errors import GraphBubbleUp
 from pydantic import BaseModel
 
 from app.agent.state import AgentErrorInfo, AgentState, StepRecord
@@ -51,8 +52,8 @@ def agent_node(name: NodeName) -> Callable[[NodeFn], NodeFn]:
             error_code: str | None = None
             try:
                 update = dict(await fn(state))
-            except IllegalTransition:
-                raise
+            except (IllegalTransition, GraphBubbleUp):
+                raise  # bugs, and LangGraph interrupts (pausing for a clarification)
             except AppError as exc:
                 error_code = exc.code
                 update = _failed(name, exc.code, exc.detail, exc.user_message, exc)

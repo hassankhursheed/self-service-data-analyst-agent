@@ -69,8 +69,8 @@ ROUTES: dict[NodeName, dict[QuestionStatus, str]] = {
         S.FAILED: N.AUDIT,
     },
     N.INTENT: {S.UNDERSTOOD: N.CONTEXT, S.CLARIFICATION_NEEDED: N.CLARIFICATION, S.FAILED: N.AUDIT},
-    # The clarifying question is returned to the user; the run pauses after the audit.
-    N.CLARIFICATION: {S.CLARIFICATION_NEEDED: N.AUDIT, S.FAILED: N.AUDIT},
+    # N-04 pauses (interrupt) until the user replies, then N-03 analyses the question again.
+    N.CLARIFICATION: {S.CLARIFICATION_NEEDED: N.INTENT, S.FAILED: N.AUDIT},
     N.CONTEXT: {S.UNDERSTOOD: N.SQL_GENERATION, S.BLOCKED: N.AUDIT, S.FAILED: N.AUDIT},
     N.SQL_GENERATION: {S.SQL_GENERATED: N.VALIDATION, S.FAILED: N.AUDIT},
     N.VALIDATION: {S.VALIDATED: N.EXECUTION, S.BLOCKED: N.AUDIT, S.FAILED: N.AUDIT},

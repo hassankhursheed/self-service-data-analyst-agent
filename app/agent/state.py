@@ -11,6 +11,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.agent.intent import ClarificationDraft, IntentAnalysis
 from app.core.context import UserContext
 from app.core.enums import BlockReason, Confidence, NodeName, QuestionStatus, RegionCode, RoleName
 from app.db.analytics import QueryResult
@@ -50,10 +51,16 @@ class StepRecord(_Frozen):
     error_code: str | None = None
 
 
-class Intent(_Frozen):
-    summary: str
-    metrics: list[str] = []
-    time_phrase: str | None = None
+class ClarificationRecord(_Frozen):
+    """One clarifying question and the user's reply (for the clarifications table)."""
+
+    round: int
+    question: str
+    options: list[str]
+    missing_parts: list[str]
+    asked_at: dt.datetime
+    answer: str | None = None
+    answered_at: dt.datetime | None = None
 
 
 class GeneratedSQL(_Frozen):
@@ -90,7 +97,11 @@ class AgentState(BaseModel):
     question: str = ""
     guardrail: GuardrailResult | None = None
     notices: list[str] = []
-    intent: Intent | None = None
+    intent: IntentAnalysis | None = None
+    pending_clarification: ClarificationDraft | None = None
+    clarifications: list[ClarificationRecord] = []
+    assumptions: list[str] = []
+    top_n: int | None = None
     date_range: DateRange | None = None
     context: RetrievedContext | None = None
     generated: GeneratedSQL | None = None
@@ -108,3 +119,6 @@ class AgentState(BaseModel):
     graph_version: str = ""
     prompt_versions: dict[str, str] = {}
     finished: bool = False
+    thread_id: str | None = None
+    # True while the graph is paused waiting for the user's clarification reply.
+    awaiting_reply: bool = False

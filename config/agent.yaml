@@ -1,3 +1,17 @@
 # Agent graph settings. Bump graph_version when nodes, routing or transitions change;
 # it is recorded with every run (brief section 23).
-graph_version: "0.1.0"
+graph_version: "0.2.0"
+
+# N-03 / N-04 (brief section 14, docs/intent-and-clarification.md).
+intent:
+  # Missing parts that would change the answer: always ask.
+  blocking_parts: [metric, entity, grouping]
+  # Missing parts with a stated default instead of a question (unless we are asking anyway).
+  default_period: this year
+  default_top_n: 10
+  # One clarification round, a second only if the reply is still unclear.
+  max_clarification_rounds: 2
+  # Regenerations after malformed structured output.
+  max_regenerations: 1
+  # Used when the model does not offer metric options.
+  fallback_metric_options: [revenue, number_of_orders]

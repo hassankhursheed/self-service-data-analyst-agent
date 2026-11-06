@@ -80,6 +80,8 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["app", "tests", "scripts", "migrations/env.py"]
+mypy_path = "."
+explicit_package_bases = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

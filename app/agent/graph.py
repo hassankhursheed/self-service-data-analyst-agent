@@ -1,24 +1,33 @@
-"""The agent graph: N-01 to N-11 with routing taken only from the transition table."""
+"""The agent graph: N-01 to N-11 with routing taken only from the transition table.
 
+``Agent`` owns one compiled graph and its checkpointer. ``run`` starts a question;
+``resume`` continues a question paused for clarification. The checkpointer is in memory
+for now; the PostgreSQL checkpointer replaces it in Step 15.
+"""
+
+import uuid
 from collections.abc import Callable
 from functools import lru_cache
-from pathlib import Path
 from typing import Any, cast
 
-import yaml
+from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
 
+from app.agent.deps import AgentDeps, default_deps
 from app.agent.nodes.base import NodeFn
 from app.agent.nodes.n01_intake import request_intake
 from app.agent.nodes.n02_guardrails import input_guardrails
+from app.agent.nodes.n03_intent import make_intent_node
+from app.agent.nodes.n04_clarification import make_clarification_node
 from app.agent.nodes.stubs import (
     answer_and_visualization,
     audit_and_metrics,
-    clarification,
     context_retrieval,
     execution,
-    intent_and_ambiguity,
     repair,
     sql_generation,
     sql_validation,
@@ -26,30 +35,26 @@ from app.agent.nodes.stubs import (
 from app.agent.state import AgentRequest, AgentState
 from app.agent.transitions import END as ROUTE_END
 from app.agent.transitions import ROUTES, next_node
-from app.core.config import PROJECT_ROOT
 from app.core.enums import NodeName
-from app.core.llm import get_llm_config
+from app.core.errors import AppError
 
-AGENT_CONFIG_FILE = PROJECT_ROOT / "config" / "agent.yaml"
-
-NODES: dict[NodeName, NodeFn] = {
-    NodeName.INTAKE: request_intake,
-    NodeName.GUARDRAILS: input_guardrails,
-    NodeName.INTENT: intent_and_ambiguity,
-    NodeName.CLARIFICATION: clarification,
-    NodeName.CONTEXT: context_retrieval,
-    NodeName.SQL_GENERATION: sql_generation,
-    NodeName.VALIDATION: sql_validation,
-    NodeName.EXECUTION: execution,
-    NodeName.REPAIR: repair,
-    NodeName.ANSWER: answer_and_visualization,
-    NodeName.AUDIT: audit_and_metrics,
-}
+Graph = CompiledStateGraph[AgentState, None, AgentState, AgentState]
 
 
-def graph_version(path: Path = AGENT_CONFIG_FILE) -> str:
-    data = yaml.safe_load(path.read_text("utf-8"))
-    return str(data["graph_version"])
+def build_nodes(deps: AgentDeps) -> dict[NodeName, NodeFn]:
+    return {
+        NodeName.INTAKE: request_intake,
+        NodeName.GUARDRAILS: input_guardrails,
+        NodeName.INTENT: make_intent_node(deps),
+        NodeName.CLARIFICATION: make_clarification_node(),
+        NodeName.CONTEXT: context_retrieval,
+        NodeName.SQL_GENERATION: sql_generation,
+        NodeName.VALIDATION: sql_validation,
+        NodeName.EXECUTION: execution,
+        NodeName.REPAIR: repair,
+        NodeName.ANSWER: answer_and_visualization,
+        NodeName.AUDIT: audit_and_metrics,
+    }
 
 
 def _router(node: NodeName) -> Callable[[AgentState], str]:
@@ -61,31 +66,70 @@ def _router(node: NodeName) -> Callable[[AgentState], str]:
     return route
 
 
-def build_graph() -> CompiledStateGraph[AgentState, None, AgentState, AgentState]:
+def build_graph(deps: AgentDeps, checkpointer: BaseCheckpointSaver[Any] | None = None) -> Graph:
+    nodes = build_nodes(deps)
     builder = StateGraph(AgentState)
-    for name, fn in NODES.items():
+    for name, fn in nodes.items():
         builder.add_node(name.value, cast(Any, fn))
     builder.add_edge(START, NodeName.INTAKE.value)
-    for name in NODES:
+    for name in nodes:
         if name is NodeName.AUDIT:
             builder.add_edge(name.value, END)
             continue
         targets = sorted(set(ROUTES[name].values()))
         builder.add_conditional_edges(name.value, _router(name), {t: t for t in targets})
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
+
+
+class Agent:
+    """One graph plus its checkpointer; safe to reuse for many questions."""
+
+    def __init__(
+        self,
+        deps: AgentDeps | None = None,
+        checkpointer: BaseCheckpointSaver[Any] | None = None,
+    ) -> None:
+        self.deps = deps or default_deps()
+        self.graph = build_graph(self.deps, checkpointer or InMemorySaver())
+
+    @staticmethod
+    def _config(thread_id: str) -> RunnableConfig:
+        return {"configurable": {"thread_id": thread_id}}
+
+    async def run(self, request: AgentRequest, *, thread_id: str | None = None) -> AgentState:
+        """Run a new question until it finishes or pauses for clarification."""
+        thread_id = thread_id or str(uuid.uuid4())
+        initial = AgentState(
+            request=request,
+            thread_id=thread_id,
+            graph_version=self.deps.agent_config.graph_version,
+            prompt_versions=dict(self.deps.llm_config.prompts),
+        )
+        await self.graph.ainvoke(initial, self._config(thread_id))
+        return await self.state(thread_id)
+
+    async def resume(self, thread_id: str, reply: str) -> AgentState:
+        """Continue a paused question with the user's clarification reply."""
+        current = await self.state(thread_id)
+        if not current.awaiting_reply:
+            raise AppError(f"thread {thread_id} is not waiting for a clarification")
+        await self.graph.ainvoke(Command(resume=reply), self._config(thread_id))
+        return await self.state(thread_id)
+
+    async def state(self, thread_id: str) -> AgentState:
+        snapshot = await self.graph.aget_state(self._config(thread_id))
+        if not snapshot.values:
+            raise AppError(f"unknown thread {thread_id}")
+        values = snapshot.values
+        state = values if isinstance(values, AgentState) else AgentState.model_validate(values)
+        return state.model_copy(update={"awaiting_reply": bool(snapshot.interrupts)})
 
 
 @lru_cache
-def get_graph() -> CompiledStateGraph[AgentState, None, AgentState, AgentState]:
-    return build_graph()
+def get_agent() -> Agent:
+    return Agent()
 
 
 async def run_agent(request: AgentRequest) -> AgentState:
-    """Run one question through the graph and return the final state."""
-    initial = AgentState(
-        request=request,
-        graph_version=graph_version(),
-        prompt_versions=dict(get_llm_config().prompts),
-    )
-    result = await get_graph().ainvoke(initial)
-    return AgentState.model_validate(result)
+    """Run one question with the default agent."""
+    return await get_agent().run(request)

@@ -4,9 +4,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from tests.fakes import CLEAR_INTENT, ScriptedModel, fake_deps
 
 import app.core.llm as llm_module
-from app.agent.graph import NODES, build_graph, run_agent
+from app.agent.graph import Agent, build_graph, build_nodes
 from app.agent.nodes.base import NodeUpdate, agent_node
 from app.agent.state import AgentRequest, AgentState
 from app.agent.transitions import ALLOWED, ROUTES, IllegalTransition, check_transition, next_node
@@ -45,6 +46,11 @@ def request(
     return AgentRequest(
         username="test.user", role=role, region=region, is_active=is_active, question=question
     )
+
+
+async def run_agent(req: AgentRequest) -> AgentState:
+    """Run through the real graph with a scripted LLM that always gives a clear intent."""
+    return await Agent(fake_deps(ScriptedModel(CLEAR_INTENT))).run(req)
 
 
 def nodes_run(state: AgentState) -> list[str]:
@@ -121,9 +127,10 @@ async def test_unexpected_node_error_becomes_failed_with_a_safe_message() -> Non
 
 
 def test_graph_has_all_eleven_nodes() -> None:
-    graph = build_graph()
+    deps = fake_deps(ScriptedModel(CLEAR_INTENT))
+    graph = build_graph(deps)
     assert {n.value for n in N} <= set(graph.get_graph().nodes)
-    assert len(NODES) == 11
+    assert len(build_nodes(deps)) == 11
 
 
 # --- N-01 intake ----------------------------------------------------------------------------
@@ -291,7 +298,7 @@ async def test_a_valid_question_reaches_the_stubbed_later_nodes() -> None:
     assert state.execution is not None
     assert state.finished is True
     assert state.graph_version
-    assert state.prompt_versions == {"system": "v1"}
+    assert state.prompt_versions == {"system": "v1", "intent": "v1"}
 
 
 async def test_every_node_records_timing_and_summaries() -> None:
