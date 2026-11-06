@@ -10,7 +10,7 @@ flowchart LR
     user(["Business user or admin (browser)"])
 
     subgraph hosting["Hosting: Docker Compose locally, HTTPS host for the live demo"]
-        ui["Streamlit UI"]
+        ui["Next.js UI (React, TypeScript, Tailwind)"]
 
         subgraph api["FastAPI service (async)"]
             routes["API routes: JWT check, correlation ID, rate limit"]
@@ -67,7 +67,7 @@ flowchart LR
 
 | Arrow | Meaning |
 | --- | --- |
-| A1 | The user logs in and asks questions in the Streamlit UI over HTTPS. |
+| A1 | The user logs in and asks questions in the Next.js UI over HTTPS; its server routes forward calls to the API and keep the token in an httpOnly cookie. |
 | A2 | The UI calls the REST API with a bearer JWT; every response returns the correlation ID. |
 | A3 | Ask and clarify requests start a graph run; role and region come from the token and the database, never from the question. |
 | A4 | Login, users, conversations, feedback and admin screens read and write the `app` schema with the `app_rw` role. |

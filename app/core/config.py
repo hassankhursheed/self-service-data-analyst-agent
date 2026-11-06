@@ -111,6 +111,7 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_api_key: SecretStr | None = None
     langsmith_project: str = "self-service-data-analyst-agent"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
     # Demo passwords for the seeded test users (config/test_users.yaml); seed only.
     demo_password_sales_europe: SecretStr | None = None
     demo_password_sales_americas: SecretStr | None = None
