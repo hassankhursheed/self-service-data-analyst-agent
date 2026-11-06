@@ -67,6 +67,7 @@ class MetricDefinition(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(Text, server_default="")
     definition_sql: Mapped[str] = mapped_column(Text)
     tables: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
     join_condition: Mapped[str | None] = mapped_column(Text)

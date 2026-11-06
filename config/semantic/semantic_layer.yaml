@@ -1,0 +1,180 @@
+# Semantic layer for the Northwind data (brief section 9). Versioned: bump `version`
+# when definitions change; the seed script syncs this file into app.semantic_catalog and
+# app.metric_definitions. allowed_roles must never exceed config/access_policy.yaml.
+version: 1
+
+tables:
+  customers:
+    description: Companies that buy from Northwind Traders. One row per customer.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      customer_id: {description: "Five-letter customer code (primary key).", examples: [ALFKI, BONAP], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      company_name: {description: "Customer company name.", examples: [Alfreds Futterkiste, Bon app'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      contact_name: {description: "Name of the contact person at the customer.", examples: [Maria Anders], allowed_roles: [sales_manager]}
+      phone: {description: "Customer phone number.", examples: [030-0074321], allowed_roles: [sales_manager]}
+      city: {description: "Customer city.", examples: [Berlin, London], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      country: {description: "Customer country; decides the sales region.", examples: [Germany, USA, Brazil], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  orders:
+    description: Customer orders, one row per order. Dates are shifted +27 years (2023-07 to 2025-05).
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      order_id: {description: "Order number (primary key).", examples: ['10248'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      customer_id: {description: "Customer who placed the order.", examples: [VINET], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      employee_id: {description: "Employee who took the order.", examples: ['5'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      order_date: {description: "Date the order was placed.", examples: ['2023-07-04'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      required_date: {description: "Date the customer needs the order by.", examples: ['2023-08-01'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      shipped_date: {description: "Date the order was shipped; empty if not shipped yet.", examples: ['2023-07-16'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      ship_via: {description: "Shipper used (shippers.shipper_id).", examples: ['3'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      freight: {description: "Freight cost charged for the order.", examples: ['32.38'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      ship_country: {description: "Country the order was shipped to.", examples: [France], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      ship_city: {description: "City the order was shipped to.", examples: [Reims], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  order_details:
+    description: Order lines, one row per product in an order.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      order_id: {description: "Order the line belongs to.", examples: ['10248'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      product_id: {description: "Product ordered.", examples: ['11'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      unit_price: {description: "Price per unit on this order line.", examples: ['14'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      quantity: {description: "Units ordered.", examples: ['12'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      discount: {description: "Discount as a fraction (0.15 = 15%).", examples: ['0', '0.15'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  products:
+    description: Products Northwind sells, with stock levels.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      product_id: {description: "Product number (primary key).", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      product_name: {description: "Product name.", examples: [Chai, Chang], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      supplier_id: {description: "Supplier of the product.", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      category_id: {description: "Product category.", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      unit_price: {description: "Current list price per unit.", examples: ['18'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      units_in_stock: {description: "Units currently in stock.", examples: ['39'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      units_on_order: {description: "Units ordered from the supplier, not yet received.", examples: ['0'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      reorder_level: {description: "Stock level at which the product should be reordered.", examples: ['10'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      discontinued: {description: "1 if the product is discontinued, else 0.", examples: ['0', '1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  categories:
+    description: Product categories.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      category_id: {description: "Category number (primary key).", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      category_name: {description: "Category name.", examples: [Beverages, Seafood], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      description: {description: "Short category description.", examples: ["Soft drinks, coffees, teas, beers, and ales"], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  suppliers:
+    description: Companies that supply Northwind's products.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      supplier_id: {description: "Supplier number (primary key).", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      company_name: {description: "Supplier company name.", examples: [Exotic Liquids], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      contact_name: {description: "Contact person at the supplier.", examples: [Charlotte Cooper], allowed_roles: [operations_manager]}
+      phone: {description: "Supplier phone number.", examples: [(171) 555-2222], allowed_roles: [operations_manager]}
+      city: {description: "Supplier city.", examples: [London], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      country: {description: "Supplier country.", examples: [UK, Japan], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  shippers:
+    description: Shipping companies that deliver orders.
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      shipper_id: {description: "Shipper number (primary key); orders.ship_via refers to it.", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      company_name: {description: "Shipper name.", examples: [Speedy Express, United Package], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+  employees:
+    description: Sales employees (no personal data is available).
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    columns:
+      employee_id: {description: "Employee number (primary key).", examples: ['1'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      first_name: {description: "Employee first name.", examples: [Nancy], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      last_name: {description: "Employee last name.", examples: [Davolio], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      title: {description: "Job title.", examples: [Sales Representative], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      hire_date: {description: "Hire date (shifted +27 years).", examples: ['2019-05-01'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+      reports_to: {description: "Manager's employee_id.", examples: ['2'], allowed_roles: [sales_manager, finance_analyst, operations_manager]}
+
+joins:
+  - {left: customers, right: orders, condition: customers.customer_id = orders.customer_id}
+  - {left: orders, right: order_details, condition: orders.order_id = order_details.order_id}
+  - {left: order_details, right: products, condition: order_details.product_id = products.product_id}
+  - {left: products, right: categories, condition: products.category_id = categories.category_id}
+  - {left: products, right: suppliers, condition: products.supplier_id = suppliers.supplier_id}
+  - {left: orders, right: shippers, condition: orders.ship_via = shippers.shipper_id}
+  - {left: orders, right: employees, condition: orders.employee_id = employees.employee_id}
+
+metrics:
+  revenue:
+    description: Order revenue after discounts.
+    definition: SUM(od.unit_price * od.quantity * (1 - od.discount))
+    tables: [orders o, order_details od]
+    join: o.order_id = od.order_id
+    synonyms: [sales, turnover, income from orders, net sales]
+    allowed_roles: [sales_manager, finance_analyst]
+  number_of_orders:
+    description: Count of distinct orders.
+    definition: COUNT(DISTINCT o.order_id)
+    tables: [orders o]
+    synonyms: [order count, orders placed, how many orders]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+  average_order_value:
+    description: Revenue divided by the number of orders.
+    definition: SUM(od.unit_price * od.quantity * (1 - od.discount)) / NULLIF(COUNT(DISTINCT o.order_id), 0)
+    tables: [orders o, order_details od]
+    join: o.order_id = od.order_id
+    synonyms: [aov, order value, average order]
+    allowed_roles: [sales_manager, finance_analyst]
+  discount_amount:
+    description: Money given away as discounts.
+    definition: SUM(od.unit_price * od.quantity * od.discount)
+    tables: [orders o, order_details od]
+    join: o.order_id = od.order_id
+    synonyms: [discounts, discount given]
+    allowed_roles: [sales_manager, finance_analyst]
+  freight_cost:
+    description: Total freight charged on orders.
+    definition: SUM(o.freight)
+    tables: [orders o]
+    synonyms: [freight, shipping cost, delivery cost]
+    allowed_roles: [finance_analyst, operations_manager]
+  units_sold:
+    description: Total units ordered.
+    definition: SUM(od.quantity)
+    tables: [order_details od]
+    synonyms: [quantity sold, units, volume]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+  late_shipments:
+    description: Orders shipped after their required date.
+    definition: COUNT(*) FILTER (WHERE o.shipped_date > o.required_date)
+    tables: [orders o]
+    synonyms: [late orders, delayed shipments, shipped late]
+    allowed_roles: [sales_manager, operations_manager]
+  number_of_customers:
+    description: Count of distinct customers.
+    definition: COUNT(DISTINCT c.customer_id)
+    tables: [customers c]
+    synonyms: [customer count, how many customers]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+  units_in_stock:
+    description: Units currently in stock.
+    definition: SUM(p.units_in_stock)
+    tables: [products p]
+    synonyms: [stock, stock level, inventory]
+    allowed_roles: [finance_analyst, operations_manager]
+
+synonyms:
+  clients: table:customers
+  client: table:customers
+  buyers: table:customers
+  items: table:products
+  item: table:products
+  goods: table:products
+  lines: table:order_details
+  order lines: table:order_details
+  carriers: table:shippers
+  carrier: table:shippers
+  vendors: table:suppliers
+  vendor: table:suppliers
+  staff: table:employees
+  sales reps: table:employees
+  category: table:categories
+  discontinued: column:products.discontinued
+  reorder: column:products.reorder_level
+  price: column:order_details.unit_price

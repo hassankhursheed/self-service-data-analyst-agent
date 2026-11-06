@@ -10,6 +10,7 @@ from app.core.config import PROJECT_ROOT, Settings
 from app.db.models import APP_SCHEMA, Base
 from app.db.northwind import row_counts
 from app.db.session import create_app_engine
+from scripts.seed import run_seed
 
 pytestmark = pytest.mark.integration
 
@@ -33,7 +34,7 @@ def _app_tables(conn: psycopg.Connection) -> set[str]:
 
 
 def test_upgrade_and_downgrade_leave_northwind_untouched(
-    alembic_cfg: Config, owner_conn: psycopg.Connection
+    alembic_cfg: Config, owner_conn: psycopg.Connection, settings: Settings
 ) -> None:
     northwind_before = row_counts(owner_conn)
     expected = {table.name for table in Base.metadata.sorted_tables}
@@ -49,7 +50,8 @@ def test_upgrade_and_downgrade_leave_northwind_untouched(
     assert _app_tables(owner_conn) == set()
     assert row_counts(owner_conn) == northwind_before
 
-    command.upgrade(alembic_cfg, "head")  # leave the database at head
+    command.upgrade(alembic_cfg, "head")
+    run_seed(settings)  # restore roles, users, grants and the semantic catalog
 
 
 def _insert_user(conn: psycopg.Connection, username: str) -> str:
@@ -64,7 +66,9 @@ def _insert_user(conn: psycopg.Connection, username: str) -> str:
 
 def _insert_role(conn: psycopg.Connection, name: str, db_role: str) -> int:
     row = conn.execute(
-        "INSERT INTO app.roles (name, db_role) VALUES (%s, %s) RETURNING id", (name, db_role)
+        "INSERT INTO app.roles (name, db_role) VALUES (%s, %s) "
+        "ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id",
+        (name, db_role),
     ).fetchone()
     assert row is not None
     return int(row[0])

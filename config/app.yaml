@@ -15,3 +15,16 @@ database:
   pool_timeout_seconds: 30
   pool_recycle_seconds: 1800
   connect_timeout_seconds: 10
+
+# Seed script (scripts/seed.py). See docs/data-setup.md.
+data_setup:
+  # Years added to every Northwind date column, applied exactly once.
+  date_shift_years: 27
+  wait_for_db_seconds: 60
+
+# Agent queries through the read-only analytics_ro login (app/db/analytics.py).
+analytics:
+  # Backstop timeout set on the analytics_ro role itself.
+  role_statement_timeout_ms: 30000
+  default_statement_timeout_ms: 10000
+  default_row_limit: 1000
