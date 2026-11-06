@@ -117,3 +117,19 @@ What was chosen, what was rejected and why. Newest step last.
 | Fiscal year naming | Named after the calendar year it ends in; plain years stay calendar years | Named after the start year | Common convention; identical while the fiscal year starts in January. |
 | Parser | Ordered regular expressions over a normalised phrase, no LLM and no date library | dateparser / LLM date parsing | Deterministic, fully unit-tested, and never falls back to the real date. Slash dates are rejected as ambiguous. |
 | Result type | `DateRange` or `UnresolvedPeriod` (discriminated by `status`) | Exceptions or None | The agent can branch on `status` and use the reason in a clarifying question. |
+
+## Step 9: SQL Safety Validator
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Parser | sqlglot (PostgreSQL dialect) parse tree for every check; `final_sql` regenerated from the tree without comments | Regex checks; passing the original text through | Parsing sees hidden statements, CTEs and subqueries; regenerating means only what was checked runs. |
+| Functions | Allow-list in `config/sql_policy.yaml` (sqlglot function keys) | Deny-list of known dangerous functions | Fails safe: an unknown or forgotten function is blocked. Cost: new harmless functions must be added to config. |
+| Real-date functions | Blocked with their own code `REAL_DATE_FUNCTION` | Allowing `now()` / `current_date` | Answers must use the business reference date (Step 8). |
+| Column allow-list | Built from the semantic layer per role; columns resolved with sqlglot `qualify` | Checking only the select list; using the database views as the list | Catches hidden columns through aliases, subqueries, CTEs, `WHERE` and `ORDER BY`; stricter than the views (undescribed columns are refused). |
+| `SELECT *` | Expanded to the role's allowed columns | Rejecting `*` | Common in generated SQL; expansion keeps it useful while making leaks impossible. |
+| Qualified table names | Always blocked (`SCHEMA_QUALIFIED`) | Allowing the user's own view schema | The executor sets `search_path`; any schema name is either redundant or an attempt to reach another schema. |
+| Set operations | `UNION` / `INTERSECT` / `EXCEPT` of selects allowed | Blocking them | Still one read-only statement; every branch is checked. |
+| `reg*` casts | Blocked as `SYSTEM_CATALOG` | Allowing all casts | `'name'::regclass` reads the catalog. |
+| LIMIT | Default 200 added, maximum 1000 enforced, `LIMIT ALL` capped, non-literal and `FETCH FIRST` blocked | Wrapping the query in an outer `SELECT ... LIMIT` | Keeps the SQL readable and the limit checkable. |
+| Reason codes | One `BlockReason` enum with one user message each | Free-text reasons | Stable codes for `blocked_queries` and the dashboard; a test enforces a message per code. |
+| Question check | Separate `validate_question` (trimmed, empty and too long rejected; limit in config) | Inside the SQL validator | It runs before any LLM call (N-02), long before SQL exists. |
