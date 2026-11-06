@@ -1,0 +1,36 @@
+# LLM settings (brief sections 22 and 27). The API key comes from LLM_API_KEY; tracing
+# from the LANGSMITH_* environment variables. Bump `version` when anything here changes;
+# evaluation runs record it.
+version: 1
+
+# LangChain provider name (init_chat_model) and model. Evaluation pins a dated model
+# version before experiments so runs are repeatable.
+provider: mistralai
+model: mistral-small-latest
+temperature: 0.0
+max_tokens: 1024
+
+# Per-attempt timeout for one LLM call.
+timeout_seconds: 30
+
+# Retries for retryable errors only (timeouts, rate limits, 5xx, connection errors).
+retry:
+  max_attempts: 3
+  initial_backoff_seconds: 1.0
+  backoff_multiplier: 2.0
+  max_backoff_seconds: 8.0
+
+# Per-question budget across all LLM calls of one question.
+budget:
+  max_tokens_per_question: 20000
+  max_cost_usd_per_question: 0.05
+
+# Estimated prices (USD per million tokens) for cost tracking; check the provider's
+# current price list before relying on the numbers.
+pricing:
+  input_per_million_usd: 0.10
+  output_per_million_usd: 0.30
+
+# Prompt name -> version used by the agent (files in config/prompts/<name>/<version>.yaml).
+prompts:
+  system: v1

@@ -133,3 +133,23 @@ What was chosen, what was rejected and why. Newest step last.
 | LIMIT | Default 200 added, maximum 1000 enforced, `LIMIT ALL` capped, non-literal and `FETCH FIRST` blocked | Wrapping the query in an outer `SELECT ... LIMIT` | Keeps the SQL readable and the limit checkable. |
 | Reason codes | One `BlockReason` enum with one user message each | Free-text reasons | Stable codes for `blocked_queries` and the dashboard; a test enforces a message per code. |
 | Question check | Separate `validate_question` (trimmed, empty and too long rejected; limit in config) | Inside the SQL validator | It runs before any LLM call (N-02), long before SQL exists. |
+
+## Frontend technology (decided before Step 10)
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| User interface | Next.js (React, App Router) + TypeScript + Tailwind CSS in `ui/`, talking only to the FastAPI service | Streamlit (listed in Step 1) | User decision: a modern, polished, responsive UI. Allowed by brief §5 ("a small React app"). Next.js server routes keep the access token in an httpOnly cookie. `streamlit` was removed from the Python dependencies. |
+
+## Step 10: LLM Client, Retries, Timeouts and Budgets
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Provider | Mistral (`langchain-mistralai`) through LangChain `init_chat_model`; provider and model in `config/llm.yaml` | Hard-wiring one SDK; LiteLLM now | The step guide's default; `init_chat_model` lets the provider change in config without code. LiteLLM fallback stays a recommended extra. |
+| Model version | `mistral-small-latest` for development | Pinning now | Evaluation (brief §24) needs a fixed dated version; it is pinned in the evaluation step and recorded with each run. |
+| Retries | Our own loop: up to 3 attempts, backoff 1 s, 2 s, ... capped at 8 s; LangChain/provider retries set to 0 | Provider SDK retries | One policy in one place; only timeouts, 408/409/425/429/5xx and connection errors are retried. 400/401/403/404/422 and unknown errors fail at once. |
+| Timeout | `asyncio.timeout` per attempt plus the model's own HTTP timeout, from config | Model timeout only | The client-side timeout also covers hangs outside the HTTP call; each attempt gets the full time. |
+| Budget | Per-question `BudgetTracker`: checks before each call that used tokens + estimated input + `max_tokens` stays within the token and cost limits; records real usage from the reply | Checking after the call | A call that could exceed the budget never reaches the provider. |
+| Cost | Estimated from `pricing` in config (USD per million tokens) | Live price lookup | Simple and repeatable; prices must be checked against the provider's list. |
+| Errors | `app/core/errors.py`: `RetryableError`, `NonRetryableError`, `BudgetExceeded`, `DbTimeout`, `ValidationBlocked`, each with a code and a safe user message | Raw provider exceptions | Later steps map errors to statuses and AgentErrors consistently. |
+| Prompts | YAML files `config/prompts/<name>/<version>.yaml` with declared input variables (checked against the template) and `name@version` refs; versions chosen in `llm.yaml` | Long strings in Python | Standing rule 8; versions are recorded with each run. |
+| Tracing | LangSmith only through `LANGSMITH_*` environment variables, read by LangChain | Enabling tracing in code | Brief §27: configuration by environment only; off by default. |

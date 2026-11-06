@@ -45,7 +45,7 @@ app/
   semantic/  semantic layer and business calendar
   safety/    SQL parsing, validation and policy
   core/      settings and shared building blocks
-ui/          Streamlit user interface
+ui/          Next.js + React + TypeScript + Tailwind CSS user interface
 migrations/  Alembic migrations
 scripts/     seed and maintenance scripts
 config/      versioned non-secret configuration

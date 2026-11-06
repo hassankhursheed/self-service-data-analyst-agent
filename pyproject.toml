@@ -27,14 +27,14 @@ dependencies = [
     "langgraph>=1.0,<2",
     "langgraph-checkpoint-postgres>=2.0",
     "langsmith>=0.3",
+    "langchain-mistralai>=1.0",  # default LLM provider (config/llm.yaml)
     # SQL parsing and validation
     "sqlglot>=26",
     # Authentication
     "argon2-cffi>=23.1",
     "pyjwt>=2.9",
-    # Charts and user interface
+    # Chart specs returned by the API (rendered by the Next.js UI)
     "plotly>=5.24",
-    "streamlit>=1.40",
 ]
 
 [project.optional-dependencies]
