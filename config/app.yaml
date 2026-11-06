@@ -1,0 +1,9 @@
+# Non-secret application settings, versioned in git.
+# Secrets and connection strings never go here: they come from environment
+# variables (see .env.example). An environment variable overrides a value here,
+# for example APP__LOG_LEVEL=DEBUG overrides app.log_level.
+config_version: 1
+
+app:
+  name: Self-Service Data Analyst Agent
+  log_level: INFO
