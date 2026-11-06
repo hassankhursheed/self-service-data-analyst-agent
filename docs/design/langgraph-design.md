@@ -162,3 +162,7 @@ All limit values live in versioned config, not in code.
   restores the app's own state types (`app/agent/checkpoint.py`).
 - Step 14: N-10 (`nodes/answer.py`) with the grounding check, chart rules and the response
   model; see `docs/answers-and-charts.md`. Only N-11 is still a stub.
+- Step 15: PostgreSQL checkpointer and user-scoped conversation threads
+  (`app/agent/conversations.py`, `app/agent/memory.py`); `steps` is a plain list so a new
+  question in a thread starts clean; `history` and `interpreted_question` support
+  follow-ups. See `docs/conversations.md`.

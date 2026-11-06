@@ -96,6 +96,20 @@ def test_union_of_selects_is_allowed() -> None:
     allowed("SELECT customer_id FROM customers UNION SELECT customer_id FROM orders")
 
 
+@pytest.mark.parametrize(
+    "where",
+    [
+        "o.order_date >= '2024-01-01' AND o.customer_id = 'ALFKI'",
+        "o.ship_country = 'Germany' OR o.ship_country = 'France'",
+        "(o.freight > 10 AND o.freight < 50) OR NOT o.ship_via = 3",
+        "o.order_date BETWEEN '2024-01-01' AND '2024-12-31' AND o.freight IS NOT NULL",
+    ],
+)
+def test_and_or_conditions_are_allowed(where: str) -> None:
+    """Regression: sqlglot models AND/OR as connector nodes; they are not functions."""
+    allowed(f"SELECT count(*) FROM orders o WHERE {where}")  # noqa: S608 (validator input)
+
+
 def test_subquery_in_where_is_allowed() -> None:
     allowed(
         "SELECT company_name FROM customers WHERE customer_id IN (SELECT customer_id FROM orders)"

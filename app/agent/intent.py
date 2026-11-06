@@ -37,8 +37,13 @@ class IntentAnalysis(BaseModel):
     assumptions: list[str] = []
     clarifying_question: str | None = None
     options: list[str] = Field(default=[], max_length=6)
+    # Follow-ups (Step 15): the question rewritten to stand on its own.
+    is_follow_up: bool = False
+    standalone_question: str | None = None
 
-    @field_validator("time_phrase", "metric", "grouping", "clarifying_question")
+    @field_validator(
+        "time_phrase", "metric", "grouping", "clarifying_question", "standalone_question"
+    )
     @classmethod
     def _blank_is_none(cls, value: str | None) -> str | None:
         return value.strip() or None if isinstance(value, str) else value

@@ -16,7 +16,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 12: Intent, Ambiguity and Clarification (Week 2, brief section 14)
 - [x] Step 13: Context Retrieval, SQL Generation, Execution and Repair (Week 2, brief sections 12, 13, 15)
 - [x] Step 14: Grounded Answers and Charts (Week 2, brief section 17)
-- [ ] Step 15: Conversation Memory and Follow-ups (guide received)
+- [x] Step 15: Conversation Memory and Follow-ups (Week 2, brief section 18)
 - [ ] Step 16: (title added when the guide arrives)
 - [ ] Step 17: (title added when the guide arrives)
 - [ ] Step 18: (title added when the guide arrives)
@@ -31,7 +31,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 15 to 26 (guide for Step 15 received).
+- Steps 16 to 26.
 - For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
   and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
   semantic layer does not describe are refused by the validator; add them to the YAML if

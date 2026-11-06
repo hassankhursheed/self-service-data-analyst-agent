@@ -37,6 +37,30 @@ def _clarifications_text(state: AgentState) -> str:
     return " | ".join(f"Asked: {c.question} Answer: {c.answer}" for c in answered)
 
 
+def _history_text(state: AgentState) -> str:
+    if not state.history:
+        return "none (this is the first question)"
+    lines = []
+    for i, turn in enumerate(state.history, 1):
+        period = f"; period: {turn.date_range_label}" if turn.date_range_label else ""
+        lines.append(f"{i}. {turn.interpreted_question}{period}")
+    return "\n".join(lines)
+
+
+def _interpreted(state: AgentState, analysis: IntentAnalysis) -> str | None:
+    """The standalone question for a follow-up; None when the question stands on its own."""
+    if not state.history or not analysis.is_follow_up or not analysis.standalone_question:
+        return None
+    if analysis.standalone_question.strip().lower() == state.question.strip().lower():
+        return None
+    return analysis.standalone_question
+
+
+def _with_interpretation(notices: list[str], question: str, interpreted: str | None) -> list[str]:
+    kept = [n for n in notices if not n.startswith("Interpreted as: ")]
+    return [*kept, f"Interpreted as: {interpreted}"] if interpreted else kept
+
+
 def make_intent_node(deps: AgentDeps) -> NodeFn:
     @agent_node(NodeName.INTENT)
     async def intent_and_ambiguity(state: AgentState) -> NodeUpdate:
@@ -44,14 +68,18 @@ def make_intent_node(deps: AgentDeps) -> NodeFn:
             raise AppError("intent reached without a user context")
         prompt = load_prompt("intent", deps.llm_config.prompts["intent"])
         layer = await deps.load_semantic()
+        values = {
+            "business_today": deps.calendar.reference_date.isoformat(),
+            "metrics": _metrics_text(layer, state.user.role),
+            "tables": _tables_text(layer, state.user.role),
+            "history": _history_text(state),
+            "question": state.question,
+            "clarifications": _clarifications_text(state),
+        }
         messages = [
             *deps.system_messages(),
             *prompt.to_chat_prompt().format_messages(
-                business_today=deps.calendar.reference_date.isoformat(),
-                metrics=_metrics_text(layer, state.user.role),
-                tables=_tables_text(layer, state.user.role),
-                question=state.question,
-                clarifications=_clarifications_text(state),
+                **{k: v for k, v in values.items() if k in prompt.input_variables}
             ),
         ]
         budget = deps.budget_for(state)
@@ -69,8 +97,12 @@ def make_intent_node(deps: AgentDeps) -> NodeFn:
             usage = usage_of(budget)
         rounds = sum(1 for c in state.clarifications if c.answer is not None)
         decision = decide(reply.value, deps.calendar, config, rounds_asked=rounds)
+        analysis = reply.value
+        interpreted = _interpreted(state, analysis)
         update: NodeUpdate = {
-            "intent": reply.value,
+            "intent": analysis,
+            "interpreted_question": interpreted,
+            "notices": _with_interpretation(state.notices, state.question, interpreted),
             "usage": usage,
             "regeneration_attempts": state.regeneration_attempts + reply.regenerations,
             "assumptions": decision.assumptions,

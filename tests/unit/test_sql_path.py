@@ -1,7 +1,6 @@
 """Step 13: context, SQL generation, validation, execution and repair (LLM and DB mocked)."""
 
 import pytest
-from tests.fakes import ONE_ROW, FakeExecutor, ScriptedModel, fake_deps, intent, sql_reply
 
 from app.agent.graph import Agent
 from app.agent.nodes.n09_repair import REPAIR_LIMIT_MESSAGE
@@ -9,6 +8,7 @@ from app.agent.state import AgentRequest, AgentState
 from app.core.enums import BlockReason, NodeName, QuestionStatus, RegionCode, RoleName
 from app.core.errors import DbTimeout
 from app.db.analytics import ReadonlyQueryError
+from tests.fakes import ONE_ROW, FakeExecutor, ScriptedModel, fake_deps, intent, sql_reply
 
 S = QuestionStatus
 ORDERS_2024 = intent(summary="Number of orders in 2024", metric="number_of_orders")

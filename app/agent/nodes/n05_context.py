@@ -19,7 +19,7 @@ def find_verified_examples(question: str, role: RoleName) -> list[str]:
 
 
 def _retrieval_text(state: AgentState) -> str:
-    parts = [state.question]
+    parts = [state.question, state.interpreted_question or ""]
     if state.intent is not None:
         parts.append(state.intent.summary)
         if state.intent.metric:

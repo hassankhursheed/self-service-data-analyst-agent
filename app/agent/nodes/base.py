@@ -78,7 +78,7 @@ def agent_node(name: NodeName) -> Callable[[NodeFn], NodeFn]:
                 output_summary=summarize({k: v for k, v in update.items() if k != "steps"}),
                 error_code=error_code,
             )
-            update["steps"] = [record]
+            update["steps"] = [*state.steps, record]
             return update
 
         return run

@@ -3,7 +3,6 @@
 import datetime as dt
 
 import pytest
-from tests.fakes import ScriptedModel, fake_deps, intent
 
 from app.agent.config import load_agent_config
 from app.agent.graph import Agent
@@ -12,6 +11,7 @@ from app.agent.state import AgentRequest, StepRecord
 from app.core.enums import NodeName, QuestionStatus, RoleName
 from app.core.errors import AppError
 from app.semantic.calendar import load_calendar
+from tests.fakes import ScriptedModel, fake_deps, intent
 
 S = QuestionStatus
 CAL = load_calendar()

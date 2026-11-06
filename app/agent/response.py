@@ -67,6 +67,7 @@ class AgentResponse(_Frozen):
     assumptions: list[str] = []
     date_range: DateRangeInfo | None = None
     notices: list[str] = []
+    interpreted_as: str | None = None
     clarification: ClarificationInfo | None = None
     block: BlockInfo | None = None
 
@@ -132,6 +133,7 @@ def build_response(state: AgentState, *, page: int = 1, page_size: int = 50) -> 
         assumptions=list(state.assumptions),
         date_range=date_range,
         notices=list(state.notices),
+        interpreted_as=state.interpreted_question,
         clarification=clarification,
         block=block,
     )

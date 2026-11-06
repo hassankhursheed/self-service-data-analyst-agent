@@ -128,6 +128,8 @@ def _check_functions(tree: exp.Expression, policy: SqlPolicy) -> None:
         if data_type.sql(DIALECT).lower().startswith("reg"):
             raise _Blocked(BlockReason.SYSTEM_CATALOG, f"cast to {data_type.sql(DIALECT)}")
     for node in tree.find_all(exp.Func):
+        if isinstance(node, exp.Connector):
+            continue  # AND / OR are logical operators in sqlglot's tree, not function calls
         name, anonymous = _function_name(node)
         if (anonymous and name in _REAL_DATE_ANONYMOUS) or (
             not anonymous and name in _REAL_DATE_FUNCTIONS

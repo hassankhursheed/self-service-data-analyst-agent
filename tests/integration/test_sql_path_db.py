@@ -6,7 +6,6 @@ from decimal import Decimal
 import psycopg
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
-from tests.fakes import ScriptedModel, fake_deps, intent, sql_reply
 
 from app.agent.deps import Executor
 from app.agent.graph import Agent
@@ -16,6 +15,7 @@ from app.core.enums import BlockReason, QuestionStatus, RegionCode, RoleName
 from app.core.errors import DbTimeout
 from app.db.analytics import QueryResult, run_readonly
 from scripts.seed import SeedSummary
+from tests.fakes import ScriptedModel, fake_deps, intent, sql_reply
 
 pytestmark = pytest.mark.integration
 S = QuestionStatus

@@ -62,7 +62,7 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "ANN", "S", "PT", "ASYNC",
 "migrations/versions/*.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "scripts"]
+known-first-party = ["app", "scripts", "tests"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

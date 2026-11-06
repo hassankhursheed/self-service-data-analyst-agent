@@ -40,7 +40,8 @@ def date_range_text(state: AgentState) -> str:
 
 
 def question_text(state: AgentState) -> str:
-    parts = [state.question]
+    """The question for SQL prompts: the standalone version of a follow-up if there is one."""
+    parts = [state.interpreted_question or state.question]
     if state.intent is not None and state.intent.summary != state.question:
         parts.append(f"(understood as: {state.intent.summary})")
     answers = [c.answer for c in state.clarifications if c.answer]
