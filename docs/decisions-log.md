@@ -64,3 +64,43 @@ What was chosen, what was rejected and why. Newest step last.
 | Keys | UUID for user-facing rows, `bigint` identity for logs | UUID everywhere | Smaller, faster indexes for high-volume tables. |
 | Pool settings | In `config/app.yaml` (`database` section) | Hard-coded | Limits live in config (standing rule 8). |
 | ERD | Generated from the models (`scripts/generate_erd.py`) with a test that fails on drift | Hand-maintained diagram | Keeps the design doc and the real schema identical. |
+
+## Step 5: Seed Script, Date Shift, Regions and Test Users
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Shift once | Shift plus a row in `analytics.data_setup`, in one transaction under a table lock; a different configured amount stops the seed | Reloading the dump before every shift (Step 2 plan) | Docker loads the dump once; the metadata row makes re-runs safe without reloading. |
+| Shifted columns | Order dates and employee birth/hire dates | Order dates only (the step guide's list) | data-decisions.md (approved in Step 2) shifts every date column, so hire dates stay before orders. |
+| Region storage | `analytics.sales_regions`, `analytics.country_region` and two lookup views (`customer_regions`, `order_regions`) | A region column added to Northwind tables | Northwind tables stay unchanged; orders take their customer's region. |
+| Config files | `config/regions.yaml`, `config/test_users.yaml`, `config/access_policy.yaml`, each validated by a strict Pydantic model | Constants in Python | Standing rule 8; typos fail with the file and field in the message. |
+| Sensitive columns | Listed per table with `visible_to` roles and a reason in `config/access_policy.yaml` | The semantic catalog | The same file drives the secure views (Step 6) and later SQL allow-lists. Added beyond the brief: employee city/region/postal code/country/extension/photo path (parts of the home address), customer contact title/fax/address/postal code, supplier contacts, category pictures. |
+| Demo passwords | One variable per user, `DEMO_PASSWORD_<USERNAME>`, hashed with argon2 (`argon2-cffi`) | One shared demo password | Each account can be reset on its own; nothing is stored in config. Re-hash only on change, bumping `token_version`. |
+| disabled.user | Has the `finance_analyst` role but `is_active = false` | No role | Proves that login fails because of the disabled flag, not a missing role. |
+| Seed entry point | `python -m scripts.seed`, logic in `app/db/setup/` | Everything in the script | Seed parts are importable and tested. |
+
+## Step 6: Database Roles, Row-Level Security and Sensitive Columns
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Agent login | One `analytics_ro` login with session settings `app.user_role` and `app.user_region` | Step 2 design: `agent_login` switching to group roles with `SET LOCAL ROLE` | The step guide asks for one `analytics_ro` role and secure views; the design docs are updated. |
+| Column hiding | One schema of views per role (`sales_ro`, `finance_ro`, `operations_ro`) built from the access policy | Column grants on base tables | Column visibility differs per role while the login is shared; views also keep the agent off raw tables. |
+| Row filtering | Region filter inside `security_barrier` views ("RLS through views") | RLS policies on base tables | `analytics_ro` has no rights on base tables, so policies there would never apply; owner-owned views are the single enforcement point. |
+| Fail closed | Every view checks `current_setting('app.user_role', true)`; sales views also check the region | Defaults | Missing settings return zero rows; another role's schema returns zero rows. |
+| Scope tampering | `EXECUTE` on `set_config` revoked from `PUBLIC`; queries sent as prepared statements (one statement only); settings set with `SET LOCAL` from enum values | Relying on later SQL validation only | The database itself stops a query from changing its own role or region. |
+| Least privilege | `CONNECT`/`TEMP` revoked from `PUBLIC`; no rights on `public`, `analytics`, `app` for `analytics_ro`; `app_rw` only on `app` (default privileges for new tables), not on `alembic_version` | Default PostgreSQL privileges | Brief §12 and §27: no DML, DDL, temp tables or function creation for the agent. |
+| Timeouts | `SET LOCAL statement_timeout` per query, a role-level backstop, and a client-side `asyncio.timeout` | One timeout | A forgotten per-query timeout still cannot run forever. |
+| Row limit | Cursor fetch of `row_limit + 1` rows with a `truncated` flag | Rewriting the SQL with LIMIT here | SQL rewriting belongs to validation (a later step); the cursor caps memory now. |
+| Driver | asyncpg through the SQLAlchemy pool, raw connection for prepare/cursor | SQLAlchemy `text()` | `text()` treats `:name` in agent SQL as bind parameters; prepared statements also block multi-statement input. |
+| `app.roles.db_role` | Stores the view schema name | A new column | Same meaning (the role's database scope), no migration needed. |
+
+## Step 7: Semantic Layer
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Source of truth | `config/semantic/semantic_layer.yaml` (versioned), synced into `app.semantic_catalog` and `app.metric_definitions` | Database only; prompt text | Reviewable in git; the database copy is what the agent reads and records by version. |
+| Retrieval | Keyword and synonym phrase matching on normalised tokens (lower case, simple singular), then the shortest join path between matched tables, then role filtering | Vector search | The vocabulary is small and closed (8 tables, about 50 columns, 9 metrics, explicit synonyms), so exact phrases are predictable, explainable and testable. Vector search would add a model and fuzzy matches that could pull in tables the question never mentioned. Revisit only if evaluation shows misses that synonyms cannot fix. |
+| Role filtering | Applied inside the retriever before anything is returned; a test also checks that the YAML never allows more than the access policy | Filtering in the prompt | A role can never receive an object it may not use. |
+| Sync | Same version: upsert in place and delete removed objects; new version: older rows deactivated, not deleted | Delete and reinsert | Safe to run twice; old versions stay for audit. |
+| `metric_definitions.description` | Added by a second migration | Storing descriptions elsewhere | Metric descriptions are part of the definition the agent reads. |
+| Join key name | `condition` | `on` | YAML 1.1 reads `on:` as the boolean `true`. |
+| Schema check | `check_semantic_schema` checks every table and column in `information_schema` and runs each metric with `LIMIT 0` | Checking names only | Catches renamed columns inside metric SQL too; the seed refuses to sync a layer that fails it. |

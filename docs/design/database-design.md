@@ -243,6 +243,7 @@ erDiagram
     metric_definitions {
         bigint id PK
         varchar name
+        text description
         text definition_sql
         text_array tables
         text join_condition
@@ -376,70 +377,23 @@ The ERD above is generated from the SQLAlchemy models (`python scripts/generate_
 
 ## Access plan
 
-### Database roles
+Implemented in Step 6; the full description is in `docs/access-control.md`. Summary:
 
-| Role | Login | Purpose and rights |
+| Role | Login | Rights |
 | --- | --- | --- |
-| `owner` | yes | Owns all schemas; runs the seed script and Alembic migrations. Never used by the running app. |
-| `app_rw` | yes | Used by the API for application data: SELECT, INSERT, UPDATE, DELETE on `app` and `checkpoints` only. No rights on `public` or `analytics`. |
-| `agent_login` | yes | Read-only login used by N-08. No direct table rights; it is a member of the three group roles below and can only switch to them. Default `default_transaction_read_only = on`. |
-| `sales_ro` | no | SELECT on allowed Northwind columns; rows filtered by region (RLS). |
-| `finance_ro` | no | SELECT on all order and financial data; no employee personal data. |
-| `operations_ro` | no | SELECT on products, suppliers, shipping; no customer contact details. |
+| owner (`POSTGRES_USER`) | yes | Runs migrations and the seed. Never used by the running app. |
+| `app_rw` | yes | `SELECT, INSERT, UPDATE, DELETE` on the `app` schema only. |
+| `analytics_ro` | yes | Read-only login for N-08: `SELECT` on the secure-view schemas `sales_ro`, `finance_ro`, `operations_ro` only. No rights on `public`, `analytics` or `app`; no `CREATE` or `TEMP`; `set_config` not executable. |
 
-No role has INSERT, UPDATE, DELETE, TRUNCATE, CREATE or function-creation rights on
-`public` or `analytics`. `CONNECT` is revoked from `PUBLIC`, and `CREATE` on schema
-`public` is revoked from everyone except `owner`.
+- Each business role has one schema of `security_barrier` views over the Northwind tables
+  that contain only the columns the role may see (`config/access_policy.yaml`).
+- Each query runs in a `READ ONLY` transaction with `SET LOCAL search_path` (the role's
+  view schema), `SET LOCAL app.user_role`, `SET LOCAL app.user_region` (sales only) and
+  `SET LOCAL statement_timeout`, all from the token-derived `UserContext`.
+- The views check `app.user_role` and, for `sales_ro`, keep only rows whose customer or
+  order belongs to `app.user_region`. Missing settings return no rows (fail closed).
+- `app.roles.db_role` stores the role's view schema name.
 
-### How role and region reach the session
-
-N-08 runs every query in its own transaction:
-
-```sql
-BEGIN READ ONLY;
-SET LOCAL ROLE sales_ro;                 -- from the token's role, mapped in app.roles.db_role
-SET LOCAL app.region = 'EUROPE';         -- from the token, verified against app.user_regions
-SET LOCAL statement_timeout = '10s';     -- from config
-<validated SELECT with LIMIT>;
-COMMIT;
-```
-
-- Both values are bound as parameters (`set_config('app.region', $1, true)`), never built
-  from the question text.
-- `SET LOCAL` lasts only for the transaction, so a pooled connection never keeps another
-  user's role or region.
-- Admins and users with no role never reach N-08 (rejected in N-01).
-
-### Row-level security policies
-
-RLS is enabled (and `FORCE`d) on `customers`, `orders` and `order_details`. Other Northwind
-tables contain no regional data and are controlled by grants only.
-
-| Table | Role | Policy (`USING`) |
-| --- | --- | --- |
-| `customers` | `sales_ro` | `country IN (SELECT country FROM analytics.country_region WHERE region_code = current_setting('app.region', true))` |
-| `orders` | `sales_ro` | `customer_id IN (SELECT customer_id FROM customers)` (inherits the customers policy) |
-| `order_details` | `sales_ro` | `order_id IN (SELECT order_id FROM orders)` (inherits the orders policy) |
-| all three | `finance_ro`, `operations_ro` | `true` |
-
-If `app.region` is unset, `current_setting(..., true)` returns NULL and the policy matches no
-rows (fail closed). Policies are `SELECT`-only; there are no write policies.
-
-### Sensitive columns by role
-
-Enforced with column-level `GRANT SELECT (col, ...)`. A query that names a hidden column
-fails in N-07 (allow-list) and would also fail in the database.
-
-| Table: sensitive columns | `sales_ro` | `finance_ro` | `operations_ro` |
-| --- | --- | --- | --- |
-| `employees`: address, city, region, postal_code, country, home_phone, extension, birth_date, notes, photo, photo_path | hidden | hidden | hidden |
-| `employees`: employee_id, first_name, last_name, title, title_of_courtesy, hire_date, reports_to | visible | visible | visible |
-| `customers`: contact_name, contact_title, phone, fax, address, postal_code | visible (own region only) | hidden | hidden |
-| `customers`: customer_id, company_name, city, region, country | visible (own region only) | visible | visible |
-| `suppliers`: contact_name, contact_title, phone, fax, address, homepage | hidden | hidden | visible |
-| `orders`, `order_details` | visible (own region only) | visible | visible |
-| `products`, `categories` (except `picture`), `shippers` | visible | visible | visible |
-| `territories`, `employee_territories`, `region`, `us_states` | hidden | hidden | hidden |
-
-`categories.picture` and `employees.photo` are binary and never exposed. The
-`customer_customer_demo` and `customer_demographics` tables are empty and not granted.
+The Step 2 plan (group roles switched with `SET LOCAL ROLE`, RLS policies and column
+grants on the base tables) was replaced by this design in Step 6; see
+`docs/decisions-log.md`.

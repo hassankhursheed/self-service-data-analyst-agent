@@ -53,6 +53,25 @@ class DatabasePoolConfig(BaseModel):
     connect_timeout_seconds: float = 10
 
 
+class DataSetupConfig(BaseModel):
+    """Seed settings (``data_setup`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    date_shift_years: int
+    wait_for_db_seconds: float = 60
+
+
+class AnalyticsConfig(BaseModel):
+    """Limits for agent queries (``analytics`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    role_statement_timeout_ms: int
+    default_statement_timeout_ms: int
+    default_row_limit: int
+
+
 class Settings(BaseSettings):
     """All settings for the application, validated at startup."""
 
@@ -70,6 +89,8 @@ class Settings(BaseSettings):
     config_version: int
     app: AppConfig
     database: DatabasePoolConfig = DatabasePoolConfig()
+    data_setup: DataSetupConfig
+    analytics: AnalyticsConfig
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"
@@ -90,6 +111,21 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_api_key: SecretStr | None = None
     langsmith_project: str = "self-service-data-analyst-agent"
+    # Demo passwords for the seeded test users (config/test_users.yaml); seed only.
+    demo_password_sales_europe: SecretStr | None = None
+    demo_password_sales_americas: SecretStr | None = None
+    demo_password_sales_other: SecretStr | None = None
+    demo_password_finance: SecretStr | None = None
+    demo_password_operations: SecretStr | None = None
+    demo_password_admin: SecretStr | None = None
+    demo_password_no_role: SecretStr | None = None
+    demo_password_disabled_user: SecretStr | None = None
+
+    def demo_password(self, username: str) -> SecretStr | None:
+        """Demo password for a test user: ``sales.europe`` -> DEMO_PASSWORD_SALES_EUROPE."""
+        field = "demo_password_" + username.replace(".", "_").lower()
+        value = getattr(self, field, None)
+        return value if isinstance(value, SecretStr) else None
 
     def owner_conninfo(self) -> str:
         """libpq connection string for the database owner (seed, migrations, checks)."""
