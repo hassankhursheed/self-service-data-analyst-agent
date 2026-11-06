@@ -49,3 +49,18 @@ What was chosen, what was rejected and why. Newest step last.
 | Owner settings | `POSTGRES_*` variables shared by Compose and `Settings` | A separate owner DSN | One set of variables for the container and the scripts. |
 | Line endings | `.gitattributes` forces LF for `.sql`, `.py`, `.yml` | Relying on `core.autocrlf` | The dump is read inside a Linux container. |
 | Integration tests | Marker `integration`; skip automatically when the database is unreachable | Always run | Unit tests stay runnable without Docker. Expected row counts are exact; the two customer-demographics tables are empty in the source dump. |
+
+## Step 4: Application Schema and Migrations
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Migration scope | Alembic `include_name` limited to schema `app`; version table in `app`; `env.py` creates the schema if missing | Default (all schemas) | Autogenerate can never see or drop Northwind tables. |
+| Migration driver | Sync psycopg as the owner | Async env | Simpler and reliable for migrations; the app itself uses asyncpg. |
+| Allowed values | CHECK constraints generated from `app/core/enums.py` | PostgreSQL ENUM types | CHECKs are easy to change in a migration; code and database share one list. |
+| Region codes | CHECK on `user_regions.region_code` | FK to `analytics.sales_regions` | Alembic must not depend on a schema it does not own; the seed step creates `analytics`. |
+| One role per user | PK of `user_roles` is `user_id` | Composite PK | Matches the design (one role in the token). |
+| JSONB | Only `agent_steps.input_summary/output_summary`, `agent_errors.input_snapshot`, `audit_log.details` | JSONB elsewhere | These hold per-node or per-event data whose shape differs by node or event type; everything else is typed columns. |
+| Lists | `text[]` / `uuid[]` for tables used, assumptions, options, synonyms, roles | Child tables | Small, read together, never queried by element in hot paths. |
+| Keys | UUID for user-facing rows, `bigint` identity for logs | UUID everywhere | Smaller, faster indexes for high-volume tables. |
+| Pool settings | In `config/app.yaml` (`database` section) | Hard-coded | Limits live in config (standing rule 8). |
+| ERD | Generated from the models (`scripts/generate_erd.py`) with a test that fails on drift | Hand-maintained diagram | Keeps the design doc and the real schema identical. |

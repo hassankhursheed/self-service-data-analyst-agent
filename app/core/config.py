@@ -25,6 +25,7 @@ from pydantic_settings import (
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
+from sqlalchemy import URL
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_FILE = PROJECT_ROOT / "config" / "app.yaml"
@@ -38,6 +39,18 @@ class AppConfig(BaseModel):
 
     name: str
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+
+class DatabasePoolConfig(BaseModel):
+    """Connection pool limits (``database`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    pool_size: int = 5
+    max_overflow: int = 10
+    pool_timeout_seconds: float = 30
+    pool_recycle_seconds: int = 1800
+    connect_timeout_seconds: float = 10
 
 
 class Settings(BaseSettings):
@@ -56,6 +69,7 @@ class Settings(BaseSettings):
     # --- From config/app.yaml (non-secret, versioned) ---
     config_version: int
     app: AppConfig
+    database: DatabasePoolConfig = DatabasePoolConfig()
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"
@@ -87,6 +101,16 @@ class Settings(BaseSettings):
             password=self.postgres_password.get_secret_value(),
         )
 
+    def owner_sqlalchemy_url(self) -> URL:
+        """SQLAlchemy URL (psycopg driver) for the database owner."""
+        return URL.create(
+            "postgresql+psycopg",
+            username=self.postgres_user,
+            password=self.postgres_password.get_secret_value(),
+            host=self.postgres_host,
+            port=self.postgres_port,
+            database=self.postgres_db,
+        )
 
     @classmethod
     def settings_customise_sources(

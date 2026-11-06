@@ -103,6 +103,8 @@ def test_owner_conninfo_uses_owner_settings(clean_env: pytest.MonkeyPatch) -> No
         "user": "dummy_owner",
         "password": "dummy-owner-password",
     }
+    url = settings.owner_sqlalchemy_url()
+    assert (url.drivername, url.port, url.username) == ("postgresql+psycopg", 6000, "dummy_owner")
 
 
 def test_yaml_holds_no_secret_settings() -> None:
