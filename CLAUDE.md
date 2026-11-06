@@ -24,7 +24,8 @@ Northwind Traders company. It is built in 26 small steps; progress is tracked in
    step, list what is left) and `docs/decisions-log.md` (what you chose, what you rejected
    and why). Then give the user a short summary of changed files and exact commands to
    verify the step. Stop and wait. Commit only after the user says "approved, commit",
-   with the message `Step N: <title>`.
+   with a short, relevant message of about 4 to 7 words that describes the change
+   (no "Step N" prefix), for example `Add sqlglot-based SQL safety validator`.
 
 ## How settings fit together
 

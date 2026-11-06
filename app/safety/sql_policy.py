@@ -42,6 +42,25 @@ def get_sql_policy() -> SqlPolicy:
 BLOCK_MESSAGES: dict[BlockReason, str] = {
     BlockReason.QUESTION_EMPTY: "Please type a question.",
     BlockReason.QUESTION_TOO_LONG: "Your question is too long. Please shorten it.",
+    BlockReason.USER_DISABLED: "Your account is disabled. Please contact the data owner.",
+    BlockReason.NO_ROLE: (
+        "Your account has no role yet, so it cannot ask business questions. "
+        "Please contact the data owner."
+    ),
+    BlockReason.ADMIN_NO_BUSINESS_DATA: (
+        "Admin accounts manage the system and do not ask business questions. "
+        "Please use a business account."
+    ),
+    BlockReason.OFF_TOPIC: (
+        "Sorry, I can only help with questions about Northwind's sales, customers, "
+        "products and shipping."
+    ),
+    BlockReason.PROMPT_INJECTION: (
+        "I can't change how I work or share my instructions. "
+        "Please ask a question about Northwind's data."
+    ),
+    BlockReason.WRITE_REQUEST: "I can only read data, so I can't change, add or delete anything.",
+    BlockReason.PERSONAL_DATA_REQUEST: "That personal information is not available to your role.",
     BlockReason.NO_DATA_ACCESS: "Your account has no access to business data.",
     BlockReason.EMPTY_SQL: "No query was produced for this question.",
     BlockReason.PARSE_ERROR: "The generated query could not be read, so it was not run.",

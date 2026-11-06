@@ -1,0 +1,3 @@
+# Agent graph settings. Bump graph_version when nodes, routing or transitions change;
+# it is recorded with every run (brief section 23).
+graph_version: "0.1.0"
