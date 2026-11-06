@@ -64,7 +64,7 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "ANN", "S", "PT", "ASYNC",
 "migrations/versions/*.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "scripts"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -85,3 +85,8 @@ files = ["app", "tests", "scripts", "migrations/env.py"]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+# asyncpg ships no type information.
+module = ["asyncpg", "asyncpg.*"]
+ignore_missing_imports = true
