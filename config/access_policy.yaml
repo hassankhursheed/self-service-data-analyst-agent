@@ -1,0 +1,64 @@
+# Who may see which Northwind tables, columns and rows (docs/access-control.md).
+# The seed script builds one schema of secure views per business role from this file.
+version: 1
+
+roles:
+  sales_manager:
+    description: Sales Manager for one region; sees only that region's customers and orders.
+    view_schema: sales_ro
+    region_scoped: true
+    tables: [customers, orders, order_details, products, categories, suppliers, shippers, employees]
+  finance_analyst:
+    description: Finance Analyst; all order and financial data, no employee personal data.
+    view_schema: finance_ro
+    region_scoped: false
+    tables: [customers, orders, order_details, products, categories, suppliers, shippers, employees]
+  operations_manager:
+    description: Operations Manager; products, suppliers and shipping, no customer contact details.
+    view_schema: operations_ro
+    region_scoped: false
+    tables: [customers, orders, order_details, products, categories, suppliers, shippers, employees]
+  admin:
+    description: Admin (Data Owner); admin area only, no business data.
+    view_schema: null
+    region_scoped: false
+    tables: []
+
+# Region filter key per table for region-scoped roles. Rows are kept only when the key
+# belongs to the region in the session setting app.user_region.
+region_keys:
+  customers: customer_id
+  orders: order_id
+  order_details: order_id
+
+# Sensitive columns. A listed column is hidden from every role not in visible_to.
+# Columns not listed are visible to every role that can see the table.
+sensitive_columns:
+  employees:
+    address: {visible_to: [], reason: "employee home address"}
+    city: {visible_to: [], reason: "part of the employee home address"}
+    region: {visible_to: [], reason: "part of the employee home address"}
+    postal_code: {visible_to: [], reason: "part of the employee home address"}
+    country: {visible_to: [], reason: "part of the employee home address"}
+    home_phone: {visible_to: [], reason: "employee personal phone"}
+    extension: {visible_to: [], reason: "employee phone extension"}
+    birth_date: {visible_to: [], reason: "employee personal data"}
+    notes: {visible_to: [], reason: "free-text HR notes"}
+    photo: {visible_to: [], reason: "employee photo (binary)"}
+    photo_path: {visible_to: [], reason: "employee photo location"}
+  customers:
+    contact_name: {visible_to: [sales_manager], reason: "customer contact person"}
+    contact_title: {visible_to: [sales_manager], reason: "customer contact person"}
+    phone: {visible_to: [sales_manager], reason: "customer contact details"}
+    fax: {visible_to: [sales_manager], reason: "customer contact details"}
+    address: {visible_to: [sales_manager], reason: "customer contact details"}
+    postal_code: {visible_to: [sales_manager], reason: "customer contact details"}
+  suppliers:
+    contact_name: {visible_to: [operations_manager], reason: "supplier contact person"}
+    contact_title: {visible_to: [operations_manager], reason: "supplier contact person"}
+    phone: {visible_to: [operations_manager], reason: "supplier contact details"}
+    fax: {visible_to: [operations_manager], reason: "supplier contact details"}
+    address: {visible_to: [operations_manager], reason: "supplier contact details"}
+    homepage: {visible_to: [operations_manager], reason: "supplier contact details"}
+  categories:
+    picture: {visible_to: [], reason: "binary image, never needed for analysis"}
