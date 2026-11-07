@@ -582,7 +582,6 @@ async def test_later_step_routes_return_501_with_a_correlation_id(
     async with running(make_app()) as client:
         admin = await login(client, settings, "admin")
         for method, path, body in [
-            ("GET", "/admin/metrics", None),
             ("POST", "/admin/eval/run", {"dataset": "northwind-eval", "experiment_name": "x"}),
             ("GET", "/admin/eval/runs", None),
         ]:

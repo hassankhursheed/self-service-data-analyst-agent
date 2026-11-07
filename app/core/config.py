@@ -102,6 +102,15 @@ class ApiConfig(BaseModel):
     max_page_size: int = Field(gt=0)
 
 
+class MonitoringConfig(BaseModel):
+    """Admin monitoring settings (``monitoring`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    time_zone: str = "UTC"
+    max_period_days: int = Field(default=92, gt=0, le=366)
+
+
 class Settings(BaseSettings):
     """All settings for the application, validated at startup."""
 
@@ -123,6 +132,7 @@ class Settings(BaseSettings):
     analytics: AnalyticsConfig
     auth: AuthConfig
     api: ApiConfig
+    monitoring: MonitoringConfig = MonitoringConfig()
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"

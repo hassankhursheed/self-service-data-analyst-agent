@@ -25,6 +25,7 @@ from app.core.enums import (
     RegionCode,
     RoleName,
 )
+from app.services.metrics import Metrics
 from app.services.users import UserView
 from app.services.verified_library import LibraryItem, ReviewItem
 
@@ -194,33 +195,8 @@ class UserList(Page):
 # --- admin: later steps (501 for now, final models) ------------------------------------
 
 
-class OutcomeCounts(BaseModel):
-    answered: int
-    blocked: int
-    rejected: int
-    failed: int
-
-
-class FeedbackCounts(BaseModel):
-    helpful: int
-    not_helpful: int
-
-
-class MetricsResponse(Envelope):
-    questions_today: int
-    questions_by_role: dict[str, int]
-    outcomes: OutcomeCounts
-    blocked_by_reason: dict[str, int]
-    repair_attempts: int
-    repair_success_rate: float | None
-    clarifications_asked: int
-    latency_avg_ms: float | None
-    latency_p95_ms: float | None
-    tokens_today: int
-    cost_today_usd: Decimal
-    feedback: FeedbackCounts
-    latest_eval_run: uuid.UUID | None
-    failed_logins: int
+class MetricsResponse(Envelope, Metrics):
+    pass
 
 
 class VerifiedQueryList(Page):

@@ -146,12 +146,12 @@ Design change (Step 18): the draft used `{question_id, clarification_id, answer}
 
 ### `GET /admin/metrics`
 - **Access:** admin.
-- **Request:** query `date` (default: today).
-- **Response:** `200 MetricsResponse {correlation_id, questions_today, questions_by_role, outcomes: {answered, blocked, rejected, failed}, blocked_by_reason, repair_attempts, repair_success_rate, clarifications_asked, latency_avg_ms, latency_p95_ms, tokens_today, cost_today_usd, feedback: {helpful, not_helpful}, latest_eval_run, failed_logins}`
-- **Errors:** 401, 403, 500.
+- **Request:** query `from`, `to` (dates, inclusive; default today; at most `monitoring.max_period_days`).
+- **Response:** `200 MetricsResponse {correlation_id, period_from, period_to, time_zone, questions, questions_by_role, outcomes: {answered, blocked, rejected, failed, awaiting_clarification, in_progress}, blocked_by_reason, repair_attempts, repaired_runs, repair_success_rate, clarifications_asked, runs, latency_avg_ms, latency_p95_ms, input_tokens, output_tokens, cost_usd, feedback: {helpful, not_helpful}, failed_logins, latest_eval_run: {run_id, experiment_name, status, execution_accuracy, unsafe_blocked_rate, access_leaks, started_at} | null, daily: [{date, questions, answered, blocked, rejected, failed, cost_usd}]}`. Definitions: docs/monitoring.md.
+- **Errors:** 400 (invalid period), 401, 403, 500.
 
 ```json
-{"correlation_id": "...", "questions_today": 42, "questions_by_role": {"sales_manager": 30, "finance_analyst": 12}, "outcomes": {"answered": 35, "blocked": 4, "rejected": 1, "failed": 2}, "blocked_by_reason": {"WRITE_STATEMENT": 3, "HIDDEN_COLUMN": 1}, "repair_attempts": 5, "repair_success_rate": 0.8, "clarifications_asked": 6, "latency_avg_ms": 3100, "latency_p95_ms": 7200, "tokens_today": 98000, "cost_today_usd": 0.41, "feedback": {"helpful": 20, "not_helpful": 3}, "latest_eval_run": null, "failed_logins": 2}
+{"correlation_id": "...", "period_from": "2026-11-01", "period_to": "2026-11-07", "time_zone": "UTC", "questions": 42, "questions_by_role": {"finance_analyst": 12, "sales_manager": 30}, "outcomes": {"answered": 35, "blocked": 4, "rejected": 1, "failed": 2, "awaiting_clarification": 0, "in_progress": 0}, "blocked_by_reason": {"WRITE_STATEMENT": 3}, "repair_attempts": 5, "repaired_runs": 4, "repair_success_rate": 0.75, "clarifications_asked": 6, "runs": 48, "latency_avg_ms": 3100.0, "latency_p95_ms": 7200.0, "input_tokens": 81000, "output_tokens": 17000, "cost_usd": "0.41", "feedback": {"helpful": 20, "not_helpful": 3}, "failed_logins": 2, "latest_eval_run": null, "daily": []}
 ```
 
 ### `GET /admin/blocked`

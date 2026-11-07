@@ -304,3 +304,18 @@ What was chosen, what was rejected and why. Newest step last.
 | Feedback link | `feedback.run_id` = latest run of the question (migration) | Question only | Guide: feedback is linked to the question and its run. |
 | Graph version | 0.5.0 | — | N-05 / N-06 behaviour changed (recorded with every run). |
 
+## Step 21: Monitoring Dashboard
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Source of numbers | Plain SQL aggregations over the audit tables on every request (app role) | Materialised views or a metrics store | Small volumes; always current; indexes keep each query to a time-range scan. Views can be added if volume grows. |
+| Period | Whole calendar days in a configured time zone (UTC), `from` / `to`, default today, max 92 days | Rolling 24 hours | Matches "today" on the page and in the brief; bounded so a query cannot scan everything. |
+| Real time vs business date | Monitoring uses real time | The business reference date | The reference date describes the Northwind data, not when the system was used. |
+| Questions and outcomes | `app.questions` (created in the period, current status) | Latest run per question | A run is written only when a question finishes; paused (`awaiting_clarification`) and running (`in_progress`) questions must still be counted. Found by the tests: `agent_runs.final_status` only allows final statuses. |
+| Latency, tokens, cost, repairs | `app.agent_runs` started in the period | Per question | These are properties of runs; a clarification reply is part of the same finished run. |
+| p95 | `percentile_cont(0.95)` (linear interpolation), mirrored by `metrics.p95()` and tested on a known sample | `percentile_disc`; computing in Python | Standard, matches numpy's default; computed in the database without moving rows. |
+| Repair success rate | Runs with ≥ 1 repair that ended ANSWERED / runs with ≥ 1 repair | Successful repair queries / repair queries | Answers the operational question "does repair rescue questions?". |
+| Indexes | `questions(created_at)`, `blocked_queries(created_at)`, `clarifications(created_at)`, `feedback(updated_at)`, `generated_queries(kind, run_id)` | No new indexes | Every metric filters by time first; existing indexes covered runs and the audit log. |
+| Response model | Replaced the Step 18 draft (`questions_today`, ...) with period fields, `in_progress`, token split and a daily series | Keeping the draft names | The guide asks for a chosen period; the chart needs the daily series. api-design.md updated. |
+| Alerts | Not built (recommended extra for Step 26, per the guide) | — | Scope rule. |
+

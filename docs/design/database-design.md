@@ -360,14 +360,14 @@ The ERD above is generated from the SQLAlchemy models (`python scripts/generate_
 | user_roles | `user_id` (one role per user) | `role_id` |
 | user_regions | PK `(user_id, region_code)`; CHECK `region_code` in `EUROPE`, `AMERICAS`, `ROW` | |
 | conversations | | `(user_id, updated_at DESC)` |
-| questions | `correlation_id` | `(conversation_id, created_at)`, `(status, created_at)`, `(user_id, created_at)` |
+| questions | `correlation_id` | `(conversation_id, created_at)`, `(status, created_at)`, `(user_id, created_at)`, `(created_at)` |
 | agent_runs | `(question_id, run_number)` | `(correlation_id)`, `(started_at)`, `(final_status, started_at)` |
 | agent_steps | `(run_id, seq)` | `(node_name, started_at)` |
-| generated_queries | `(run_id, attempt)` | |
+| generated_queries | `(run_id, attempt)` | `(kind, run_id)` |
 | query_executions | | `(generated_query_id)`, `(status, executed_at)` |
-| blocked_queries | | `(run_id)`, `(reason_code, created_at)` |
-| clarifications | | `(question_id)` |
-| feedback | `(question_id, user_id)` | `(rating, review_status)` |
+| blocked_queries | | `(run_id)`, `(reason_code, created_at)`, `(created_at)` |
+| clarifications | | `(question_id)`, `(created_at)` |
+| feedback | `(question_id, user_id)` | `(rating, review_status)`, `(updated_at)` |
 | semantic_catalog | `(object_type, object_name, version)`; partial unique `(object_type, object_name) WHERE is_active` | |
 | metric_definitions | `(name, version)`; partial unique `(name) WHERE is_active` | |
 | business_calendar_config | `version`; partial unique `(is_active) WHERE is_active` | |
