@@ -98,6 +98,7 @@ class GeneratedQuery(CreatedAtMixin, Base):
     __table_args__ = (
         UniqueConstraint("run_id", "attempt"),
         check_in("kind", QueryKind),
+        Index(None, "kind", "run_id"),  # repair attempts per period (monitoring)
         check_in("confidence", Confidence, nullable=True),
     )
 
@@ -145,6 +146,7 @@ class BlockedQuery(CreatedAtMixin, Base):
         check_in("stage", BlockStage),
         Index(None, "run_id"),
         Index(None, "reason_code", "created_at"),
+        Index(None, "created_at"),  # blocked queries per period (monitoring)
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)

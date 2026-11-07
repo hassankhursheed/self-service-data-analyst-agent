@@ -159,9 +159,15 @@ async def reset_password(
 # --- verified queries and review (Step 20) -----------------------------------------------
 
 
-@router.get("/metrics", response_model=MetricsResponse, responses=LATER)
-async def metrics(_: AdminUser) -> MetricsResponse:
-    raise NotImplementedYet("metrics dashboard")
+@router.get("/metrics", response_model=MetricsResponse, responses=ERRORS)
+async def metrics(
+    _: AdminUser, services: ServicesDep, correlation_id: CorrelationId,
+    date_from: Annotated[dt.date | None, Query(alias="from")] = None,
+    date_to: Annotated[dt.date | None, Query(alias="to")] = None,
+) -> MetricsResponse:  # fmt: skip
+    """Operational health for a period of days (default: today in the monitoring zone)."""
+    result = await services.metrics.metrics(date_from, date_to)
+    return MetricsResponse(correlation_id=correlation_id, **result.model_dump())
 
 
 @router.get("/review", response_model=ReviewList, responses=ERRORS)

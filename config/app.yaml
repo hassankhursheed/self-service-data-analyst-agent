@@ -47,3 +47,9 @@ api:
     logins_per_minute_per_ip: 10
   default_page_size: 20
   max_page_size: 100
+
+# Admin Monitoring page (app/services/metrics.py, docs/monitoring.md). Operational
+# metrics use real time, not the business reference date of the data.
+monitoring:
+  time_zone: UTC
+  max_period_days: 92

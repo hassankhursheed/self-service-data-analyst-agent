@@ -93,3 +93,13 @@ async def test_error_handlers_return_the_standard_shape_without_tracebacks() -> 
         assert boom_response.json()["error"]["code"] == "INTERNAL_ERROR"
         assert "secret" not in boom_response.text
         assert boom_response.json()["correlation_id"] == boom_response.headers[HEADER]
+
+
+def test_p95_uses_linear_interpolation_like_percentile_cont() -> None:
+    from app.services.metrics import p95
+
+    assert p95([]) is None
+    assert p95([42.0]) == 42.0
+    assert p95([10.0 * i for i in range(1, 21)]) == 190.5
+    assert p95([100.0, 300.0, 400.0, 500.0, 600.0]) == 580.0
+    assert p95([5.0, 1.0, 3.0]) == 4.8  # order does not matter: 3 + 0.9 * (5 - 3)

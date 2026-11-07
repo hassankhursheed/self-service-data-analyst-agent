@@ -48,6 +48,7 @@ class Question(TimestampMixin, Base):
         Index(None, "conversation_id", "created_at"),
         Index(None, "status", "created_at"),
         Index(None, "user_id", "created_at"),
+        Index(None, "created_at"),  # questions per period (monitoring)
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -73,7 +74,8 @@ class Question(TimestampMixin, Base):
 
 class Clarification(CreatedAtMixin, Base):
     __tablename__ = "clarifications"
-    __table_args__ = (Index(None, "question_id"),)
+    # created_at: clarifications asked per period (monitoring).
+    __table_args__ = (Index(None, "question_id"), Index(None, "created_at"))
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     question_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("questions.id", ondelete="CASCADE"))
@@ -90,6 +92,7 @@ class Feedback(TimestampMixin, Base):
         check_in("rating", Rating),
         check_in("review_status", ReviewStatus),
         Index(None, "rating", "review_status"),
+        Index(None, "updated_at"),  # ratings per period (monitoring)
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)

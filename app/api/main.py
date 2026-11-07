@@ -26,6 +26,7 @@ from app.auth.tokens import TokenService
 from app.core.config import Settings, get_settings
 from app.db.session import create_app_engine, create_session_factory
 from app.services.feedback import FeedbackService
+from app.services.metrics import MetricsService
 from app.services.review import ReviewService
 from app.services.users import UserAdminService
 from app.services.verified_library import VerifiedLibraryService
@@ -65,6 +66,7 @@ def create_app(
                 feedback=FeedbackService(sessions),
                 review=ReviewService(sessions, conversations),
                 library=VerifiedLibraryService(sessions, agent.deps.load_semantic),
+                metrics=MetricsService(sessions, settings.monitoring),
                 question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
                 login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
             )

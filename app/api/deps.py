@@ -12,6 +12,7 @@ from app.api.ratelimit import SlidingWindowLimiter
 from app.auth.service import AuthService
 from app.core.config import ApiConfig
 from app.services.feedback import FeedbackService
+from app.services.metrics import MetricsService
 from app.services.review import ReviewService
 from app.services.users import UserAdminService
 from app.services.verified_library import VerifiedLibraryService
@@ -30,6 +31,7 @@ class Services:
     feedback: FeedbackService
     review: ReviewService
     library: VerifiedLibraryService
+    metrics: MetricsService
     question_limiter: SlidingWindowLimiter
     login_limiter: SlidingWindowLimiter
 

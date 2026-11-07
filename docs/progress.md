@@ -22,8 +22,8 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 18: FastAPI Endpoints (Week 3, brief sections 19, 22)
 - [x] Step 19: User Interface (Week 3, brief section 20)
 - [x] Step 20: Verified Query Library and Feedback Loop (Week 3, brief section 16)
-- [ ] Step 21: (title added when the guide arrives)
-- [ ] Step 22: (title added when the guide arrives)
+- [x] Step 21: Monitoring Dashboard (Week 3, brief section 26)
+- [ ] Step 22: Evaluation Set and Experiments (guide received; plan first)
 - [ ] Step 23: (title added when the guide arrives)
 - [ ] Step 24: (title added when the guide arrives)
 - [ ] Step 25: (title added when the guide arrives)
@@ -31,8 +31,9 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 21 to 26 (guides not received yet).
-- UI placeholders to fill: Admin › Monitoring and Evaluation (Steps 21-22). The
+- Steps 22 to 26 (guide for Step 22 received; it needs a plan first).
+- UI placeholder to fill: Admin › Evaluation (Step 22). Monitoring shows the latest
+  evaluation run once Step 22 writes `eval_runs`. The
   evaluation must show whether verified examples improved accuracy (brief §16):
   `verified_examples.enabled` in config/agent.yaml switches retrieval off.
 - Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
@@ -40,9 +41,11 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   when Monitoring, Review and Evaluation are filled in: the user signs in as
   `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
   not read demo passwords), then every screen is exercised and captured.
-- API endpoints that return 501 until their step: `GET /admin/metrics` (dashboard),
-  `POST /admin/eval/run` and `GET /admin/eval/runs` (evaluation). Their final request
-  and response models exist.
+- API endpoints that return 501 until Step 22: `POST /admin/eval/run` and
+  `GET /admin/eval/runs`. Their final request and response models exist.
+- Recommended extra for Step 26: alerts (email or Slack) when the failure rate,
+  blocked attempts, failed logins or daily cost pass configured thresholds, stored
+  in `alerts`.
 - Rate limits are in memory (one API process); a shared store is needed before running
   several API workers.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
