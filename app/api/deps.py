@@ -14,6 +14,7 @@ from app.core.config import ApiConfig
 from app.services.feedback import FeedbackService
 from app.services.review import ReviewService
 from app.services.users import UserAdminService
+from app.services.verified_library import VerifiedLibraryService
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class Services:
     users: UserAdminService
     feedback: FeedbackService
     review: ReviewService
+    library: VerifiedLibraryService
     question_limiter: SlidingWindowLimiter
     login_limiter: SlidingWindowLimiter
 

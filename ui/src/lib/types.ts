@@ -138,6 +138,40 @@ export interface ErrorItem {
   created_at: string;
 }
 
+export type ReviewKind = "not_helpful" | "blocked" | "failure";
+
+export interface ReviewItem {
+  kind: ReviewKind;
+  id: string;
+  question_id: string | null;
+  correlation_id: string | null;
+  question: string | null;
+  username: string | null;
+  role: string | null;
+  sql_text: string | null;
+  detail: string;
+  status: string;
+  created_at: string;
+}
+
+export interface VerifiedQuery {
+  id: string;
+  lineage_id: string;
+  version: number;
+  question_text: string;
+  sql_text: string;
+  description: string;
+  tables_used: string[];
+  metrics_used: string[];
+  allowed_roles: RoleName[];
+  is_active: boolean;
+  verified_by: string | null;
+  verified_at: string | null;
+  source_question_id: string | null;
+}
+
+export const BUSINESS_ROLES: RoleName[] = ["sales_manager", "finance_analyst", "operations_manager"];
+
 export interface ApiErrorBody {
   correlation_id: string;
   error: { code: string; message: string };

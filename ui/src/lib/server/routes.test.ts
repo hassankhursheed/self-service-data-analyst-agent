@@ -32,6 +32,9 @@ describe("proxy allow-list", () => {
   it("allows only the API paths the UI uses", () => {
     expect(isAllowedPath("ask")).toBe(true);
     expect(isAllowedPath("admin/errors/12/rerun")).toBe(true);
+    expect(isAllowedPath("admin/review")).toBe(true);
+    expect(isAllowedPath("admin/feedback/7/eval-case")).toBe(true);
+    expect(isAllowedPath("admin/verified-queries/0b7d4c1a-6a8e-4c43-9f0f-2a1e5b8c9d10")).toBe(true);
     expect(isAllowedPath("conversations/0b7d4c1a-6a8e-4c43-9f0f-2a1e5b8c9d10/table")).toBe(true);
     for (const path of ["auth/login", "health", "docs", "openapi.json", "admin/users/../../x", "ask/../admin"]) {
       expect(isAllowedPath(path)).toBe(false);

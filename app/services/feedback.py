@@ -13,7 +13,7 @@ from app.auth.models import AuthenticatedUser
 from app.core.enums import Rating, ReviewStatus
 from app.core.errors import AppError
 from app.core.masking import mask_text
-from app.db.models import Feedback, Question
+from app.db.models import AgentRun, Feedback, Question
 
 
 class QuestionNotFound(AppError):
@@ -33,6 +33,13 @@ class FeedbackService:
             question = await session.get(Question, question_id)
             if question is None or question.user_id != user.user_id:
                 raise QuestionNotFound(f"question {question_id} not found for this user")
+            # Looked up before the new row exists, so autoflush cannot insert it half-filled.
+            run_id = await session.scalar(
+                select(AgentRun.id)
+                .where(AgentRun.question_id == question_id)
+                .order_by(AgentRun.started_at.desc())
+                .limit(1)
+            )
             feedback = await session.scalar(
                 select(Feedback).where(
                     Feedback.question_id == question_id, Feedback.user_id == user.user_id
@@ -41,6 +48,7 @@ class FeedbackService:
             if feedback is None:
                 feedback = Feedback(question_id=question_id, user_id=user.user_id)
                 session.add(feedback)
+            feedback.run_id = run_id
             feedback.rating = rating.value
             feedback.comment = mask_text(comment.strip()) if comment and comment.strip() else None
             feedback.review_status = ReviewStatus.OPEN.value

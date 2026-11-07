@@ -1,6 +1,6 @@
 # Agent graph settings. Bump graph_version when nodes, routing or transitions change;
 # it is recorded with every run (brief section 23).
-graph_version: "0.4.0"
+graph_version: "0.5.0"
 
 # N-03 / N-04 (brief section 14, docs/intent-and-clarification.md).
 intent:
@@ -45,3 +45,13 @@ answer:
     max_bars: 30
     max_line_points: 400
     max_series: 3
+
+# N-05 / N-06: verified query library (brief section 16, docs/verified-queries.md).
+verified_examples:
+  # Turned off for "without verified examples" evaluation runs.
+  enabled: true
+  # Few-shot examples passed to SQL generation at most.
+  max_examples: 3
+  # Keyword similarity (0-1) an example needs to be offered.
+  min_score: 0.4
+

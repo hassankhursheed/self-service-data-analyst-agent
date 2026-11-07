@@ -4,7 +4,7 @@ import { ReviewBoard } from "@/components/admin/review-board";
 export default function ReviewPage() {
   return (
     <>
-      <PageHeader title="Review" description="Blocked queries and failures. Verifying and correcting queries arrives in Step 20." />
+      <PageHeader title="Review" description="Answers rated not helpful, blocked queries and failures. Verify or correct queries for the library, or turn feedback into evaluation cases." />
       <ReviewBoard />
     </>
   );

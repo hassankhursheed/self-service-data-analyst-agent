@@ -35,6 +35,6 @@ pricing:
 prompts:
   system: v1
   intent: v2
-  sql_generation: v1
+  sql_generation: v2
   sql_repair: v1
   answer: v1

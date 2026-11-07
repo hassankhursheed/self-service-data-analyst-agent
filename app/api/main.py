@@ -28,6 +28,7 @@ from app.db.session import create_app_engine, create_session_factory
 from app.services.feedback import FeedbackService
 from app.services.review import ReviewService
 from app.services.users import UserAdminService
+from app.services.verified_library import VerifiedLibraryService
 
 
 def create_app(
@@ -63,6 +64,7 @@ def create_app(
                 users=UserAdminService(sessions, settings.auth),
                 feedback=FeedbackService(sessions),
                 review=ReviewService(sessions, conversations),
+                library=VerifiedLibraryService(sessions, agent.deps.load_semantic),
                 question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
                 login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
             )

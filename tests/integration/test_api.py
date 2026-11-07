@@ -156,7 +156,7 @@ async def test_every_protected_route_refuses_missing_invalid_and_expired_tokens(
     ]
     async with running(app) as client:
         routes = protected_routes(app)
-        assert len(routes) == 19
+        assert len(routes) == 22
         for method, path in routes:
             for headers, code in cases:
                 response = await client.request(method, path, headers=headers, json={})
@@ -583,12 +583,6 @@ async def test_later_step_routes_return_501_with_a_correlation_id(
         admin = await login(client, settings, "admin")
         for method, path, body in [
             ("GET", "/admin/metrics", None),
-            ("GET", "/admin/verified-queries", None),
-            (
-                "POST",
-                "/admin/verified-queries",
-                {"question_text": "q", "sql_text": "SELECT 1", "description": "d"},
-            ),
             ("POST", "/admin/eval/run", {"dataset": "northwind-eval", "experiment_name": "x"}),
             ("GET", "/admin/eval/runs", None),
         ]:

@@ -2,7 +2,7 @@
 
 import datetime as dt
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
 
@@ -14,13 +14,17 @@ from app.api.schemas import (
     CreateUserRequest,
     ErrorItem,
     ErrorList,
+    EvalCaseRequest,
+    EvalCaseResponse,
     EvalRunList,
     EvalRunRequest,
     EvalRunStarted,
     MetricsResponse,
     RerunResponse,
     ResetPasswordRequest,
+    ReviewList,
     UpdateUserRequest,
+    UpdateVerifiedRequest,
     UserList,
     UserResponse,
     VerifiedQueryList,
@@ -30,6 +34,7 @@ from app.api.schemas import (
 from app.auth.dependencies import AdminUser
 from app.core.enums import ErrorStatus, RoleName
 from app.services.users import UserNotFound, UserView
+from app.services.verified_library import VerifyInput
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 ERRORS = error_responses(400, 401, 403, 404, 409, 500)
@@ -151,7 +156,7 @@ async def reset_password(
     return _user(correlation_id, view)
 
 
-# --- built in later steps (Steps 20-23): final models, 501 for now ---------------------
+# --- verified queries and review (Step 20) -----------------------------------------------
 
 
 @router.get("/metrics", response_model=MetricsResponse, responses=LATER)
@@ -159,15 +164,68 @@ async def metrics(_: AdminUser) -> MetricsResponse:
     raise NotImplementedYet("metrics dashboard")
 
 
-@router.get("/verified-queries", response_model=VerifiedQueryList, responses=LATER)
-async def list_verified_queries(_: AdminUser) -> VerifiedQueryList:
-    raise NotImplementedYet("verified queries")
+@router.get("/review", response_model=ReviewList, responses=ERRORS)
+async def review_list(
+    _: AdminUser, services: ServicesDep, paging: PagingDep, correlation_id: CorrelationId,
+    kind: Literal["not_helpful", "blocked", "failure"] | None = None,
+) -> ReviewList:  # fmt: skip
+    items, total = await services.library.review(
+        page=paging.page, page_size=paging.page_size, kind=kind
+    )
+    return ReviewList(
+        correlation_id=correlation_id, items=items, total=total, page=paging.page,
+        page_size=paging.page_size,
+    )  # fmt: skip
+
+
+@router.get("/verified-queries", response_model=VerifiedQueryList, responses=ERRORS)
+async def list_verified_queries(
+    _: AdminUser, services: ServicesDep, paging: PagingDep, correlation_id: CorrelationId,
+    is_active: bool | None = None,
+) -> VerifiedQueryList:  # fmt: skip
+    items, total = await services.library.list_queries(
+        page=paging.page, page_size=paging.page_size, is_active=is_active
+    )
+    return VerifiedQueryList(
+        correlation_id=correlation_id, items=items, total=total, page=paging.page,
+        page_size=paging.page_size,
+    )  # fmt: skip
 
 
 @router.post("/verified-queries", response_model=VerifiedQueryResponse,
-             status_code=status.HTTP_201_CREATED, responses=LATER)  # fmt: skip
-async def create_verified_query(_body: VerifyRequest, _: AdminUser) -> VerifiedQueryResponse:
-    raise NotImplementedYet("verified queries")
+             status_code=status.HTTP_201_CREATED, responses=ERRORS)  # fmt: skip
+async def create_verified_query(
+    body: VerifyRequest, admin: AdminUser, services: ServicesDep, correlation_id: CorrelationId
+) -> VerifiedQueryResponse:
+    item = await services.library.verify(
+        admin, VerifyInput(**body.model_dump()), correlation_id=correlation_id
+    )
+    return VerifiedQueryResponse(correlation_id=correlation_id, **item.model_dump())
+
+
+@router.patch("/verified-queries/{query_id}", response_model=VerifiedQueryResponse,
+              responses=ERRORS)  # fmt: skip
+async def update_verified_query(
+    query_id: uuid.UUID, body: UpdateVerifiedRequest, admin: AdminUser, services: ServicesDep,
+    correlation_id: CorrelationId,
+) -> VerifiedQueryResponse:  # fmt: skip
+    item = await services.library.set_active(
+        admin, query_id, body.is_active, correlation_id=correlation_id
+    )
+    return VerifiedQueryResponse(correlation_id=correlation_id, **item.model_dump())
+
+
+@router.post("/feedback/{feedback_id}/eval-case", response_model=EvalCaseResponse,
+             status_code=status.HTTP_201_CREATED, responses=ERRORS)  # fmt: skip
+async def feedback_to_eval_case(
+    feedback_id: int, body: EvalCaseRequest, admin: AdminUser, services: ServicesDep,
+    correlation_id: CorrelationId,
+) -> EvalCaseResponse:  # fmt: skip
+    created = await services.library.to_eval_case(
+        admin, feedback_id, case_type=body.case_type, expected_behaviour=body.expected_behaviour,
+        expected_sql=body.expected_sql, correlation_id=correlation_id,
+    )  # fmt: skip
+    return EvalCaseResponse(correlation_id=correlation_id, **created.model_dump())
 
 
 @router.post("/eval/run", response_model=EvalRunStarted, status_code=status.HTTP_202_ACCEPTED,

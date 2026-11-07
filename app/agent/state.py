@@ -31,6 +31,7 @@ from app.safety.sql_validator import SqlValidationResult
 from app.semantic.calendar import DateRange
 from app.semantic.models import SemanticLayer
 from app.semantic.retriever import RetrievedContext
+from app.semantic.verified import VerifiedExample
 
 
 class _Frozen(BaseModel):
@@ -161,8 +162,8 @@ class AgentState(BaseModel):
     date_range: DateRange | None = None
     semantic: SemanticLayer | None = None
     context: RetrievedContext | None = None
-    # Hook for verified examples (Step 20); always empty until then.
-    verified_examples: list[str] = []
+    # Verified examples chosen by N-05 and shown to N-06 as few-shot guidance (Step 20).
+    verified_examples: list[VerifiedExample] = []
     generated: GeneratedSQL | None = None
     regeneration_attempts: int = 0
     validation: SqlValidationResult | None = None
