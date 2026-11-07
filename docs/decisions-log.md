@@ -239,3 +239,16 @@ What was chosen, what was rejected and why. Newest step last.
 | `prompt_version` | Widened to 255 characters (migration) to hold `name@version` for every prompt | Storing only one prompt's version | Runs must record every prompt version used. |
 | asyncpg introspection | Role-level `jit = off` and telling asyncpg JIT is off, so it never calls `set_config` | Granting `set_config` back | Found by the audit tests: asyncpg toggles JIT with `set_config` before introspecting `uuid[]`; granting it would let a query change its own region. A test proves `array_agg` results work for `analytics_ro`. |
 | Re-run input | `agent_errors.input_snapshot` stores the masked request, clarification answers and thread | Storing the whole state | Enough to re-run (Step 18) without keeping results or secrets. |
+
+## Step 17: Authentication and User Management
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Token contents | `sub` (user ID), `ver` (token version), `iss`, `iat`, `exp`, `jti`; HS256 | Role and region in the token | Brief §8: role and region come from the database for every request, so a role change applies at once and cannot be forged. |
+| Revocation | `token_version` bumped on disable and password reset; checked on every request | Token deny-list; very short tokens only | One integer per user; old tokens stop working immediately (brief §8). |
+| Login errors | One message for unknown user, wrong password and disabled account; dummy hash verified for unknown users | Distinct errors | No username enumeration by message or timing; the reason is in the audit log. |
+| Secret strength | At least 32 characters required in production | No check | A short HMAC key is guessable; development and tests may use shorter keys. |
+| Dependencies | `CurrentUser` / `AdminUser` FastAPI dependencies now, used by the API in Step 18 | Writing them with the API | The guide asks for the dependency in this step; it only needs `app.state.auth`. |
+| Admin rules | Admin-only service methods; username pattern; password length from config; sales managers need exactly one region; admins cannot disable themselves | Validation only in the API | The same rules apply whatever calls the service (API, scripts, tests). |
+| Audit | `login`, `login_failed` (with reason), `user_created`, `user_disabled`, `user_enabled`, `password_reset`, `role_assigned` in `audit_log` | Separate auth log | One audit trail for the monitoring view (brief §8, §23). |
+| Shared identity | `AuthenticatedUser` moved to `app/auth/models.py` | Defined in the conversation service | Auth, API and agent use one model. |

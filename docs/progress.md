@@ -18,7 +18,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 14: Grounded Answers and Charts (Week 2, brief section 17)
 - [x] Step 15: Conversation Memory and Follow-ups (Week 2, brief section 18)
 - [x] Step 16: Audit Log, Error Records and Tracing (Week 2, brief sections 22, 23)
-- [ ] Step 17: Authentication and User Management (guide received)
+- [x] Step 17: Authentication and User Management (Week 3, brief section 8)
 - [ ] Step 18: FastAPI Endpoints (guide received; plan first)
 - [ ] Step 19: User Interface (guide received; plan first)
 - [ ] Step 20: Verified Query Library and Feedback Loop (guide received)
@@ -31,7 +31,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 17 to 26 (guides for Steps 17-20 received).
+- Steps 18 to 26 (guides for Steps 18-20 received; Step 18 plan waiting for approval).
 - For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
   and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
   semantic layer does not describe are refused by the validator; add them to the YAML if

@@ -9,13 +9,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.agent.conversations import (
-    AuthenticatedUser,
     ConversationNotFound,
     ConversationService,
     thread_id_for,
 )
 from app.agent.graph import Agent
 from app.agent.memory import postgres_checkpointer
+from app.auth.models import AuthenticatedUser
 from app.core.config import Settings
 from app.core.enums import QuestionStatus, RegionCode, RoleName
 from app.db.session import create_app_engine, create_session_factory

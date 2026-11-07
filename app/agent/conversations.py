@@ -17,7 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.agent.graph import Agent
 from app.agent.state import AgentRequest, AgentState, ConversationTurn
-from app.core.enums import FINAL_STATUSES, QuestionStatus, RegionCode, RoleName
+from app.auth.models import AuthenticatedUser
+from app.core.enums import FINAL_STATUSES, QuestionStatus
 from app.core.errors import AppError
 from app.core.masking import mask_text
 from app.db.models import Conversation, Question
@@ -29,18 +30,6 @@ TITLE_LENGTH = 80
 class ConversationNotFound(AppError):
     code = "NOT_FOUND"
     user_message = "Conversation not found."
-
-
-class AuthenticatedUser(BaseModel):
-    """Identity from the verified token and the database (Step 17), never from the question."""
-
-    model_config = ConfigDict(frozen=True)
-
-    user_id: uuid.UUID
-    username: str
-    role: RoleName | None
-    region: RegionCode | None = None
-    is_active: bool = True
 
 
 class ConversationSummary(BaseModel):

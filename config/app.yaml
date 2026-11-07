@@ -28,3 +28,11 @@ analytics:
   role_statement_timeout_ms: 30000
   default_statement_timeout_ms: 10000
   default_row_limit: 1000
+
+# Login and access tokens (app/auth, docs/authentication.md). The signing key is
+# JWT_SECRET_KEY in the environment.
+auth:
+  jwt_algorithm: HS256
+  access_token_minutes: 60
+  issuer: northwind-data-analyst
+  min_password_length: 10
