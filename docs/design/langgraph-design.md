@@ -166,3 +166,6 @@ All limit values live in versioned config, not in code.
   (`app/agent/conversations.py`, `app/agent/memory.py`); `steps` is a plain list so a new
   question in a thread starts clean; `history` and `interpreted_question` support
   follow-ups. See `docs/conversations.md`.
+- Step 16: N-11 writes the audit trail (`nodes/n11_audit.py`, `app/agent/audit.py`); the
+  state keeps every SQL attempt and execution; the correlation ID is the LangSmith run ID.
+  All nodes are now real. See `docs/audit-and-tracing.md`.

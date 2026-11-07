@@ -1,7 +1,7 @@
 """Agent state: everything one question carries through the graph (langgraph-design.md).
 
-Later nodes fill the typed slots; ``steps`` grows by one record per node (LangGraph
-reducer), ready for the audit trail.
+Later nodes fill the typed slots; ``steps`` grows by one record per node, ready for the
+audit trail written by N-11.
 """
 
 import datetime as dt
@@ -18,7 +18,9 @@ from app.core.enums import (
     BlockReason,
     BlockStage,
     Confidence,
+    ExecutionStatus,
     NodeName,
+    QueryKind,
     QuestionStatus,
     RegionCode,
     RoleName,
@@ -83,6 +85,31 @@ class ClarificationRecord(_Frozen):
     answered_at: dt.datetime | None = None
 
 
+class SqlAttempt(_Frozen):
+    """One SQL the LLM produced (for generated_queries)."""
+
+    attempt: int
+    kind: QueryKind
+    sql: str
+    tables_used: list[str]
+    metrics_used: list[str]
+    confidence: Confidence
+    verified_examples: list[str] = []
+
+
+class ExecutionRecord(_Frozen):
+    """One execution of validated SQL (for query_executions)."""
+
+    attempt: int
+    status: ExecutionStatus
+    view_schema: str | None
+    region: RegionCode | None
+    row_count: int | None = None
+    result_bytes: int | None = None
+    latency_ms: int
+    error: str | None = None
+
+
 class BlockedQueryRecord(_Frozen):
     """A refusal, ready for the blocked_queries table (Step 16)."""
 
@@ -144,6 +171,10 @@ class AgentState(BaseModel):
     last_db_error: str | None = None
     low_confidence: bool = False
     blocked: BlockedQueryRecord | None = None
+    sql_attempts: list[SqlAttempt] = []
+    executions: list[ExecutionRecord] = []
+    # False when N-11 could not write the audit trail (the answer is still returned).
+    audit_ok: bool | None = None
     repair_attempts: int = 0
     answer: Answer | None = None
     user_message: str | None = None

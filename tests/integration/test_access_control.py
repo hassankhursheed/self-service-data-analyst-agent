@@ -161,6 +161,16 @@ async def test_admin_has_no_business_data_access(analytics_engine: AsyncEngine) 
     assert err.value.kind == "no_data_access"
 
 
+async def test_array_results_work_without_set_config(analytics_engine: AsyncEngine) -> None:
+    """asyncpg introspects array types; it must not need the revoked set_config()."""
+    result = await _run(
+        analytics_engine,
+        "SELECT array_agg(DISTINCT ship_via ORDER BY ship_via) AS shippers FROM orders",
+        FINANCE,
+    )
+    assert result.rows[0][0] == [1, 2, 3]
+
+
 async def test_row_limit_truncates_results(analytics_engine: AsyncEngine) -> None:
     result = await run_readonly(
         "SELECT order_id FROM orders ORDER BY order_id", FINANCE, 5000, 10, engine=analytics_engine

@@ -56,7 +56,7 @@ class AgentRun(CreatedAtMixin, Base):
     run_number: Mapped[int] = mapped_column(Integer, server_default="1")
     correlation_id: Mapped[uuid.UUID] = mapped_column(Uuid)
     graph_version: Mapped[str] = mapped_column(String(32))
-    prompt_version: Mapped[str] = mapped_column(String(32))
+    prompt_version: Mapped[str] = mapped_column(String(255))
     semantic_version: Mapped[str] = mapped_column(String(32))
     model_name: Mapped[str | None] = mapped_column(String(128))
     final_status: Mapped[str | None] = mapped_column(String(32))

@@ -225,3 +225,17 @@ What was chosen, what was rejected and why. Newest step last.
 | App tables | `app.conversations` and `app.questions` written by `ConversationService` (app role) | Writing them inside graph nodes | The graph stays storage-agnostic; Step 16 adds runs, steps and audit rows. |
 | Windows event loop | Selector loop via the `pytest_asyncio_loop_factories` hook | Proactor (default) | psycopg async does not support the Proactor loop. |
 | Validator fix | `AND` / `OR` connector nodes are not checked as functions | — | Found by the Germany follow-up test: sqlglot models `AND`/`OR` as function-like connector nodes, so `WHERE a AND b` was refused as a forbidden function. Regression tests added. |
+
+## Step 16: Audit Log, Error Records and Tracing
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Where audit is written | N-11 through an injected `AuditSink` (database in the app, memory in unit tests), one transaction per run | Writes spread over every node | One place to reconstruct a question; nodes stay storage-free and testable. |
+| Failure handling | Catch, log with the correlation ID, `audit_ok = false`, still answer | Failing the question | Brief: audit writes must never break the user's answer. |
+| Attempts and executions | Kept in the state (`sql_attempts`, `executions`) and written as `generated_queries` / `query_executions` rows | Only the last SQL | Repairs and their errors must be visible (brief §23). |
+| Trace link | Correlation ID = LangSmith root run ID; stored as `langsmith:<project>/runs/<id>` | A separate trace ID | One ID connects the API response, every table and the trace. |
+| Masking point | Before the graph (question), on answer-prompt rows, and on every audit write | Masking only in the database | Brief §27: sensitive data must not reach the LLM or traces either; the raw value never enters the system. |
+| Masking rules | Regex rules for e-mail, phone, card/bank numbers, IBAN, keys, tokens, passwords; business numbers and dates kept (tested) | Masking all numbers | Questions are full of amounts, years and order IDs that must stay readable. |
+| `prompt_version` | Widened to 255 characters (migration) to hold `name@version` for every prompt | Storing only one prompt's version | Runs must record every prompt version used. |
+| asyncpg introspection | Role-level `jit = off` and telling asyncpg JIT is off, so it never calls `set_config` | Granting `set_config` back | Found by the audit tests: asyncpg toggles JIT with `set_config` before introspecting `uuid[]`; granting it would let a query change its own region. A test proves `array_agg` results work for `analytics_ro`. |
+| Re-run input | `agent_errors.input_snapshot` stores the masked request, clarification answers and thread | Storing the whole state | Enough to re-run (Step 18) without keeping results or secrets. |

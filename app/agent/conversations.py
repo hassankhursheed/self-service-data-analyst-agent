@@ -19,6 +19,7 @@ from app.agent.graph import Agent
 from app.agent.state import AgentRequest, AgentState, ConversationTurn
 from app.core.enums import FINAL_STATUSES, QuestionStatus, RegionCode, RoleName
 from app.core.errors import AppError
+from app.core.masking import mask_text
 from app.db.models import Conversation, Question
 
 MAX_HISTORY_TURNS = 5
@@ -94,7 +95,7 @@ class ConversationService:
     async def start_conversation(self, user: AuthenticatedUser, title: str = "") -> uuid.UUID:
         async with self.sessions() as session, session.begin():
             conversation = Conversation(
-                user_id=user.user_id, title=title[:TITLE_LENGTH] or "New conversation"
+                user_id=user.user_id, title=mask_text(title)[:TITLE_LENGTH] or "New conversation"
             )
             session.add(conversation)
             await session.flush()
@@ -217,7 +218,7 @@ class ConversationService:
                 correlation_id=correlation_id,
                 conversation_id=conversation_id,
                 user_id=user.user_id,
-                question_text=text[:4000],
+                question_text=mask_text(text)[:4000],
                 role_name=user.role.value if user.role else None,
                 region_code=user.region.value if user.region else None,
                 status=QuestionStatus.RECEIVED.value,

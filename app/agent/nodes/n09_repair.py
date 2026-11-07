@@ -9,8 +9,8 @@ from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.nodes.n06_sql_generation import is_low_confidence
 from app.agent.nodes.sql_context import date_range_text, metrics_text, question_text, schema_text
 from app.agent.sql_output import GeneratedSQL, check_against_context
-from app.agent.state import AgentErrorInfo, AgentState
-from app.core.enums import NodeName, QuestionStatus
+from app.agent.state import AgentErrorInfo, AgentState, SqlAttempt
+from app.core.enums import NodeName, QueryKind, QuestionStatus
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.prompts import load_prompt
@@ -63,10 +63,19 @@ def make_repair_node(deps: AgentDeps) -> NodeFn:
             check=lambda generated: check_against_context(generated, context),
         )
         generated = reply.value
+        attempt = SqlAttempt(
+            attempt=len(state.sql_attempts) + 1,
+            kind=QueryKind.REPAIR,
+            sql=generated.sql,
+            tables_used=generated.tables_used,
+            metrics_used=generated.metrics_used,
+            confidence=generated.confidence,
+        )
         return {
             "status": S.SQL_GENERATED,
             "via": [S.REPAIRING],
             "generated": generated,
+            "sql_attempts": [*state.sql_attempts, attempt],
             "repair_attempts": state.repair_attempts + 1,
             "usage": usage_of(budget),
             "low_confidence": state.low_confidence or is_low_confidence(state, generated),

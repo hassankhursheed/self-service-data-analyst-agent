@@ -22,6 +22,7 @@ from app.agent.state import AgentState, Answer
 from app.core.enums import Confidence, NodeName, QuestionStatus
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
+from app.core.masking import mask_text
 from app.core.prompts import load_prompt
 from app.db.analytics import QueryResult
 
@@ -46,7 +47,8 @@ def format_value(value: Any) -> str:  # noqa: ANN401 (result cells have any SQL 
 
 
 def rows_text(result: QueryResult, limit: int) -> str:
-    lines = [" | ".join(format_value(v) for v in row) for row in result.rows[:limit]]
+    """Top rows for the LLM, with personal values such as phone numbers masked (section 27)."""
+    lines = [mask_text(" | ".join(format_value(v) for v in row)) for row in result.rows[:limit]]
     return "\n".join(lines)
 
 

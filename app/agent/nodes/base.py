@@ -13,6 +13,7 @@ from app.agent.state import AgentErrorInfo, AgentState, StepRecord
 from app.agent.transitions import IllegalTransition, check_transition
 from app.core.enums import NodeName, QuestionStatus
 from app.core.errors import AppError
+from app.core.masking import mask_text
 
 NodeUpdate = dict[str, Any]
 NodeFn = Callable[[AgentState], Awaitable[NodeUpdate]]
@@ -21,15 +22,16 @@ _MAX_TEXT = 200
 
 
 def summarize(value: Any) -> Any:  # noqa: ANN401 (summaries are any JSON-like value)
-    """Small, log-safe summary of a value for the step record (long text is cut)."""
+    """Small, log-safe summary for the step record: secrets masked, long text cut."""
     if isinstance(value, BaseModel):
         return summarize(value.model_dump(mode="json"))
     if isinstance(value, dict):
         return {str(k): summarize(v) for k, v in value.items()}
     if isinstance(value, list | tuple):
         return [summarize(v) for v in value[:10]] + (["..."] if len(value) > 10 else [])
-    if isinstance(value, str) and len(value) > _MAX_TEXT:
-        return value[:_MAX_TEXT] + "..."
+    if isinstance(value, str):
+        value = mask_text(value)
+        return value[:_MAX_TEXT] + "..." if len(value) > _MAX_TEXT else value
     if isinstance(value, int | float | bool) or value is None:
         return value
     return str(value)
