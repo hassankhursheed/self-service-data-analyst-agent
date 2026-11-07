@@ -32,6 +32,11 @@ class ConversationNotFound(AppError):
     user_message = "Conversation not found."
 
 
+class NoPendingClarification(AppError):
+    code = "NO_PENDING_CLARIFICATION"
+    user_message = "This conversation is not waiting for a clarification."
+
+
 class ConversationSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -151,15 +156,20 @@ class ConversationService:
         user: AuthenticatedUser,
         question: str,
         conversation_id: uuid.UUID | None = None,
+        *,
+        correlation_id: uuid.UUID | None = None,
     ) -> AgentState:
-        """Ask a new question, or a follow-up when ``conversation_id`` is given."""
+        """Ask a new question, or a follow-up when ``conversation_id`` is given.
+
+        ``correlation_id`` is the API request's ID, so the HTTP response, the audit rows and
+        the trace share one ID."""
         if conversation_id is None:
             conversation_id = await self.start_conversation(user, question)
         async with self.sessions() as session:
             await self._owned(session, user, conversation_id)
         thread_id = thread_id_for(user.user_id, conversation_id)
         history = await self._history(thread_id)
-        correlation_id = uuid.uuid4()
+        correlation_id = correlation_id or uuid.uuid4()
         question_id = await self._record_question(user, conversation_id, correlation_id, question)
         request = AgentRequest(
             username=user.username,
@@ -181,8 +191,13 @@ class ConversationService:
         """Answer the pending clarifying question of the user's own conversation."""
         async with self.sessions() as session:
             await self._owned(session, user, conversation_id)
-        state = await self.agent.resume(thread_id_for(user.user_id, conversation_id), reply)
-        question_id = await self._question_id(state)
+        thread_id = thread_id_for(user.user_id, conversation_id)
+        if not await self.agent.has_thread(thread_id):
+            raise NoPendingClarification(f"no thread for conversation {conversation_id}")
+        if not (await self.agent.state(thread_id)).awaiting_reply:
+            raise NoPendingClarification(f"conversation {conversation_id} is not paused")
+        state = await self.agent.resume(thread_id, reply)
+        question_id = await self.question_id_for(state)
         if question_id is not None:
             await self._finish_question(question_id, state)
         return state
@@ -219,7 +234,18 @@ class ConversationService:
             await session.flush()
             return question.id
 
-    async def _question_id(self, state: AgentState) -> uuid.UUID | None:
+    async def latest_state(
+        self, user: AuthenticatedUser, conversation_id: uuid.UUID
+    ) -> AgentState | None:
+        """The checkpointed state of the conversation's latest question (owner only)."""
+        async with self.sessions() as session:
+            await self._owned(session, user, conversation_id)
+        thread_id = thread_id_for(user.user_id, conversation_id)
+        if not await self.agent.has_thread(thread_id):
+            return None
+        return await self.agent.state(thread_id)
+
+    async def question_id_for(self, state: AgentState) -> uuid.UUID | None:
         if state.correlation_id is None:
             return None
         async with self.sessions() as session:

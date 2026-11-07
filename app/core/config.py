@@ -83,6 +83,25 @@ class AuthConfig(BaseModel):
     min_password_length: int = Field(ge=8)
 
 
+class RateLimitConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    questions_per_minute: int = Field(gt=0)
+    logins_per_minute_per_ip: int = Field(gt=0)
+
+
+class ApiConfig(BaseModel):
+    """HTTP API settings (``api`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    version: str
+    cors_origins: list[str]
+    rate_limits: RateLimitConfig
+    default_page_size: int = Field(gt=0)
+    max_page_size: int = Field(gt=0)
+
+
 class Settings(BaseSettings):
     """All settings for the application, validated at startup."""
 
@@ -103,6 +122,7 @@ class Settings(BaseSettings):
     data_setup: DataSetupConfig
     analytics: AnalyticsConfig
     auth: AuthConfig
+    api: ApiConfig
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"

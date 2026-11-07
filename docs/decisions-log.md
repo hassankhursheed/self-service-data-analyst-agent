@@ -252,3 +252,23 @@ What was chosen, what was rejected and why. Newest step last.
 | Admin rules | Admin-only service methods; username pattern; password length from config; sales managers need exactly one region; admins cannot disable themselves | Validation only in the API | The same rules apply whatever calls the service (API, scripts, tests). |
 | Audit | `login`, `login_failed` (with reason), `user_created`, `user_disabled`, `user_enabled`, `password_reset`, `role_assigned` in `audit_log` | Separate auth log | One audit trail for the monitoring view (brief §8, §23). |
 | Shared identity | `AuthenticatedUser` moved to `app/auth/models.py` | Defined in the conversation service | Auth, API and agent use one model. |
+
+## Step 18: FastAPI Endpoints
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| App structure | `create_app(settings, agent_deps=, checkpointer=)` factory; one lifespan opens the engine, PostgreSQL checkpointer, agent and services and closes them | Module-level globals | Tests build an app with a scripted LLM and in-memory checkpointer; production uses the real wiring. |
+| Correlation ID | Middleware accepts a valid UUID from `X-Correlation-ID` or creates one; header and every body carry it; passed to the agent as the run ID | Separate request and run IDs | One ID links the HTTP response, audit rows and the LangSmith trace (brief §22). Invalid client values are replaced, not trusted. |
+| `/clarify` correlation ID | The response uses the paused question's ID | A new ID per HTTP call | The resumed run is the same question, so header, body, audit and trace match. |
+| `/clarify` body | `{conversation_id, answer}` | `{question_id, clarification_id, answer}` (design draft) | One pending clarification per conversation thread; the owner check on the conversation is enough. api-design.md updated. |
+| Error shape | `{correlation_id, error: {code, message}}`; status from the stable code; unknown errors become a generic 500 in the middleware | FastAPI default `{detail}`; returning exception text | No stack traces or internal details reach the client (brief §22); the error is logged with the correlation ID. |
+| No role / admin on `/ask` | The agent runs (and audits the rejection), then the API returns 403 `NO_ROLE` / `ADMIN_ONLY` | Refusing before the agent | Every refused question still leaves an audit trail. Empty or too-long questions become 400 the same way. |
+| Blocked / failed answers | 200 with `status` and a plain message | HTTP errors | Agent outcomes are not request errors (api-design.md). |
+| Feedback | Built now: one rating per user and question, updated on resend; only for own questions | Waiting for Step 20 | The endpoint is listed in §19 and the table exists; the review queue comes in Step 20. |
+| Re-run | Claims the error (`open` -> `rerun`) atomically, reloads the original user's current role, region and active flag, runs the masked logged question, audits `error_rerun`; 409 if already re-run | Running as the admin; re-using the old identity snapshot | A re-run never gives more access than the user has today, and cannot be triggered twice. |
+| Later-step routes | Defined with their final models and return 501 | Leaving them out | The OpenAPI contract is complete for the UI; behaviour arrives in its step. |
+| Rate limits | In-memory sliding window: 20 questions per minute per user, 10 logins per minute per IP (config) | Redis; no limits | Enough for one API process; documented as a limitation. |
+| CORS | Only the UI origin from `config/app.yaml` (default `http://localhost:3000`); `X-Correlation-ID` exposed | `*` | The browser may only call the API from the UI. |
+| Conversation detail | Question list plus the full response of the latest question | Full response for every question | The checkpointer keeps only the latest state per thread; earlier answers are reconstructable from the audit tables later if needed. |
+| Region in user models | One `region` field | `regions: [...]` (design draft) | The data model and Step 17 service use one region per sales manager. |
+

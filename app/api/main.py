@@ -1,0 +1,91 @@
+"""FastAPI application factory (brief §19). Run with ``python scripts/run_api.py``.
+
+The lifespan opens the database engine, the PostgreSQL checkpointer and the agent once,
+and closes them on shutdown. Tests pass their own agent dependencies and checkpointer.
+"""
+
+from collections.abc import AsyncIterator
+from contextlib import AsyncExitStack, asynccontextmanager
+from typing import Any
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from langgraph.checkpoint.base import BaseCheckpointSaver
+
+from app.agent.conversations import ConversationService
+from app.agent.deps import AgentDeps, default_deps
+from app.agent.graph import Agent
+from app.agent.memory import postgres_checkpointer
+from app.api.deps import Services
+from app.api.errors import install_error_handlers
+from app.api.middleware import HEADER, CorrelationIdMiddleware
+from app.api.ratelimit import SlidingWindowLimiter
+from app.api.routes import admin, public, questions
+from app.auth.service import AuthService
+from app.auth.tokens import TokenService
+from app.core.config import Settings, get_settings
+from app.db.session import create_app_engine, create_session_factory
+from app.services.feedback import FeedbackService
+from app.services.review import ReviewService
+from app.services.users import UserAdminService
+
+
+def create_app(
+    settings: Settings | None = None,
+    *,
+    agent_deps: AgentDeps | None = None,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
+) -> FastAPI:
+    settings = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        async with AsyncExitStack() as stack:
+            engine = create_app_engine(settings)
+            stack.push_async_callback(engine.dispose)
+            sessions = create_session_factory(engine)
+            saver = checkpointer or await stack.enter_async_context(postgres_checkpointer(settings))
+            agent = Agent(agent_deps or default_deps(), saver)
+            conversations = ConversationService(agent, sessions)
+            tokens = TokenService(
+                settings.jwt_secret_key.get_secret_value(), settings.auth,
+                production=settings.app_env == "production",
+            )  # fmt: skip
+            auth = AuthService(sessions, tokens)
+            limits = settings.api.rate_limits
+            app.state.auth = auth
+            app.state.services = Services(
+                api=settings.api,
+                engine=engine,
+                sessions=sessions,
+                auth=auth,
+                conversations=conversations,
+                users=UserAdminService(sessions, settings.auth),
+                feedback=FeedbackService(sessions),
+                review=ReviewService(sessions, conversations),
+                question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
+                login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
+            )
+            yield
+
+    app = FastAPI(
+        title=settings.app.name,
+        version=settings.api.version,
+        description="Governed text-to-SQL assistant for Northwind Traders (fictional data).",
+        lifespan=lifespan,
+    )
+    install_error_handlers(app)
+    # Order matters: CORS is added last so it wraps everything, including error bodies.
+    app.add_middleware(CorrelationIdMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.api.cors_origins),
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", HEADER],
+        expose_headers=[HEADER],
+    )
+    app.include_router(public.router)
+    app.include_router(questions.router)
+    app.include_router(admin.router)
+    return app
