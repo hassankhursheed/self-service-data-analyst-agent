@@ -13,7 +13,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.conversations import ConversationSummary, QuestionSummary
-from app.agent.response import AgentResponse
+from app.agent.response import AgentResponse, TablePage
 from app.auth.models import AuthenticatedUser
 from app.core.enums import (
     CaseType,
@@ -60,6 +60,10 @@ class LoginResponse(Envelope):
     user: AuthenticatedUser
 
 
+class MeResponse(Envelope):
+    user: AuthenticatedUser
+
+
 class HealthResponse(Envelope):
     status: Literal["ok", "degraded"]
     database: Literal["ok", "down"]
@@ -94,6 +98,10 @@ class ConversationDetailResponse(Envelope):
     questions: list[QuestionSummary]
     # Full response of the latest question (the checkpointer keeps only the latest state).
     latest: AgentResponse | None
+
+
+class TablePageResponse(Envelope):
+    table: TablePage | None
 
 
 class FeedbackRequest(ApiRequest):

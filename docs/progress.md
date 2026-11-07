@@ -20,7 +20,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 16: Audit Log, Error Records and Tracing (Week 2, brief sections 22, 23)
 - [x] Step 17: Authentication and User Management (Week 3, brief section 8)
 - [x] Step 18: FastAPI Endpoints (Week 3, brief sections 19, 22)
-- [ ] Step 19: User Interface (guide received; plan first)
+- [x] Step 19: User Interface (Week 3, brief section 20)
 - [ ] Step 20: Verified Query Library and Feedback Loop (guide received)
 - [ ] Step 21: (title added when the guide arrives)
 - [ ] Step 22: (title added when the guide arrives)
@@ -31,7 +31,14 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 19 to 26 (guides for Steps 19-20 received; Step 19 needs a plan first).
+- Steps 20 to 26 (guide for Step 20 received).
+- UI placeholders to fill: Admin › Monitoring, Review (verify / correct queries,
+  not-helpful answers) and Evaluation (Steps 20-22).
+- Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
+  screenshots in `docs/screenshots/` (only `01-login.jpg` so far). Done once after Step 22,
+  when Monitoring, Review and Evaluation are filled in: the user signs in as
+  `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
+  not read demo passwords), then every screen is exercised and captured.
 - API endpoints that return 501 until their step: `GET /admin/metrics` (dashboard),
   `GET/POST /admin/verified-queries` (Step 20), `POST /admin/eval/run` and
   `GET /admin/eval/runs` (evaluation). Their final request and response models exist.

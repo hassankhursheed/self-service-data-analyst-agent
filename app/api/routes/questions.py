@@ -1,10 +1,11 @@
 """Questions, clarifications, conversations and feedback (logged-in users)."""
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
-from app.agent.response import build_response
+from app.agent.response import build_response, table_page
 from app.agent.state import AgentState
 from app.api.deps import CorrelationId, PagingDep, ServicesDep
 from app.api.errors import ApiError, error_responses
@@ -16,6 +17,7 @@ from app.api.schemas import (
     ConversationList,
     FeedbackRequest,
     FeedbackResponse,
+    TablePageResponse,
 )
 from app.auth.dependencies import CurrentUser
 from app.core.enums import BlockReason, QuestionStatus
@@ -103,6 +105,19 @@ async def get_conversation(
         questions=detail.questions,
         latest=build_response(latest) if latest is not None and latest.status else None,
     )
+
+
+@router.get("/conversations/{conversation_id}/table", response_model=TablePageResponse,
+            responses=ERRORS)  # fmt: skip
+async def latest_table_page(
+    conversation_id: uuid.UUID, user: CurrentUser, services: ServicesDep,
+    correlation_id: CorrelationId, page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> TablePageResponse:  # fmt: skip
+    """One page of the latest question's result rows (the table in the UI is paginated)."""
+    latest = await services.conversations.latest_state(user, conversation_id)
+    table = table_page(latest, page, page_size) if latest is not None else None
+    return TablePageResponse(correlation_id=correlation_id, table=table)
 
 
 @router.post("/feedback", response_model=FeedbackResponse, responses=ERRORS)

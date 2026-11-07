@@ -69,6 +69,9 @@ python -m scripts.seed          # migrations, date shift, regions, users, roles,
 alembic upgrade head            # migrations only (the seed also runs them)
 python scripts/generate_erd.py  # after changing models
 python scripts/run_api.py       # API on http://127.0.0.1:8000 (docs at /docs)
+npm --prefix ui install         # once; then: npm --prefix ui run dev (http://localhost:3000)
+npm --prefix ui run lint && npm --prefix ui run typecheck && npm --prefix ui test
+docker compose --profile app up -d --build   # whole stack: db + api + ui
 pytest                          # integration tests skip if the database is down
 ruff check .
 ruff format --check .

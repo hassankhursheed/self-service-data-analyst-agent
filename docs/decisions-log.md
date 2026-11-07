@@ -272,3 +272,19 @@ What was chosen, what was rejected and why. Newest step last.
 | Conversation detail | Question list plus the full response of the latest question | Full response for every question | The checkpointer keeps only the latest state per thread; earlier answers are reconstructable from the audit tables later if needed. |
 | Region in user models | One `region` field | `regions: [...]` (design draft) | The data model and Step 17 service use one region per sales manager. |
 
+## Step 19: User Interface
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Framework | Next.js 16 (App Router) + React 19 + TypeScript (strict) + Tailwind CSS 4, exact versions pinned, each at least two weeks old | Streamlit; a plain Vite SPA | User decision (polished, responsive UI); server routes let the token stay out of the browser. |
+| Token handling | Next.js server routes; token in an `httpOnly`, `SameSite=Strict` (`Secure` in production) cookie; the browser gets only the user | Token in `localStorage`; calling the API from the browser | No script can read the token (XSS cannot steal it); the API is never exposed to the browser and needs no CORS for the UI. |
+| Proxy scope | Allow-list of the API paths the UI uses; same-origin JSON required for writes | Forwarding every path | Smallest surface; CSRF protection on top of SameSite. |
+| Identity in the header | `GET /auth/me` (new) on every page load | Role stored in a cookie or in local state | A changed role or a disabled account applies immediately and cannot be faked in the browser. |
+| Admin pages | Hidden in the navigation, refused by the server-side admin layout, and 403 from the API | Hiding links only | Defence in depth; non-admins never receive admin pages. |
+| Admins on Ask | Redirected to the admin pages | Showing the Ask screen with a 403 | Business questions are off for admins (brief §8); a dead screen confuses. |
+| Result paging | `GET /conversations/{id}/table` (new) pages the latest question's stored rows | Re-running the query per page; sending all rows | No extra query or LLM call; keeps responses small. |
+| Charts | Recharts with theme-aware colours, drawing the API's chart spec | Plotly | Lighter and React-native; the API already chooses the chart type. |
+| Docker | `api` and `ui` services in the `app` profile; the API entrypoint swaps the database host in the `.env` URLs to `db:5432`; images run as non-root with health checks; Python versions pinned by `docker/constraints.txt` | Always starting everything; duplicating URLs with passwords in compose | `docker compose up -d` stays database-only for tests; no secrets in compose files. |
+| Tests | Vitest + Testing Library: chart choice, outcome messages, clarification, feedback, role-based navigation, proxy token handling, allow-list, CSRF, login cookie | Browser end-to-end tests | Fast and deterministic; the end-to-end checks are done manually with screenshots. |
+| Rate limit of logins | Unchanged (per client IP at the API) | Forwarding `X-Forwarded-For` | Behind the UI all logins come from the UI server, so the limit is effectively per UI instance; trusting a client header would let anyone bypass it. Documented. |
+

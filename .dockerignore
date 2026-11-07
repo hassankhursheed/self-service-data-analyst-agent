@@ -1,0 +1,15 @@
+# Build context for docker/api.Dockerfile: never send secrets or local state.
+.env
+.env.*
+!.env.example
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+.mypy_cache
+.ruff_cache
+ui
+data
+docs
+tests
+eval

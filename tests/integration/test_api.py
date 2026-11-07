@@ -156,7 +156,7 @@ async def test_every_protected_route_refuses_missing_invalid_and_expired_tokens(
     ]
     async with running(app) as client:
         routes = protected_routes(app)
-        assert len(routes) == 17
+        assert len(routes) == 19
         for method, path in routes:
             for headers, code in cases:
                 response = await client.request(method, path, headers=headers, json={})
@@ -365,10 +365,26 @@ async def test_conversations_are_listed_and_opened_for_their_owner_only(
         assert_correlated(detail)
         assert [q["question"] for q in detail.json()["questions"]] == ["How many orders?"]
         assert detail.json()["latest"]["status"] == "ANSWERED"
+        table = await client.get(
+            f"/conversations/{conversation_id}/table",
+            params={"page": 1, "page_size": 10},
+            headers=finance,
+        )
+        assert table.status_code == 200
+        assert table.json()["table"]["rows"] == [[830]]
+        assert table.json()["table"]["total_pages"] == 1
+        me = await client.get("/auth/me", headers=finance)
+        assert me.json()["user"]["role"] == "finance_analyst"
+        assert_correlated(me)
 
         operations = await login(client, settings, "operations")
         assert_error(
             await client.get(f"/conversations/{conversation_id}", headers=operations),
+            404,
+            "NOT_FOUND",
+        )
+        assert_error(
+            await client.get(f"/conversations/{conversation_id}/table", headers=operations),
             404,
             "NOT_FOUND",
         )
