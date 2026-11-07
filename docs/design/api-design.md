@@ -33,7 +33,9 @@ endpoints are async; request and response bodies are Pydantic models.
 | 401 | Missing, invalid or expired token; wrong password; disabled user | `INVALID_TOKEN`, `TOKEN_EXPIRED`, `INVALID_CREDENTIALS` |
 | 403 | Logged in but not allowed (no role, not admin, someone else's conversation) | `NO_ROLE`, `ADMIN_ONLY`, `FORBIDDEN` |
 | 404 | Resource not found (or not owned by the caller) | `NOT_FOUND` |
+| 409 | Conflict (already re-run, no pending clarification, username taken) | `CONFLICT`, `NO_PENDING_CLARIFICATION`, `USERNAME_TAKEN` |
 | 429 | Rate limit exceeded | `RATE_LIMITED` |
+| 501 | Endpoint built in a later step | `NOT_IMPLEMENTED` |
 | 500 | Unexpected server error (no stack trace is returned) | `INTERNAL_ERROR` |
 
 Login failures return the same `INVALID_CREDENTIALS` for an unknown user, a wrong
@@ -102,13 +104,15 @@ password and a disabled account, so the API does not reveal which usernames exis
 
 ### `POST /clarify`
 - **Access:** logged-in user; only the owner of the question.
-- **Request:** `ClarifyRequest {question_id: UUID, clarification_id: int, answer: str}` (one of the offered options or free text, same length limits).
-- **Response:** `200 AskResponse` (the run resumes from `CLARIFICATION_NEEDED`).
-- **Errors:** 400, 401, 403, 404 (no open clarification), 429, 500.
+- **Request:** `ClarifyRequest {conversation_id: UUID, answer: str}` (one of the offered options or free text, same length limits). A conversation has at most one paused question, so the conversation identifies it.
+- **Response:** `200 AskResponse` (the run resumes from `CLARIFICATION_NEEDED`). The correlation ID is the paused question's, so it matches its audit rows and trace.
+- **Errors:** 400, 401, 404 (not the caller's conversation), 409 `NO_PENDING_CLARIFICATION`, 429, 500.
 
 ```json
-{"question_id": "c3a0e9b2-...", "clarification_id": 12, "answer": "By revenue, for 2024"}
+{"conversation_id": "0b7d4c1a-...", "answer": "By revenue, for 2024"}
 ```
+
+Design change (Step 18): the draft used `{question_id, clarification_id, answer}`.
 
 ### `GET /conversations`
 - **Access:** logged-in user; own conversations only.
@@ -123,7 +127,7 @@ password and a disabled account, so the API does not reveal which usernames exis
 ### `GET /conversations/{id}`
 - **Access:** logged-in user; own conversation only (others return 404).
 - **Request:** path `id`.
-- **Response:** `200 ConversationDetail {correlation_id, id, title, questions: [AskResponse]}`
+- **Response:** `200 ConversationDetail {correlation_id, id, title, questions: [{id, correlation_id, question, status, created_at}], latest: AskResponse | null}` (the checkpointer keeps the full state of the latest question only).
 - **Errors:** 401, 404, 500.
 
 ```json

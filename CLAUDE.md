@@ -68,6 +68,7 @@ python scripts/db_check.py      # row counts of every Northwind table
 python -m scripts.seed          # migrations, date shift, regions, users, roles, views, semantic layer
 alembic upgrade head            # migrations only (the seed also runs them)
 python scripts/generate_erd.py  # after changing models
+python scripts/run_api.py       # API on http://127.0.0.1:8000 (docs at /docs)
 pytest                          # integration tests skip if the database is down
 ruff check .
 ruff format --check .

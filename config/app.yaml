@@ -36,3 +36,14 @@ auth:
   access_token_minutes: 60
   issuer: northwind-data-analyst
   min_password_length: 10
+
+# HTTP API (app/api, docs/api.md).
+api:
+  version: "0.1.0"
+  # Browser origins allowed by CORS (the Next.js UI).
+  cors_origins: ["http://localhost:3000"]
+  rate_limits:
+    questions_per_minute: 20
+    logins_per_minute_per_ip: 10
+  default_page_size: 20
+  max_page_size: 100
