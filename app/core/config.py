@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Literal
 
 from psycopg.conninfo import make_conninfo
-from pydantic import BaseModel, ConfigDict, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -72,6 +72,17 @@ class AnalyticsConfig(BaseModel):
     default_row_limit: int
 
 
+class AuthConfig(BaseModel):
+    """Login and token settings (``auth`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    jwt_algorithm: Literal["HS256", "HS384", "HS512"]
+    access_token_minutes: int = Field(gt=0, le=24 * 60)
+    issuer: str = Field(min_length=1)
+    min_password_length: int = Field(ge=8)
+
+
 class Settings(BaseSettings):
     """All settings for the application, validated at startup."""
 
@@ -91,6 +102,7 @@ class Settings(BaseSettings):
     database: DatabasePoolConfig = DatabasePoolConfig()
     data_setup: DataSetupConfig
     analytics: AnalyticsConfig
+    auth: AuthConfig
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"
