@@ -26,7 +26,9 @@ Locked down for everyone (`PUBLIC`):
 - All rights on schemas `public` and `analytics` and their tables are revoked; the
   roles have no `CREATE` anywhere, so they cannot create tables, views or functions.
 - `EXECUTE` on `pg_catalog.set_config(text, text, boolean)` is revoked, so a query cannot
-  rewrite its own session settings from inside a `SELECT`.
+  rewrite its own session settings from inside a `SELECT`. Both login roles run with
+  `jit = off`, and the engines tell asyncpg so it never needs `set_config` for type
+  introspection (docs/audit-and-tracing.md).
 
 ## Secure views
 

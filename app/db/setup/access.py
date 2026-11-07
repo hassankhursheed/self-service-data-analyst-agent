@@ -132,6 +132,9 @@ def setup_database_access(
             "ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA checkpoints "
             "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {app}",
             # Analytics role: read-only by default, with a backstop timeout.
+            # JIT off: asyncpg would otherwise call the revoked set_config() to toggle it.
+            "ALTER ROLE {app} SET jit = off",
+            "ALTER ROLE {ro} SET jit = off",
             "ALTER ROLE {ro} SET default_transaction_read_only = on",
             "ALTER ROLE {ro} SET statement_timeout = {timeout}",
         ):

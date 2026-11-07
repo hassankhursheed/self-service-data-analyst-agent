@@ -1,8 +1,8 @@
 """N-02 Input Guardrails: rule-based checks before any LLM call (app/safety/guardrails.py)."""
 
 from app.agent.nodes.base import NodeUpdate, agent_node
-from app.agent.state import AgentState
-from app.core.enums import NodeName, QuestionStatus
+from app.agent.state import AgentState, BlockedQueryRecord
+from app.core.enums import BlockStage, NodeName, QuestionStatus
 from app.core.errors import AppError
 from app.safety.guardrails import check_input
 
@@ -18,4 +18,11 @@ async def input_guardrails(state: AgentState) -> NodeUpdate:
     else:
         update["user_message"] = result.user_message
         update["block_reason"] = result.reason_code
+        if result.status is QuestionStatus.BLOCKED and result.reason_code is not None:
+            update["blocked"] = BlockedQueryRecord(
+                stage=BlockStage.INPUT_GUARDRAIL,
+                reason_code=result.reason_code,
+                reason_text=result.user_message or "",
+                detail=result.matched_rule,
+            )
     return update

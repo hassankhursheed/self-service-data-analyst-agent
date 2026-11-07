@@ -14,14 +14,17 @@ from langchain_core.messages import BaseMessage
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.agent.audit import AuditSink, DatabaseAuditSink, MemoryAuditSink
 from app.agent.config import AgentConfig, get_agent_config
 from app.agent.state import AgentState, Usage
 from app.core.config import Settings, get_settings
 from app.core.context import UserContext
+from app.core.enums import RoleName
 from app.core.llm import BudgetTracker, LLMClient, LLMConfig, create_llm_client, get_llm_config
 from app.core.prompts import load_prompt
 from app.db.analytics import QueryResult, run_readonly
-from app.db.session import create_analytics_engine
+from app.db.session import create_analytics_engine, create_app_engine, create_session_factory
+from app.safety.access_policy import get_access_policy
 from app.safety.sql_policy import SqlPolicy, get_sql_policy
 from app.semantic.calendar import CalendarConfig, load_calendar
 from app.semantic.catalog import load_active_semantic_layer
@@ -44,6 +47,7 @@ class AgentDeps:
     sql_policy: SqlPolicy
     statement_timeout_ms: int
     row_limit: int
+    audit: AuditSink = field(default_factory=MemoryAuditSink)
     sleep: Sleep = field(default=asyncio.sleep)
 
     def budget_for(self, state: AgentState) -> BudgetTracker:
@@ -55,6 +59,10 @@ class AgentDeps:
             spent_output_tokens=state.usage.output_tokens,
             spent_cost_usd=state.usage.cost_usd,
         )
+
+    def view_schema(self, role: RoleName) -> str | None:
+        """The secure-view schema the role's queries run against (recorded in the audit)."""
+        return get_access_policy().roles[role].view_schema
 
     def system_messages(self) -> list[BaseMessage]:
         prompt = load_prompt("system", self.llm_config.prompts["system"])
@@ -104,7 +112,13 @@ def analytics_executor(settings: Settings) -> Executor:
 def default_deps() -> AgentDeps:
     """Production wiring: real LLM, database semantic layer and read-only executor."""
     settings = get_settings()
+    llm_config = get_llm_config()
     return AgentDeps(
+        audit=DatabaseAuditSink(
+            create_session_factory(create_app_engine(settings)),
+            model_name=llm_config.model,
+            trace_project=settings.langsmith_project,
+        ),
         llm=create_llm_client(settings),
         llm_config=get_llm_config(),
         agent_config=get_agent_config(),

@@ -79,7 +79,7 @@ class EvalRun(TimestampMixin, Base):
     model_name: Mapped[str] = mapped_column(String(128))
     temperature: Mapped[Decimal] = mapped_column(Numeric(3, 2))
     graph_version: Mapped[str] = mapped_column(String(32))
-    prompt_version: Mapped[str] = mapped_column(String(32))
+    prompt_version: Mapped[str] = mapped_column(String(255))
     semantic_version: Mapped[str] = mapped_column(String(32))
     verified_examples_enabled: Mapped[bool] = mapped_column(Boolean)
     reference_date: Mapped[date] = mapped_column(Date)
