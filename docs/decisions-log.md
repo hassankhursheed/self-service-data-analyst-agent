@@ -288,3 +288,19 @@ What was chosen, what was rejected and why. Newest step last.
 | Tests | Vitest + Testing Library: chart choice, outcome messages, clarification, feedback, role-based navigation, proxy token handling, allow-list, CSRF, login cookie | Browser end-to-end tests | Fast and deterministic; the end-to-end checks are done manually with screenshots. |
 | Rate limit of logins | Unchanged (per client IP at the API) | Forwarding `X-Forwarded-For` | Behind the UI all logins come from the UI server, so the limit is effectively per UI instance; trusting a client header would let anyone bypass it. Documented. |
 
+## Step 20: Verified Query Library and Feedback Loop
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Similarity | Keyword cosine similarity over token sets (same tokenising as the semantic retriever, small stop-word list), `min_score` 0.4, at most 3 examples (config) | Embeddings and a vector index | The library is tens of short, domain-specific questions; token overlap finds the right one, is deterministic and explainable, and needs no model or service. `similarity()` can be swapped later. |
+| Access control for examples | Offered only if enabled, the role is listed, **and** the SQL passes the validator for the user's role against today's semantic layer | Trusting the stored roles only | Examples never bypass access control, even after a role or the semantic layer changes. |
+| Saving rules | SQL validated for every allowed role; tables taken from the validator; allowed roles never wider than the metrics' roles; business roles only | Free-form saving | Brief: corrected SQL must pass the validator; a finance-only example must not reach sales. |
+| Versioning | Correction = new version in the lineage; one enabled version per lineage (partial unique index); enabling re-validates | Editing in place | History is kept and auditable; runs record which version they used. |
+| Seed | 18 examples in `config/verified_queries.yaml`; lineage `uuid5(key)`; only missing lineages are inserted | Re-writing on every seed | Admin corrections and disabled examples survive a re-seed. Every example is checked against the validator and the data. |
+| Prompt | `sql_generation` v2 with a "Verified examples" block; follow patterns but use this question's period and filters | Copying example SQL | Dates in examples are illustrations; the resolved period stays authoritative. |
+| Failure handling | A library loading problem is logged; the question continues without examples | Failing the question | Examples are guidance, not a dependency. |
+| Review list | One `GET /admin/review` merging open not-helpful answers, blocked queries and open failures, newest first | Separate screens only | Brief §16 / guide: one list; the older `/admin/blocked` and `/admin/errors` stay for filtering. |
+| Eval cases from feedback | Dataset `review-cases`, key `FB-<feedback id>`, expected SQL validated for the asking user's role; feedback becomes `converted` (409 on repeat) | Writing to the YAML eval file | Cases stay traceable to their feedback; Step 22 decides how datasets are exported. |
+| Feedback link | `feedback.run_id` = latest run of the question (migration) | Question only | Guide: feedback is linked to the question and its run. |
+| Graph version | 0.5.0 | — | N-05 / N-06 behaviour changed (recorded with every run). |
+

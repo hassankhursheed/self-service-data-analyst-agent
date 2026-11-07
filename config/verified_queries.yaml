@@ -1,0 +1,285 @@
+# Seeded verified query library (brief §16, docs/verified-queries.md).
+#
+# Each example is a question with SQL that an analyst checked against the data. The seed
+# loads them into app.verified_queries (version 1 of a lineage keyed by `key`); admins add
+# and correct examples in the Review screen afterwards. Rules:
+# - SQL uses plain table names and only columns the semantic layer describes; it must pass
+#   the SQL validator for every role in allowed_roles (tested).
+# - allowed_roles is never wider than what the metrics used allow (tested).
+# - Dates are examples of the pattern; the agent always uses the question's own period.
+# - Verified examples are guidance only: generated SQL is still validated and runs under
+#   the user's role and region.
+version: 1
+
+examples:
+  - key: revenue-last-quarter
+    question: What was our total revenue last quarter?
+    description: Sums order revenue (after discounts) for orders placed in Q1 2025.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      WHERE o.order_date BETWEEN '2025-01-01' AND '2025-03-31'
+
+  - key: monthly-revenue-year
+    question: Show monthly revenue for 2024
+    description: Revenue per calendar month for orders placed in 2024.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT date_trunc('month', o.order_date)::date AS month,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY 1
+      ORDER BY 1
+
+  - key: top-products-by-revenue
+    question: Top 5 products by revenue in 2024
+    description: The five products with the highest revenue from orders placed in 2024.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT p.product_name,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN products p ON p.product_id = od.product_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY p.product_name
+      ORDER BY revenue DESC
+      LIMIT 5
+
+  - key: revenue-by-category
+    question: Revenue by product category in 2024
+    description: Revenue per product category for orders placed in 2024.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT c.category_name,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN products p ON p.product_id = od.product_id
+      JOIN categories c ON c.category_id = p.category_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY c.category_name
+      ORDER BY revenue DESC
+
+  - key: top-customers-by-revenue
+    question: Who were our top 10 customers by revenue in 2024?
+    description: The ten customers with the highest revenue from orders placed in 2024.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT cu.company_name,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN customers cu ON cu.customer_id = o.customer_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY cu.company_name
+      ORDER BY revenue DESC
+      LIMIT 10
+
+  - key: revenue-by-country
+    question: Total revenue by customer country in 2024
+    description: Revenue per customer country for orders placed in 2024.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT cu.country,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN customers cu ON cu.customer_id = o.customer_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY cu.country
+      ORDER BY revenue DESC
+
+  - key: quarter-over-quarter-product-drop
+    question: Which five products lost the most revenue last quarter compared with the quarter before?
+    description: Revenue per product in Q1 2025 minus Q4 2024; the five largest drops.
+    metrics: [revenue]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT p.product_name,
+             SUM(CASE WHEN o.order_date BETWEEN '2025-01-01' AND '2025-03-31'
+                      THEN od.unit_price * od.quantity * (1 - od.discount) ELSE 0 END) AS revenue_last_quarter,
+             SUM(CASE WHEN o.order_date BETWEEN '2024-10-01' AND '2024-12-31'
+                      THEN od.unit_price * od.quantity * (1 - od.discount) ELSE 0 END) AS revenue_previous_quarter,
+             SUM(CASE WHEN o.order_date BETWEEN '2025-01-01' AND '2025-03-31'
+                      THEN od.unit_price * od.quantity * (1 - od.discount) ELSE 0 END)
+             - SUM(CASE WHEN o.order_date BETWEEN '2024-10-01' AND '2024-12-31'
+                        THEN od.unit_price * od.quantity * (1 - od.discount) ELSE 0 END) AS revenue_change
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN products p ON p.product_id = od.product_id
+      WHERE o.order_date BETWEEN '2024-10-01' AND '2025-03-31'
+      GROUP BY p.product_name
+      ORDER BY revenue_change ASC
+      LIMIT 5
+
+  - key: average-order-value-monthly
+    question: Average order value by month in 2024
+    description: Revenue divided by the number of orders, per month of 2024.
+    metrics: [average_order_value]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT date_trunc('month', o.order_date)::date AS month,
+             SUM(od.unit_price * od.quantity * (1 - od.discount)) / NULLIF(COUNT(DISTINCT o.order_id), 0) AS average_order_value
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY 1
+      ORDER BY 1
+
+  - key: discounts-by-employee
+    question: How much discount did each sales employee give in 2024?
+    description: Discount amount per employee who took the orders placed in 2024.
+    metrics: [discount_amount]
+    allowed_roles: [sales_manager, finance_analyst]
+    sql: |
+      SELECT concat(e.first_name, ' ', e.last_name) AS employee,
+             SUM(od.unit_price * od.quantity * od.discount) AS discount_amount
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN employees e ON e.employee_id = o.employee_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY e.first_name, e.last_name
+      ORDER BY discount_amount DESC
+
+  - key: orders-per-month
+    question: How many orders did we receive each month in 2024?
+    description: Number of distinct orders per month of 2024.
+    metrics: [number_of_orders]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    sql: |
+      SELECT date_trunc('month', o.order_date)::date AS month,
+             COUNT(DISTINCT o.order_id) AS number_of_orders
+      FROM orders o
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY 1
+      ORDER BY 1
+
+  - key: units-sold-by-product
+    question: Top 10 products by units sold in 2024
+    description: Quantity sold per product for orders placed in 2024; the ten highest.
+    metrics: [units_sold]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    sql: |
+      SELECT p.product_name, SUM(od.quantity) AS units_sold
+      FROM orders o
+      JOIN order_details od ON od.order_id = o.order_id
+      JOIN products p ON p.product_id = od.product_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY p.product_name
+      ORDER BY units_sold DESC
+      LIMIT 10
+
+  - key: late-shipments-by-shipper
+    question: How many orders were shipped late by each shipper in 2024?
+    description: Orders shipped after their required date, per shipper, for orders placed in 2024.
+    metrics: [late_shipments]
+    allowed_roles: [sales_manager, operations_manager]
+    sql: |
+      SELECT s.company_name AS shipper,
+             COUNT(*) FILTER (WHERE o.shipped_date > o.required_date) AS late_shipments
+      FROM orders o
+      JOIN shippers s ON s.shipper_id = o.ship_via
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY s.company_name
+      ORDER BY late_shipments DESC
+
+  - key: average-shipping-days
+    question: Average shipping time in days by shipper in 2024
+    description: Average days from order date to shipped date, per shipper, for shipped orders placed in 2024.
+    metrics: []
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    sql: |
+      SELECT s.company_name AS shipper,
+             ROUND(AVG(o.shipped_date - o.order_date), 1) AS average_shipping_days
+      FROM orders o
+      JOIN shippers s ON s.shipper_id = o.ship_via
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+        AND o.shipped_date IS NOT NULL
+      GROUP BY s.company_name
+      ORDER BY average_shipping_days
+
+  - key: freight-by-shipper
+    question: Total freight cost by shipper last quarter
+    description: Sum of freight per shipper for orders placed in Q1 2025.
+    metrics: [freight_cost]
+    allowed_roles: [finance_analyst, operations_manager]
+    sql: |
+      SELECT s.company_name AS shipper, SUM(o.freight) AS freight_cost
+      FROM orders o
+      JOIN shippers s ON s.shipper_id = o.ship_via
+      WHERE o.order_date BETWEEN '2025-01-01' AND '2025-03-31'
+      GROUP BY s.company_name
+      ORDER BY freight_cost DESC
+
+  - key: freight-share-of-revenue
+    question: Freight cost as a share of revenue by month in 2024
+    description: Monthly freight divided by monthly revenue for orders placed in 2024 (finance only, it needs both metrics).
+    metrics: [freight_cost, revenue]
+    allowed_roles: [finance_analyst]
+    sql: |
+      WITH revenue AS (
+        SELECT date_trunc('month', o.order_date)::date AS month,
+               SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue
+        FROM orders o
+        JOIN order_details od ON od.order_id = o.order_id
+        WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+        GROUP BY 1
+      ), freight AS (
+        SELECT date_trunc('month', o.order_date)::date AS month, SUM(o.freight) AS freight_cost
+        FROM orders o
+        WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+        GROUP BY 1
+      )
+      SELECT r.month, f.freight_cost, r.revenue,
+             ROUND((f.freight_cost / NULLIF(r.revenue, 0) * 100)::numeric, 2) AS freight_share_pct
+      FROM revenue r
+      JOIN freight f ON f.month = r.month
+      ORDER BY r.month
+
+  - key: stock-below-reorder-level
+    question: Which products are below their reorder level?
+    description: Products still sold whose units in stock are below the reorder level.
+    metrics: []
+    allowed_roles: [finance_analyst, operations_manager]
+    sql: |
+      SELECT p.product_name, p.units_in_stock, p.units_on_order, p.reorder_level
+      FROM products p
+      WHERE p.units_in_stock < p.reorder_level
+        AND p.discontinued = 0
+      ORDER BY p.reorder_level - p.units_in_stock DESC
+
+  - key: stock-by-category
+    question: Units in stock by category
+    description: Total units in stock per product category.
+    metrics: [units_in_stock]
+    allowed_roles: [finance_analyst, operations_manager]
+    sql: |
+      SELECT c.category_name, SUM(p.units_in_stock) AS units_in_stock
+      FROM products p
+      JOIN categories c ON c.category_id = p.category_id
+      GROUP BY c.category_name
+      ORDER BY units_in_stock DESC
+
+  - key: active-customers-by-country
+    question: How many customers ordered in 2024, by country?
+    description: Distinct customers with at least one order placed in 2024, per country.
+    metrics: [number_of_customers]
+    allowed_roles: [sales_manager, finance_analyst, operations_manager]
+    sql: |
+      SELECT cu.country, COUNT(DISTINCT cu.customer_id) AS number_of_customers
+      FROM orders o
+      JOIN customers cu ON cu.customer_id = o.customer_id
+      WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'
+      GROUP BY cu.country
+      ORDER BY number_of_customers DESC

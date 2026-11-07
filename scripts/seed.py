@@ -11,7 +11,8 @@ Steps (each safe to run again):
 6. create database login roles, grants and the secure views (docs/access-control.md);
 7. sync the semantic layer into the catalog tables and check it against the database;
 8. sync the business calendar (config/calendar.yaml);
-9. create the LangGraph checkpoint tables in schema ``checkpoints`` (before the grants).
+9. create the LangGraph checkpoint tables in schema ``checkpoints`` (before the grants);
+10. add the seeded verified examples (config/verified_queries.yaml) that are not there yet.
 """
 
 import sys
@@ -39,6 +40,7 @@ from app.semantic.calendar import load_calendar
 from app.semantic.calendar_store import sync_calendar
 from app.semantic.catalog import load_semantic_layer_file, sync_semantic_layer
 from app.semantic.schema_check import check_semantic_schema
+from app.semantic.verified import load_seed_file, sync_seed_examples
 
 
 class SeedSummary(BaseModel):
@@ -53,6 +55,7 @@ class SeedSummary(BaseModel):
     metrics: int
     calendar_version: int
     reference_date: str
+    verified_examples_added: int
 
 
 def wait_for_database(settings: Settings) -> None:
@@ -78,6 +81,7 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
     users = load_test_users()
     layer = load_semantic_layer_file()
     calendar = load_calendar()
+    verified = load_seed_file()
 
     wait_for_database(settings)
     run_migrations()
@@ -94,6 +98,10 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
             raise SeedError("semantic layer does not match the database: " + "; ".join(problems))
         semantic = sync_semantic_layer(conn, layer)
         calendar_version = sync_calendar(conn, calendar)
+        try:
+            verified_added = sync_seed_examples(conn, verified, layer)
+        except ValueError as exc:
+            raise SeedError(str(exc)) from exc
     return SeedSummary(
         date_shift_years=settings.data_setup.date_shift_years,
         date_shift_applied_now=shifted_now,
@@ -106,6 +114,7 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
         metrics=semantic["metrics"],
         calendar_version=calendar_version,
         reference_date=calendar.reference_date.isoformat(),
+        verified_examples_added=verified_added,
     )
 
 
@@ -129,6 +138,7 @@ def main() -> int:
     print(
         f"  calendar:        v{summary.calendar_version}, business today {summary.reference_date}"
     )
+    print(f"  verified queries: {summary.verified_examples_added} seeded examples added")
     return 0
 
 

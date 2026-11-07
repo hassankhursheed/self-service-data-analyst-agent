@@ -127,6 +127,10 @@ class VerifiedQuery(TimestampMixin, Base):
     question_text: Mapped[str] = mapped_column(Text)
     sql_text: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
+    # Checked by the SQL validator when saved; used to filter examples per role.
+    tables_used: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
+    metrics_used: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
+    allowed_roles: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
     source_question_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("questions.id", ondelete="SET NULL")
     )

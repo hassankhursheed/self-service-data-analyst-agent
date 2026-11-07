@@ -209,26 +209,39 @@ from §8 use two extra endpoints on the same resource:
 
 Every user-management action is written to the audit log.
 
+### `GET /admin/review`
+- **Access:** admin.
+- **Request:** query `page`, `page_size`, `kind` (`not_helpful`, `blocked`, `failure`; all when omitted).
+- **Response:** `200 ReviewList {correlation_id, items: [{kind, id, question_id, correlation_id, question, username, role, sql_text, detail, status, created_at}], total, page, page_size}`. Open not-helpful answers, blocked queries and open failures in one list, newest first (Step 20).
+- **Errors:** 401, 403, 500.
+
 ### `GET /admin/verified-queries`
 - **Access:** admin.
-- **Request:** query `page`, `page_size`, `is_active`, `review` (`not_helpful` lists answers rated not helpful that still need review).
-- **Response:** `200 VerifiedQueryList {correlation_id, items: [{id, lineage_id, version, question_text, sql_text, description, is_active, verified_by, verified_at}], review_items: [{question_id, question, sql_text, rating, comment}], total, page, page_size}`
+- **Request:** query `page`, `page_size`, `is_active`.
+- **Response:** `200 VerifiedQueryList {correlation_id, items: [{id, lineage_id, version, question_text, sql_text, description, tables_used, metrics_used, allowed_roles, is_active, verified_by, verified_at, source_question_id}], total, page, page_size}`
 - **Errors:** 401, 403, 500.
 
 ### `POST /admin/verified-queries`
 - **Access:** admin.
-- **Request:** `VerifyRequest {source_question_id: UUID | null, question_text, sql_text, description, lineage_id: UUID | null}`. With `lineage_id`, a new version is created (correct); the SQL must pass the same validation as agent SQL before it is saved.
-- **Response:** `201 VerifiedQueryResponse {correlation_id, id, lineage_id, version, is_active}`
-- **Errors:** 400 (`SQL_INVALID` with the validation reason), 401, 403, 404, 500.
+- **Request:** `VerifyRequest {source_question_id: UUID | null, question_text, sql_text, description, allowed_roles: [RoleName], metrics_used: [str], lineage_id: UUID | null}`. With `lineage_id`, a new version is created (correct) and the older versions are disabled. The SQL must pass the validator for every allowed role; allowed roles cannot be wider than the metrics' roles.
+- **Response:** `201 VerifiedQueryResponse {correlation_id, ...the library item}`
+- **Errors:** 400 (`SQL_INVALID` with the validation reason, `VALIDATION_ERROR`), 401, 403, 404, 500.
 
 ```json
-{"source_question_id": "c3a0...", "question_text": "Revenue by month in 2024", "sql_text": "SELECT date_trunc('month', o.order_date) AS month, ...", "description": "Monthly revenue for 2024", "lineage_id": null}
+{"source_question_id": "c3a0...", "question_text": "Revenue by month in 2024", "sql_text": "SELECT date_trunc('month', o.order_date) AS month, ...", "description": "Monthly revenue for 2024", "allowed_roles": ["sales_manager", "finance_analyst"], "metrics_used": ["revenue"], "lineage_id": null}
 ```
 
-Design choice: disabling a verified example uses `PATCH /admin/verified-queries/{id}` with
-`{is_active: false}`. Turning a not-helpful answer into an evaluation case uses
-`POST /admin/feedback/{id}/eval-case` with `{case_type, expected_behaviour, expected_sql?}`
-(brief §16).
+### `PATCH /admin/verified-queries/{id}`
+- **Access:** admin.
+- **Request:** `{is_active: bool}`. Enabling re-validates the SQL and disables the other versions of the lineage.
+- **Response:** `200 VerifiedQueryResponse`
+- **Errors:** 400, 401, 403, 404, 500.
+
+### `POST /admin/feedback/{id}/eval-case`
+- **Access:** admin.
+- **Request:** `EvalCaseRequest {case_type, expected_behaviour, expected_sql: str | null}`. The expected SQL is validated for the asking user's role.
+- **Response:** `201 EvalCaseResponse {correlation_id, case_id, case_key: "FB-<feedback id>", dataset: "review-cases"}`; the feedback becomes `converted`.
+- **Errors:** 400, 401, 403, 404, 409 (already converted), 500.
 
 ### `POST /admin/eval/run`
 - **Access:** admin.
@@ -265,6 +278,7 @@ Design choice: disabling a verified example uses `PATCH /admin/verified-queries/
 | POST | `/admin/users` | admin | §19 |
 | PATCH | `/admin/users/{id}` | admin | design choice (§8) |
 | POST | `/admin/users/{id}/reset-password` | admin | design choice (§8) |
+| GET | `/admin/review` | admin | design choice (§16) |
 | GET | `/admin/verified-queries` | admin | §19 |
 | POST | `/admin/verified-queries` | admin | §19 |
 | PATCH | `/admin/verified-queries/{id}` | admin | design choice (§16) |

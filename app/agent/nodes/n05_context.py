@@ -4,18 +4,37 @@ The semantic layer is loaded fresh for each question (from the database in produ
 so a changed metric definition takes effect without a code change or restart.
 """
 
+import logging
+
 from app.agent.deps import AgentDeps
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.state import AgentState, BlockedQueryRecord
 from app.core.enums import BlockReason, BlockStage, NodeName, QuestionStatus, RoleName
 from app.core.errors import AppError
 from app.safety.sql_policy import BLOCK_MESSAGES
+from app.semantic.models import SemanticLayer
 from app.semantic.retriever import retrieve
+from app.semantic.verified import VerifiedExample, find_verified_examples
+
+logger = logging.getLogger(__name__)
 
 
-def find_verified_examples(question: str, role: RoleName) -> list[str]:
-    """Hook for the verified query library (Step 20). Returns no examples until then."""
-    return []
+async def _verified_examples(
+    deps: AgentDeps, state: AgentState, role: RoleName, layer: SemanticLayer
+) -> list[VerifiedExample]:
+    """Similar verified examples for this role; the library is optional guidance, so a
+    loading problem is logged and the question continues without examples."""
+    config = deps.agent_config.verified_examples
+    if not config.enabled:
+        return []
+    try:
+        library = await deps.load_verified()
+    except Exception:  # any storage problem must not fail the question
+        logger.exception("could not load verified examples (correlation_id=%s)",
+                         state.correlation_id)  # fmt: skip
+        return []
+    question = state.interpreted_question or state.question
+    return find_verified_examples(question, role, library, layer, config, deps.sql_policy)
 
 
 def _retrieval_text(state: AgentState) -> str:
@@ -57,7 +76,7 @@ def make_context_node(deps: AgentDeps) -> NodeFn:
             "status": QuestionStatus.UNDERSTOOD,
             "semantic": layer,
             "context": context,
-            "verified_examples": find_verified_examples(state.question, state.user.role),
+            "verified_examples": await _verified_examples(deps, state, state.user.role, layer),
         }
 
     return context_retrieval

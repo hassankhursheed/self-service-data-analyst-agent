@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 STATUS_BY_CODE: dict[str, int] = {
     "VALIDATION_ERROR": 400,
+    "SQL_INVALID": 400,
     "QUESTION_EMPTY": 400,
     "QUESTION_TOO_LONG": 400,
     "INVALID_CREDENTIALS": 401,

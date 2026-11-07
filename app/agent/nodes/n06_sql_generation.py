@@ -1,7 +1,8 @@
 """N-06 SQL Generation: structured SQL from the LLM (brief section 15).
 
-Only the schema of the retrieved tables, metric definitions and the resolved period are
-sent. The reply must match ``GeneratedSQL`` and stay inside the retrieved context; one
+Only the schema of the retrieved tables, metric definitions, the resolved period and the
+verified examples chosen by N-05 (few-shot guidance) are sent. The reply must match
+``GeneratedSQL`` and stay inside the retrieved context; one
 regeneration is allowed, then the question fails with a clear reason. Nothing runs here.
 """
 
@@ -14,6 +15,7 @@ from app.core.enums import Confidence, NodeName, QueryKind, QuestionStatus
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.prompts import load_prompt
+from app.semantic.verified import examples_text
 
 
 def is_low_confidence(state: AgentState, generated: GeneratedSQL) -> bool:
@@ -43,6 +45,7 @@ def make_sql_generation_node(deps: AgentDeps) -> NodeFn:
                 date_range=date_range_text(state),
                 assumptions="; ".join(state.assumptions) or "none",
                 top_n=str(state.top_n) if state.top_n else "not given",
+                examples=examples_text(state.verified_examples),
                 question=question_text(state),
             ),
         ]
@@ -64,7 +67,7 @@ def make_sql_generation_node(deps: AgentDeps) -> NodeFn:
             tables_used=generated.tables_used,
             metrics_used=generated.metrics_used,
             confidence=generated.confidence,
-            verified_examples=list(state.verified_examples),
+            verified_examples=[str(example.id) for example in state.verified_examples],
         )
         return {
             "status": QuestionStatus.SQL_GENERATED,

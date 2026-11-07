@@ -29,11 +29,17 @@ from app.safety.sql_policy import SqlPolicy, get_sql_policy
 from app.semantic.calendar import CalendarConfig, load_calendar
 from app.semantic.catalog import load_active_semantic_layer
 from app.semantic.models import SemanticLayer
+from app.semantic.verified import VerifiedExample, VerifiedLoader, database_verified_loader
 
 # (sql, user, timeout_ms, row_limit) -> rows. The default runs through analytics_ro.
 Executor = Callable[[str, UserContext, int, int], Awaitable[QueryResult]]
 SemanticLoader = Callable[[], Awaitable[SemanticLayer]]
 Sleep = Callable[[float], Awaitable[None]]
+
+
+async def no_verified_examples() -> list[VerifiedExample]:
+    """Default loader (unit tests): an empty library."""
+    return []
 
 
 @dataclass(frozen=True)
@@ -48,6 +54,7 @@ class AgentDeps:
     statement_timeout_ms: int
     row_limit: int
     audit: AuditSink = field(default_factory=MemoryAuditSink)
+    load_verified: VerifiedLoader = field(default=no_verified_examples)
     sleep: Sleep = field(default=asyncio.sleep)
 
     def budget_for(self, state: AgentState) -> BudgetTracker:
@@ -81,10 +88,14 @@ def usage_of(budget: BudgetTracker) -> Usage:
     )
 
 
+def _app_conninfo(settings: Settings) -> str:
+    url = make_url(settings.app_database_url.get_secret_value()).set(drivername="postgresql")
+    return url.render_as_string(hide_password=False)
+
+
 def database_semantic_loader(settings: Settings) -> SemanticLoader:
     """Read the active semantic layer from the database for every question (app role)."""
-    url = make_url(settings.app_database_url.get_secret_value()).set(drivername="postgresql")
-    conninfo = url.render_as_string(hide_password=False)
+    conninfo = _app_conninfo(settings)
 
     def load() -> SemanticLayer:
         with psycopg.connect(conninfo, connect_timeout=5) as conn:
@@ -124,6 +135,7 @@ def default_deps() -> AgentDeps:
         agent_config=get_agent_config(),
         calendar=load_calendar(),
         load_semantic=database_semantic_loader(settings),
+        load_verified=database_verified_loader(_app_conninfo(settings)),
         executor=analytics_executor(settings),
         sql_policy=get_sql_policy(),
         statement_timeout_ms=settings.analytics.default_statement_timeout_ms,

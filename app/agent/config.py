@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.agent.charts import ChartConfig
 from app.core.config import PROJECT_ROOT
 from app.core.yaml_config import load_yaml_model
+from app.semantic.verified import VerifiedConfig
 
 AGENT_CONFIG_FILE = PROJECT_ROOT / "config" / "agent.yaml"
 
@@ -54,6 +55,7 @@ class AgentConfig(BaseModel):
     intent: IntentConfig
     sql: SqlConfig
     answer: AnswerConfig
+    verified_examples: VerifiedConfig
 
 
 def load_agent_config(path: Path = AGENT_CONFIG_FILE) -> AgentConfig:

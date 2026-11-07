@@ -26,6 +26,7 @@ from app.core.enums import (
     RoleName,
 )
 from app.services.users import UserView
+from app.services.verified_library import LibraryItem, ReviewItem
 
 MAX_QUESTION_CHARS = 4000  # hard cap on the body; the guardrail applies the real limit
 MAX_COMMENT_CHARS = 1000
@@ -222,44 +223,41 @@ class MetricsResponse(Envelope):
     failed_logins: int
 
 
-class VerifiedQueryItem(BaseModel):
-    id: uuid.UUID
-    lineage_id: uuid.UUID
-    version: int
-    question_text: str
-    sql_text: str
-    description: str
-    is_active: bool
-    verified_by: str | None
-    verified_at: dt.datetime
-
-
-class ReviewItem(BaseModel):
-    question_id: uuid.UUID
-    question: str
-    sql_text: str | None
-    rating: Rating
-    comment: str | None
-
-
 class VerifiedQueryList(Page):
-    items: list[VerifiedQueryItem]
-    review_items: list[ReviewItem]
+    items: list[LibraryItem]
+
+
+class ReviewList(Page):
+    """Not-helpful answers, blocked queries and failures in one list (brief §16)."""
+
+    items: list[ReviewItem]
 
 
 class VerifyRequest(ApiRequest):
+    """Mark a question and its SQL as verified, or correct it (``lineage_id`` = new version).
+    The SQL must pass the validator for every allowed role."""
+
     source_question_id: uuid.UUID | None = None
-    question_text: str = Field(min_length=1, max_length=MAX_QUESTION_CHARS)
-    sql_text: str = Field(min_length=1)
-    description: str = Field(min_length=1, max_length=1000)
+    question_text: str = Field(min_length=3, max_length=MAX_QUESTION_CHARS)
+    sql_text: str = Field(min_length=10, max_length=20_000)
+    description: str = Field(min_length=3, max_length=1000)
+    allowed_roles: list[RoleName] = Field(min_length=1)
+    metrics_used: list[str] = []
     lineage_id: uuid.UUID | None = None
 
 
-class VerifiedQueryResponse(Envelope):
-    id: uuid.UUID
-    lineage_id: uuid.UUID
-    version: int
+class UpdateVerifiedRequest(ApiRequest):
     is_active: bool
+
+
+class VerifiedQueryResponse(Envelope, LibraryItem):
+    pass
+
+
+class EvalCaseResponse(Envelope):
+    case_id: int
+    case_key: str
+    dataset: str
 
 
 class EvalRunRequest(ApiRequest):

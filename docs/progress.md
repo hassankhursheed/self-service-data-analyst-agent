@@ -21,7 +21,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 17: Authentication and User Management (Week 3, brief section 8)
 - [x] Step 18: FastAPI Endpoints (Week 3, brief sections 19, 22)
 - [x] Step 19: User Interface (Week 3, brief section 20)
-- [ ] Step 20: Verified Query Library and Feedback Loop (guide received)
+- [x] Step 20: Verified Query Library and Feedback Loop (Week 3, brief section 16)
 - [ ] Step 21: (title added when the guide arrives)
 - [ ] Step 22: (title added when the guide arrives)
 - [ ] Step 23: (title added when the guide arrives)
@@ -31,23 +31,20 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 
 ## What is left
 
-- Steps 20 to 26 (guide for Step 20 received).
-- UI placeholders to fill: Admin › Monitoring, Review (verify / correct queries,
-  not-helpful answers) and Evaluation (Steps 20-22).
+- Steps 21 to 26 (guides not received yet).
+- UI placeholders to fill: Admin › Monitoring and Evaluation (Steps 21-22). The
+  evaluation must show whether verified examples improved accuracy (brief §16):
+  `verified_examples.enabled` in config/agent.yaml switches retrieval off.
 - Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
   screenshots in `docs/screenshots/` (only `01-login.jpg` so far). Done once after Step 22,
   when Monitoring, Review and Evaluation are filled in: the user signs in as
   `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
   not read demo passwords), then every screen is exercised and captured.
 - API endpoints that return 501 until their step: `GET /admin/metrics` (dashboard),
-  `GET/POST /admin/verified-queries` (Step 20), `POST /admin/eval/run` and
-  `GET /admin/eval/runs` (evaluation). Their final request and response models exist.
+  `POST /admin/eval/run` and `GET /admin/eval/runs` (evaluation). Their final request
+  and response models exist.
 - Rate limits are in memory (one API process); a shared store is needed before running
   several API workers.
-- For later steps: wire `validate_question` and `validate` into the graph (N-02, N-07)
-  and store blocks in `app.blocked_queries` with their `BlockReason`. Columns the
-  semantic layer does not describe are refused by the validator; add them to the YAML if
-  eval questions need them. The LLM provider and the `checkpoints` schema grants are still to come.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
   reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
 - Still open:

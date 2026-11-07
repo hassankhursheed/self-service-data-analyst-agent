@@ -95,6 +95,10 @@ class Feedback(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     question_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("questions.id", ondelete="CASCADE"))
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # The run that produced the rated answer (latest run of the question).
+    run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("agent_runs.id", ondelete="SET NULL")
+    )
     rating: Mapped[str] = mapped_column(String(16))
     comment: Mapped[str | None] = mapped_column(Text)
     review_status: Mapped[str] = mapped_column(String(16), server_default=ReviewStatus.OPEN.value)

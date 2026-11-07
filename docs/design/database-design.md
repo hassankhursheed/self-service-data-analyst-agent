@@ -38,6 +38,7 @@ erDiagram
     eval_datasets ||--o{ eval_runs : "dataset_id"
     users |o--o{ eval_runs : "started_by"
     questions ||--o{ feedback : "question_id"
+    agent_runs |o--o{ feedback : "run_id"
     users ||--o{ feedback : "user_id"
     agent_runs ||--o{ generated_queries : "run_id"
     users |o--o{ metric_definitions : "updated_by"
@@ -220,6 +221,7 @@ erDiagram
         bigint id PK
         uuid question_id FK
         uuid user_id FK
+        uuid run_id FK
         varchar rating
         text comment
         varchar review_status
@@ -334,6 +336,9 @@ erDiagram
         text question_text
         text sql_text
         text description
+        text_array tables_used
+        text_array metrics_used
+        text_array allowed_roles
         uuid source_question_id FK
         boolean is_active
         uuid verified_by FK
