@@ -6,7 +6,8 @@ from sqlalchemy import text
 
 from app.api.deps import ClientIp, CorrelationId, ServicesDep
 from app.api.errors import error_responses
-from app.api.schemas import HealthResponse, LoginRequest, LoginResponse
+from app.api.schemas import HealthResponse, LoginRequest, LoginResponse, MeResponse
+from app.auth.dependencies import CurrentUser
 
 router = APIRouter(tags=["public"])
 ERRORS = error_responses(400, 401, 429, 500)
@@ -26,6 +27,12 @@ async def login(
         expires_in=token.expires_in,
         user=token.user,
     )
+
+
+@router.get("/auth/me", response_model=MeResponse, responses=ERRORS)
+async def me(user: CurrentUser, correlation_id: CorrelationId) -> MeResponse:
+    """The caller with their current role and region (read from the database)."""
+    return MeResponse(correlation_id=correlation_id, user=user)
 
 
 @router.get("/health", response_model=HealthResponse, responses={503: {"model": HealthResponse}})

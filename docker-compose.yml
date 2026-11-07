@@ -24,5 +24,39 @@ services:
       retries: 12
       start_period: 30s
 
+  # The API and the UI are in the "app" profile, so `docker compose up -d` still starts only
+  # the database (for tests and local development). Whole stack:
+  #   docker compose --profile app up -d --build
+  # Run `python -m scripts.seed` once from the host first (roles, views, users).
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DB_HOSTPORT: db:5432
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ui:
+    profiles: ["app"]
+    build:
+      context: ./ui
+    restart: unless-stopped
+    environment:
+      # Server-side only: the browser talks to the UI, the UI talks to the API.
+      API_BASE_URL: http://api:8000
+    ports:
+      - "${UI_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   pgdata:

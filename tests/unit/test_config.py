@@ -122,4 +122,6 @@ def test_env_example_lists_every_environment_variable() -> None:
         if line.strip() and not line.lstrip().startswith("#")
     }
     env_fields = set(Settings.model_fields) - _yaml_top_level_keys()
-    assert documented == {name.upper() for name in env_fields}
+    # Read by other services, not by the Python settings (the Next.js UI server).
+    other_services = {"API_BASE_URL"}
+    assert documented == {name.upper() for name in env_fields} | other_services
