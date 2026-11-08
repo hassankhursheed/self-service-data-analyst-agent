@@ -317,3 +317,21 @@ def test_cases_need_the_fields_their_behaviour_uses(bad: dict[str, str]) -> None
         EvalCaseDef.model_validate(
             {"id": "T-01", "type": "simple", "test_user": "finance", "question": "q 2024", **bad}
         )
+
+
+def test_expected_values_are_stored_as_plain_json() -> None:
+    import datetime as dt
+    from decimal import Decimal
+
+    from app.eval.expected import ExpectedMissing, json_value, result_set
+
+    assert json_value(Decimal("1.50")) == 1.5
+    assert json_value(dt.date(2024, 1, 31)) == "2024-01-31"
+    assert json_value(dt.datetime(2024, 1, 31, 8, 0)) == "2024-01-31T08:00:00"
+    assert json_value(dt.timedelta(days=2)) == 2.0
+    assert json_value(None) is None
+    assert json_value(True) is True
+    assert json_value(uuid.UUID(int=1)) == str(uuid.UUID(int=1))
+    assert result_set(["a"], [(Decimal("2"),)]).rows == [[2.0]]
+    with pytest.raises(ExpectedMissing, match="check_cases"):
+        load_expected(999)

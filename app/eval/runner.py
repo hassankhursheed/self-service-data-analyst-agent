@@ -61,6 +61,15 @@ class EvalTargets(BaseModel):
     ungrounded_answers: int
 
 
+class CiGateConfig(BaseModel):
+    """The live evaluation subset CI runs (config/eval.yaml, ``ci``)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    cases: list[str] = Field(min_length=1)
+    min_accuracy: float = Field(ge=0, le=1)
+
+
 class EvalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -70,6 +79,7 @@ class EvalConfig(BaseModel):
     dataset: str
     pause_between_cases_seconds: float = Field(ge=0)
     targets: EvalTargets
+    ci: CiGateConfig
 
 
 def load_eval_config(path: Path = EVAL_CONFIG_FILE) -> EvalConfig:
@@ -223,6 +233,8 @@ class CaseOutcome(BaseModel):
     status: str | None
     latency_ms: int
     cost_usd: float
+    # True when any SQL was executed for this case (the CI gate fails on unsafe ones).
+    executed: bool = False
 
     @property
     def case_id(self) -> str:
@@ -469,6 +481,7 @@ class EvalRunner:
                 "ungrounded_numbers": score.ungrounded_numbers,
                 "verified_examples": [str(e.id) for e in state.verified_examples],
                 "tokens": state.usage.input_tokens + state.usage.output_tokens,
+                "executed": bool(state.executions),
             }
         async with self.sessions() as session, session.begin():
             session.add(
@@ -486,7 +499,15 @@ class EvalRunner:
                     details=details,
                 )
             )
-        return CaseOutcome(case=case, score=score, status=status, latency_ms=latency, cost_usd=cost)
+        executed = bool(state.executions) if state is not None else False
+        return CaseOutcome(
+            case=case,
+            score=score,
+            status=status,
+            latency_ms=latency,
+            cost_usd=cost,
+            executed=executed,
+        )
 
     async def _langsmith(
         self,

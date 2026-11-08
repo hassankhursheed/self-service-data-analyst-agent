@@ -1,6 +1,9 @@
-"""Shared fixtures for integration tests. They skip when PostgreSQL is not reachable."""
+"""Shared fixtures for integration tests. They skip when PostgreSQL is not reachable
+(and fail instead when REQUIRE_DATABASE=1, as in CI)."""
 
+import os
 from collections.abc import AsyncIterator, Iterator
+from typing import NoReturn
 
 import psycopg
 import pytest
@@ -13,12 +16,20 @@ from app.db.session import create_analytics_engine
 from scripts.seed import SeedSummary, run_seed
 
 
+def _skip_or_fail(reason: str) -> NoReturn:
+    """Locally a missing database skips; in CI (REQUIRE_DATABASE=1) it fails, so the
+    safety and access-control tests can never be skipped silently."""
+    if os.environ.get("REQUIRE_DATABASE") == "1":
+        pytest.fail(f"REQUIRE_DATABASE=1 but {reason}")
+    pytest.skip(reason)
+
+
 @pytest.fixture(scope="session")
 def settings() -> Settings:
     try:
         return get_settings()
     except ValidationError:
-        pytest.skip("No database settings (.env missing); start Docker Compose first")
+        _skip_or_fail("No database settings (.env missing); start Docker Compose first")
 
 
 @pytest.fixture(scope="session")
@@ -26,7 +37,7 @@ def owner_conn(settings: Settings) -> Iterator[psycopg.Connection]:
     try:
         conn = psycopg.connect(settings.owner_conninfo(), connect_timeout=3, autocommit=True)
     except psycopg.OperationalError:
-        pytest.skip("PostgreSQL is not reachable; run `docker compose up -d`")
+        _skip_or_fail("PostgreSQL is not reachable; run `docker compose up -d`")
     with conn:
         yield conn
 
