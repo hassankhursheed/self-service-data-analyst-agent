@@ -9,7 +9,9 @@ import type { AgentResponse, AskResponse, ConversationDetail, RoleName } from "@
 import { AnswerCard } from "./answer/answer-card";
 import { Alert, Badge, Button, Card, Skeleton } from "./ui";
 
-const MAX_CHARS = 1000;
+// The question limit (config/sql_policy.yaml max_question_length; a test keeps them equal).
+export const MAX_QUESTION_CHARS = 500;
+const MAX_CHARS = MAX_QUESTION_CHARS;
 
 const EXAMPLES: Record<string, string[]> = {
   sales_manager: [

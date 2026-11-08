@@ -6,12 +6,19 @@ asks one clarifying question (brief section 14). Time phrases are resolved with 
 business calendar (Step 8), never the real date.
 """
 
+from collections.abc import Sequence
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.agent.config import IntentConfig, IntentPart
-from app.semantic.calendar import CalendarConfig, DateRange, UnresolvedPeriod, resolve_period
+from app.semantic.calendar import (
+    CalendarConfig,
+    DateRange,
+    UnresolvedPeriod,
+    find_period,
+    resolve_period,
+)
 
 
 class MissingPart(BaseModel):
@@ -114,14 +121,32 @@ def template_clarification(
     return ClarificationDraft(question=question, options=options[:4], missing_parts=parts)
 
 
+def merge_assumptions(*groups: Sequence[str]) -> list[str]:
+    """All assumptions in order, each once (ignoring case, spaces and a final full stop);
+    the model often repeats the ones it was given (Step 26 walk-through)."""
+    seen: set[str] = set()
+    merged: list[str] = []
+    for group in groups:
+        for text in group:
+            key = " ".join(text.lower().split()).rstrip(".")
+            if key and key not in seen:
+                seen.add(key)
+                merged.append(text)
+    return merged
+
+
 def decide(
     analysis: IntentAnalysis,
     calendar: CalendarConfig,
     config: IntentConfig,
     *,
     rounds_asked: int = 0,
+    texts: Sequence[str | None] = (),
 ) -> IntentDecision:
-    """Continue, continue with assumptions, or ask (at most ``max_clarification_rounds``)."""
+    """Continue, continue with assumptions, or ask (at most ``max_clarification_rounds``).
+
+    ``texts`` (the standalone follow-up question, then the question) are searched for a
+    period when the model returned none it could resolve."""
     missing: set[IntentPart] = {m.part for m in analysis.missing}
     assumptions = list(analysis.assumptions)
     date_range: DateRange | None = None
@@ -135,6 +160,15 @@ def decide(
             missing.discard("time_range")
             if resolved.assumption:
                 assumptions.append(resolved.assumption)
+    if date_range is None:
+        for text in texts:
+            found = find_period(text, calendar) if text else None
+            if found is not None:
+                date_range = found
+                missing.discard("time_range")
+                if found.assumption:
+                    assumptions.append(found.assumption)
+                break
 
     blocking = missing & set(config.blocking_parts)
     if blocking:

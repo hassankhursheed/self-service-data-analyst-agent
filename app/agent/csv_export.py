@@ -21,7 +21,10 @@ def csv_cell(value: Any) -> str:  # noqa: ANN401 (result cells have any SQL type
         return ""
     if isinstance(value, bool):
         return "true" if value else "false"
-    if isinstance(value, int | float | Decimal):
+    if isinstance(value, float):
+        # Floating-point noise (2427.4000312536955) is rounded like the table shows it.
+        return f"{value:.2f}".rstrip("0").rstrip(".") or "0"
+    if isinstance(value, int | Decimal):
         return str(value)  # numbers stay numbers, negative ones included
     if isinstance(value, dt.date | dt.datetime):
         return value.isoformat()

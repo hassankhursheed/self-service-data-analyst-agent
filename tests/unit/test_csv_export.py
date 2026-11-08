@@ -14,6 +14,11 @@ def test_values_are_written_plainly() -> None:
     assert csv_cell(-12) == "-12"  # negative numbers are not treated as formulas
     assert csv_cell(dt.date(2025, 3, 31)) == "2025-03-31"
     assert csv_cell(True) == "true"
+    assert csv_cell(2427.4000312536955) == "2427.4"  # float noise rounded like the table
+    assert csv_cell(17320.399) == "17320.4"
+    assert csv_cell(-0.5) == "-0.5"
+    assert csv_cell(1234567.891) == "1234567.89"  # never scientific notation
+    assert csv_cell(0.0) == "0"
 
 
 def test_formula_like_text_cannot_run_in_a_spreadsheet() -> None:

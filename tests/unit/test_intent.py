@@ -285,3 +285,58 @@ def test_the_intent_prompt_says_whose_data_it_is() -> None:
     assert "EUROPE" in sales
     assert "my region" in sales
     assert "all regions" in user_scope(RoleName.FINANCE_ANALYST, None)
+
+
+# --- Step 26 walk-through: the period is found in the question when the model omits it -----
+
+
+@pytest.mark.parametrize(
+    ("question", "label"),
+    [
+        ("What was our revenue by category last quarter?", "Last quarter"),
+        ("Top 5 products by revenue in 2024", "2024"),
+        ("Orders in Q4 2024 by shipper", "Q4 2024"),
+        ("Revenue in the last 3 months", "Last 3 months"),
+    ],
+)
+def test_a_period_in_the_question_is_used_when_the_model_returns_none(
+    question: str, label: str
+) -> None:
+    analysis = IntentAnalysis.model_validate(intent(time_phrase=None, missing=[]))
+    decision = decide(analysis, CAL, CFG, texts=(None, question))
+    assert decision.date_range is not None
+    assert decision.date_range.label.startswith(label)
+    assert not any("No time period given" in a for a in decision.assumptions)
+
+
+def test_a_follow_up_takes_the_period_from_its_standalone_question() -> None:
+    analysis = IntentAnalysis.model_validate(intent(time_phrase=None, missing=[]))
+    decision = decide(
+        analysis, CAL, CFG,
+        texts=("What are the top 5 products by revenue in the UK for 2024?", "Now only for the UK"),
+    )  # fmt: skip
+    assert decision.date_range is not None
+    assert decision.date_range.from_date == dt.date(2024, 1, 1)
+
+
+def test_may_as_a_verb_is_not_a_period() -> None:
+    analysis = IntentAnalysis.model_validate(
+        intent(time_phrase=None, missing=[{"part": "time_range", "reason": "no period"}])
+    )
+    decision = decide(analysis, CAL, CFG, texts=("Which customers may order again?",))
+    assert decision.date_range is not None
+    assert decision.date_range.label.startswith("This year")  # the configured default
+
+
+def test_assumptions_are_merged_once_each() -> None:
+    from app.agent.intent import merge_assumptions
+
+    merged = merge_assumptions(
+        ["Revenue is calculated after discounts (net sales).", "Last quarter is Q1 2025."],
+        ["revenue is calculated after discounts (net sales)", "Categories come from categories."],
+    )
+    assert merged == [
+        "Revenue is calculated after discounts (net sales).",
+        "Last quarter is Q1 2025.",
+        "Categories come from categories.",
+    ]

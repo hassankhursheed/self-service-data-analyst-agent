@@ -82,6 +82,15 @@ async def test_sql_prompt_contains_the_resolved_period() -> None:
     assert "from 2025-01-01 to 2025-03-31" in prompt
 
 
+async def test_sql_prompt_forbids_region_filters_of_its_own() -> None:
+    """Step 26 walk-through: the model added an EU country list and dropped UK customers."""
+    model = ScriptedModel(intent(time_phrase="2024"), sql=[GOOD_SQL])
+    await run(model, FakeExecutor())
+    prompt = " ".join(str(m.content) for m in model.calls_by_kind["sql"][0])
+    assert "already limits the data to the user's own sales region" in prompt
+    assert "no lists of countries" in prompt
+
+
 # --- blocked ---------------------------------------------------------------------------------
 
 
@@ -273,3 +282,41 @@ def test_plan_cost_reads_explain_json() -> None:
     assert plan_cost([{"Plan": {"Total Cost": 3}}]) == 3.0
     with pytest.raises(ReadonlyQueryError):
         plan_cost("[]")
+
+
+def test_the_users_own_region_never_reaches_the_sql_prompt() -> None:
+    """Step 26 walk-through: "in the EUROPE region" made the model write a country list."""
+    from app.agent.nodes.sql_context import without_own_region
+
+    europe = RegionCode.EUROPE
+    assert (
+        without_own_region(
+            "Identify the top 5 products by revenue in the EUROPE region for 2024.", europe
+        )
+        == "Identify the top 5 products by revenue for 2024."
+    )
+    assert without_own_region("Revenue in the European sales region", europe) == "Revenue"
+    assert "UK" in without_own_region("Top products in the UK", europe)
+    assert without_own_region("Sales in the Americas region", europe) == (
+        "Sales in the Americas region"
+    )  # another region is kept (the database returns nothing for it)
+    assert without_own_region("in the EUROPE region", None) == "in the EUROPE region"
+
+
+async def test_sql_prompt_drops_own_region_from_summary_and_assumptions() -> None:
+    model = ScriptedModel(
+        intent(
+            summary="Top 5 products by revenue in the EUROPE region for 2024",
+            assumptions=["The EUROPE region is already limited to the user's data."],
+        ),
+        sql=[GOOD_SQL],
+    )
+    await run(
+        model,
+        FakeExecutor(),
+        request("Top 5 products 2024", role=RoleName.SALES_MANAGER, region=RegionCode.EUROPE),
+    )
+    prompt = " ".join(str(m.content) for m in model.calls_by_kind["sql"][0])
+    human = str(model.calls_by_kind["sql"][0][-1].content)
+    assert "EUROPE region" not in human
+    assert "The EUROPE region is already limited" not in prompt

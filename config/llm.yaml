@@ -1,7 +1,7 @@
 # LLM settings (brief sections 22 and 27). The API key comes from LLM_API_KEY; tracing
 # from the LANGSMITH_* environment variables. Bump `version` when anything here changes;
 # evaluation runs record it.
-version: 3
+version: 4
 
 # LangChain provider name (init_chat_model) and model: a dated version, so the app and
 # the evaluation (config/eval.yaml) use exactly the same model. Ministral 14B is the
@@ -16,11 +16,13 @@ max_tokens: 1024
 timeout_seconds: 30
 
 # Retries for retryable errors only (timeouts, rate limits, 5xx, connection errors).
+# Waits 3 s, 7.5 s and 18.75 s (about 30 s in all): the free Mistral plan limits requests
+# per minute, and the Step 26 walk-through showed 1 s + 2 s was too short to get past it.
 retry:
-  max_attempts: 3
-  initial_backoff_seconds: 1.0
-  backoff_multiplier: 2.0
-  max_backoff_seconds: 8.0
+  max_attempts: 4
+  initial_backoff_seconds: 3.0
+  backoff_multiplier: 2.5
+  max_backoff_seconds: 20.0
 
 # Per-question budget across all LLM calls of one question.
 budget:
@@ -38,6 +40,6 @@ pricing:
 prompts:
   system: v1
   intent: v3
-  sql_generation: v2
+  sql_generation: v3
   sql_repair: v1
   answer: v1

@@ -154,7 +154,12 @@ async def test_non_retryable_error_is_not_retried(status: int) -> None:
 
 
 async def test_gives_up_after_max_attempts_with_progressive_backoff() -> None:
-    config = _config(retry__max_attempts=4, retry__max_backoff_seconds=3.0)
+    config = _config(
+        retry__max_attempts=4,
+        retry__initial_backoff_seconds=1.0,
+        retry__backoff_multiplier=2.0,
+        retry__max_backoff_seconds=3.0,
+    )
     model = FakeModel(*[_http_error(503)] * 4)
     client, sleeps = _client(model, config)
     with pytest.raises(RetryableError, match="gave up after 4 attempts"):

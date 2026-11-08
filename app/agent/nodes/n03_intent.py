@@ -108,8 +108,14 @@ def make_intent_node(deps: AgentDeps) -> NodeFn:
         finally:
             usage = usage_of(budget)
         rounds = sum(1 for c in state.clarifications if c.answer is not None)
-        decision = decide(reply.value, deps.calendar, config, rounds_asked=rounds)
         analysis = reply.value
+        decision = decide(
+            analysis,
+            deps.calendar,
+            config,
+            rounds_asked=rounds,
+            texts=(analysis.standalone_question, state.question),
+        )
         interpreted = _interpreted(state, analysis)
         update: NodeUpdate = {
             "intent": analysis,

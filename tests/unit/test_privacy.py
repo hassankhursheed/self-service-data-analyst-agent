@@ -141,3 +141,25 @@ def test_log_records_are_masked_including_tracebacks(caplog: pytest.LogCaptureFi
     assert "7946 0958" not in text
     assert "s3cret-pass" not in text
     assert "RuntimeError" in text  # the traceback is kept, only values are masked
+
+
+def test_clean_records_keep_their_arguments_for_formatters_like_uvicorn() -> None:
+    """Step 26 walk-through: emptying args broke uvicorn's access log on every request."""
+    import logging
+
+    from app.core.log_masking import mask_record
+
+    access = logging.LogRecord(
+        "uvicorn.access", logging.INFO, __file__, 1, '%s - "%s %s HTTP/%s" %d',
+        ("10.0.0.5:5000", "GET", "/health", "1.1", 200), None,
+    )  # fmt: skip
+    masked = mask_record(access)
+    assert masked.args == ("10.0.0.5:5000", "GET", "/health", "1.1", 200)
+    leaky = logging.LogRecord(
+        "uvicorn.access", logging.INFO, __file__, 1, '%s - "%s %s HTTP/%s" %d',
+        ("10.0.0.5:5000", "GET", "/users?email=maria.anders@example.com", "1.1", 200), None,
+    )  # fmt: skip
+    masked = mask_record(leaky)
+    assert isinstance(masked.args, tuple)
+    assert len(masked.args) == 5  # still unpackable by the access formatter
+    assert "maria.anders@example.com" not in masked.getMessage()

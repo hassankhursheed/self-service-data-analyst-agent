@@ -404,3 +404,17 @@ existed (20 questions per minute per user, Step 18).
 | Found by the load test (2) | `PlainUUID` turns asyncpg's UUID subclass into `uuid.UUID` in the agent state and identity models | Allowing the asyncpg type in the checkpoint serializer | LangGraph refused to restore it from checkpoints; plain types need no extra allow-listing. |
 | Found by the load test (3) | `agent.checkpoint_durability: exit`: checkpoints saved once per run and at a clarification pause | Saving after every node (default); a bigger checkpoint pool (tried, no effect) | The Postgres saver runs every write behind one `asyncio.Lock`, so 20 parallel questions queued: p50 27 s, 44 questions per minute. With `exit`: p50 about 6 s, about 200 per minute. A crash mid-run loses only that run, which fails anyway. |
 
+## Step 26: Fixes from the local walk-through
+
+Found by walking through every role in the browser on the production build.
+
+| # | Finding | Fix | Rejected | Why |
+| --- | --- | --- | --- | --- |
+| 2 | For a Europe sales manager the model added its own list of "EU" countries and dropped UK customers (wrong totals) | `sql_generation@v3`: the database already limits the region; never add region, country or country-list filters unless the question names a country | A validator rule against long `IN` lists | The cause is the prompt; a rule would also block legitimate lists the user asks for. |
+| 5 | "Last quarter" was labelled "This year" when the model left `time_phrase` empty; follow-ups lost the earlier period (the SQL was right, the label and confidence wrong) | `find_period` searches the standalone follow-up question, then the question, for a period the calendar resolves | Trusting the model's field only | Dates are deterministic (brief §10); the label must match what was run. |
+| 4 | Mistral's free plan returned 429 and retries gave up after about 5 s | Retries wait 3 s, 7.5 s and 18.75 s (4 attempts) | Queueing requests | A per-minute limit needs a longer wait; still bounded at about 30 s. |
+| 3 | Log masking emptied every record's arguments, so uvicorn's access log failed on each request | Clean records are left untouched; otherwise each string argument is masked and the count kept | Excluding uvicorn's logger | Access lines can contain user input too, so they stay masked. |
+| 1 | The question box allowed 1000 characters while the limit is 500 | UI constant 500 with a test that reads `config/sql_policy.yaml` | Fetching the limit from the API | One number, checked automatically. |
+| 6 | CSV amounts had floating-point noise | Floats rounded to 2 decimals like the table, never in scientific notation | — | The file should match what the user sees. |
+| 7 | Assumptions were listed twice | `merge_assumptions` keeps each once | — | Clearer answers. |
+

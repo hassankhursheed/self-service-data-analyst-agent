@@ -7,8 +7,15 @@ regeneration is allowed, then the question fails with a clear reason. Nothing ru
 """
 
 from app.agent.deps import AgentDeps, usage_of
+from app.agent.intent import merge_assumptions
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
-from app.agent.nodes.sql_context import date_range_text, metrics_text, question_text, schema_text
+from app.agent.nodes.sql_context import (
+    assumptions_for_sql,
+    date_range_text,
+    metrics_text,
+    question_text,
+    schema_text,
+)
 from app.agent.sql_output import GeneratedSQL, check_against_context
 from app.agent.state import AgentState, SqlAttempt
 from app.core.enums import Confidence, NodeName, QueryKind, QuestionStatus
@@ -43,7 +50,7 @@ def make_sql_generation_node(deps: AgentDeps) -> NodeFn:
                 schema=schema_text(context),
                 metrics=metrics_text(context),
                 date_range=date_range_text(state),
-                assumptions="; ".join(state.assumptions) or "none",
+                assumptions="; ".join(assumptions_for_sql(state)) or "none",
                 top_n=str(state.top_n) if state.top_n else "not given",
                 examples=examples_text(state.verified_examples),
                 question=question_text(state),
@@ -76,7 +83,7 @@ def make_sql_generation_node(deps: AgentDeps) -> NodeFn:
             "usage": usage_of(budget),
             "regeneration_attempts": state.regeneration_attempts + reply.regenerations,
             "low_confidence": state.low_confidence or is_low_confidence(state, generated),
-            "assumptions": [*state.assumptions, *generated.assumptions],
+            "assumptions": merge_assumptions(state.assumptions, generated.assumptions),
         }
 
     return sql_generation

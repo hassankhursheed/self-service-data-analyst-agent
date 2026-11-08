@@ -305,6 +305,40 @@ def resolve_period(phrase: str, cal: CalendarConfig) -> PeriodResolution:
     )
 
 
+_MONTH_NAMES = (
+    "january|february|march|april|june|july|august|september|october|november|december"
+    "|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec"
+)
+# Candidate period phrases inside a whole question ("may" alone is left out: it is
+# usually a verb). Each candidate is checked with resolve_period.
+_PERIOD_IN_TEXT = re.compile(
+    r"\b(?:"
+    r"(?:this|current|last|previous|prior|past)(?: \w+)? (?:day|week|month|quarter|year)s?"
+    r"|(?:week|month|quarter|year) (?:to date|before last)"
+    r"|ytd|qtd|mtd|wtd|today|yesterday"
+    r"|(?:first|second|third|fourth|1st|2nd|3rd|4th) quarter(?: of)?(?: \d{4})?"
+    r"|q[1-4](?: \d{4})?|\d{4} q[1-4]"
+    r"|(?:fy|fiscal year) ?\d{4}"
+    r"|(?:" + _MONTH_NAMES + r"|may \d{4})(?: \d{4})?"
+    r"|(?:19|20)\d{2}"
+    r")\b"
+)
+
+
+def find_period(text: str, cal: CalendarConfig) -> DateRange | None:
+    """The first time period named anywhere in ``text`` (a whole question), if any.
+
+    Used when the model does not return the time phrase on its own (found in the Step 26
+    walk-through: "last quarter" was then labelled "this year").
+    """
+    lowered = text.lower()
+    for match in _PERIOD_IN_TEXT.finditer(lowered):
+        resolved = resolve_period(match.group(0), cal)
+        if isinstance(resolved, DateRange):
+            return resolved
+    return None
+
+
 def _named_month(text: str, b: _Builder) -> PeriodResolution | None:
     match = re.fullmatch(r"([a-z]+)\.?(?: (\d{4}))?", text)
     if not match or match.group(1) not in _MONTHS:
