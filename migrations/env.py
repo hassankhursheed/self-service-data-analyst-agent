@@ -10,6 +10,11 @@ target_metadata = Base.metadata
 
 
 def _owner_url() -> URL:
+    """The owner URL, or the one a caller passed in ``config.attributes["url"]``
+    (the migration test uses a scratch database)."""
+    override = context.config.attributes.get("url")
+    if isinstance(override, URL):
+        return override
     return get_settings().owner_sqlalchemy_url()
 
 

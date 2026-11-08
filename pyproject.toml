@@ -39,6 +39,7 @@ dependencies = [
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
     "ruff>=0.8",
     "mypy>=1.13",
     "types-pyyaml>=6.0",
@@ -90,3 +91,12 @@ warn_required_dynamic_aliases = true
 # asyncpg ships no type information.
 module = ["asyncpg", "asyncpg.*"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["app"]
+# SQLAlchemy's async API runs code in greenlets; trace them too.
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true

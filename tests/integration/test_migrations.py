@@ -1,18 +1,23 @@
 """Alembic migrations create and remove the app schema without touching Northwind."""
 
+import os
+from collections.abc import Iterator
+
 import psycopg
 import pytest
 from alembic import command
 from alembic.config import Config
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
 from sqlalchemy import select
 
 from app.core.config import PROJECT_ROOT, Settings
 from app.db.models import APP_SCHEMA, Base
 from app.db.northwind import row_counts
 from app.db.session import create_app_engine
-from scripts.seed import run_seed
 
 pytestmark = pytest.mark.integration
+NORTHWIND_DUMP = PROJECT_ROOT / "data" / "northwind" / "northwind.sql"
 
 
 @pytest.fixture(scope="module")
@@ -33,25 +38,54 @@ def _app_tables(conn: psycopg.Connection) -> set[str]:
     return {str(row[0]) for row in rows} - {"alembic_version"}
 
 
+@pytest.fixture
+def scratch_database(
+    settings: Settings, owner_conn: psycopg.Connection
+) -> Iterator[tuple[Config, str]]:
+    """A throwaway database with a fresh copy of Northwind, dropped afterwards.
+
+    The round trip below downgrades the app schema to nothing; doing that in the real
+    database deleted every app row (found in Step 22), so it only runs here."""
+    name = f"migration_test_{os.getpid()}"
+    owner_conn.execute(
+        sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(name))
+    )
+    owner_conn.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    url = settings.owner_sqlalchemy_url().set(database=name)
+    conninfo = make_conninfo(settings.owner_conninfo(), dbname=name)
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        conn.execute(NORTHWIND_DUMP.read_text("utf-8"))
+    cfg = Config(str(PROJECT_ROOT / "alembic.ini"))
+    cfg.attributes["url"] = url
+    try:
+        yield cfg, conninfo
+    finally:
+        owner_conn.execute(
+            sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(name))
+        )
+
+
 def test_upgrade_and_downgrade_leave_northwind_untouched(
-    alembic_cfg: Config, owner_conn: psycopg.Connection, settings: Settings
+    scratch_database: tuple[Config, str], owner_conn: psycopg.Connection
 ) -> None:
-    northwind_before = row_counts(owner_conn)
-    expected = {table.name for table in Base.metadata.sorted_tables}
+    cfg, conninfo = scratch_database
+    real_users_before = owner_conn.execute("SELECT count(*) FROM app.users").fetchone()
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        northwind_before = row_counts(conn)
+        expected = {table.name for table in Base.metadata.sorted_tables}
 
-    command.downgrade(alembic_cfg, "base")
-    assert _app_tables(owner_conn) == set()
+        command.upgrade(cfg, "head")
+        assert _app_tables(conn) == expected
+        assert len(expected) == 24
 
-    command.upgrade(alembic_cfg, "head")
-    assert _app_tables(owner_conn) == expected
-    assert len(expected) == 24
+        command.downgrade(cfg, "base")
+        assert _app_tables(conn) == set()
+        assert row_counts(conn) == northwind_before
 
-    command.downgrade(alembic_cfg, "base")
-    assert _app_tables(owner_conn) == set()
-    assert row_counts(owner_conn) == northwind_before
-
-    command.upgrade(alembic_cfg, "head")
-    run_seed(settings)  # restore roles, users, grants and the semantic catalog
+        command.upgrade(cfg, "head")
+        assert _app_tables(conn) == expected
+    # The real database was never touched.
+    assert owner_conn.execute("SELECT count(*) FROM app.users").fetchone() == real_users_before
 
 
 def _insert_user(conn: psycopg.Connection, username: str) -> str:
