@@ -156,7 +156,7 @@ async def test_every_protected_route_refuses_missing_invalid_and_expired_tokens(
     ]
     async with running(app) as client:
         routes = protected_routes(app)
-        assert len(routes) == 22
+        assert len(routes) == 23
         for method, path in routes:
             for headers, code in cases:
                 response = await client.request(method, path, headers=headers, json={})
@@ -572,21 +572,6 @@ async def test_admin_user_management_round_trip(
             )
     finally:
         owner_conn.execute("DELETE FROM app.users WHERE username = 'test.api.user'")
-
-
-async def test_later_step_routes_return_501_with_a_correlation_id(
-    make_app: AppFactory,
-    settings: Settings,
-    seeded: SeedSummary,
-) -> None:
-    async with running(make_app()) as client:
-        admin = await login(client, settings, "admin")
-        for method, path, body in [
-            ("POST", "/admin/eval/run", {"dataset": "northwind-eval", "experiment_name": "x"}),
-            ("GET", "/admin/eval/runs", None),
-        ]:
-            response = await client.request(method, path, headers=admin, json=body)
-            assert_error(response, 501, "NOT_IMPLEMENTED")
 
 
 # --- platform behaviour -----------------------------------------------------------------

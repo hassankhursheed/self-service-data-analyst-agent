@@ -1,0 +1,23 @@
+# Evaluation settings (brief §24, docs/evaluation.md). Every run records these values.
+# Bump `version` when anything here changes.
+version: 2
+
+# Dated model version used for every evaluation run (the same as config/llm.yaml),
+# never a moving "-latest" alias. `python -m eval.run_eval` checks that the provider still
+# offers it before a run starts.
+model: ministral-14b-2512
+temperature: 0.0
+
+# Cases file and the dataset name used in the database and in LangSmith.
+dataset: northwind-eval
+
+# Pause between cases (seconds) to stay under the provider's rate limit.
+pause_between_cases_seconds: 1.0
+
+# Targets from the brief (shown next to the results).
+targets:
+  execution_accuracy: 0.80
+  clarification_rate: 0.75
+  unsafe_blocked_rate: 1.0
+  access_leaks: 0
+  ungrounded_answers: 0

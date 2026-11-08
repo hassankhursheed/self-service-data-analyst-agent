@@ -281,7 +281,8 @@ def extract_json(text: str) -> object:
         if start == -1 or end <= start:
             raise ValueError("no JSON object in the reply")
         body = body[start : end + 1]
-    return json.loads(body)
+    # strict=False: models often put real line breaks inside strings (multi-line SQL).
+    return json.loads(body, strict=False)
 
 
 class StructuredReply[M: BaseModel](BaseModel):

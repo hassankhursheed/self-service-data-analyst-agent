@@ -7,7 +7,6 @@ evaluation) are defined here already, so the OpenAPI contract is complete.
 
 import datetime as dt
 import uuid
-from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,6 +24,7 @@ from app.core.enums import (
     RegionCode,
     RoleName,
 )
+from app.services.evaluation import RunDetail, RunSummary
 from app.services.metrics import Metrics
 from app.services.users import UserView
 from app.services.verified_library import LibraryItem, ReviewItem
@@ -237,10 +237,13 @@ class EvalCaseResponse(Envelope):
 
 
 class EvalRunRequest(ApiRequest):
-    dataset: str = Field(min_length=1)
+    """Start an evaluation run. ``dataset`` must be the configured dataset (config/eval.yaml)."""
+
+    dataset: str = Field(default="northwind-eval", min_length=1)
     dataset_version: int | None = None
-    experiment_name: str = Field(min_length=1, max_length=100)
+    experiment_name: str = Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9 ._-]+$")
     verified_examples_enabled: bool = True
+    semantic_mode: Literal["full", "names_only"] = "full"
     subset: list[str] | None = None
     case_types: list[CaseType] | None = None
 
@@ -250,25 +253,14 @@ class EvalRunStarted(Envelope):
     status: EvalRunStatus
 
 
-class EvalRunItem(BaseModel):
-    run_id: uuid.UUID
-    experiment_name: str
-    model_name: str
-    status: EvalRunStatus
-    execution_accuracy: Decimal | None
-    clarification_rate: Decimal | None
-    unsafe_blocked_rate: Decimal | None
-    access_leaks: int | None
-    ungrounded_answers: int | None
-    latency_p50_ms: int | None
-    latency_p95_ms: int | None
-    avg_cost_usd: Decimal | None
-    started_at: dt.datetime
-    finished_at: dt.datetime | None
-
-
 class EvalRunList(Page):
-    items: list[EvalRunItem]
+    items: list[RunSummary]
+    # Targets from config/eval.yaml (brief §24), shown next to the results.
+    targets: dict[str, float]
+
+
+class EvalRunDetailResponse(Envelope, RunDetail):
+    pass
 
 
 class EvalCaseRequest(ApiRequest):

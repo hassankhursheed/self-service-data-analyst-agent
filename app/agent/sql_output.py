@@ -2,7 +2,7 @@
 
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import Confidence
 from app.semantic.retriever import RetrievedContext
@@ -32,6 +32,12 @@ class GeneratedSQL(BaseModel):
     date_range: SqlDateRange | None = None
     assumptions: list[str] = []
     confidence: Confidence
+
+    @field_validator("metrics_used", "assumptions", mode="before")
+    @classmethod
+    def _null_is_empty(cls, value: object) -> object:
+        """Some models write null for an empty list (Step 22). tables_used stays required."""
+        return [] if value is None else value
 
 
 def check_against_context(generated: GeneratedSQL, context: RetrievedContext) -> None:

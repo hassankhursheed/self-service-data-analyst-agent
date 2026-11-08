@@ -311,3 +311,14 @@ def test_prompt_file_must_match_its_name_and_version(tmp_path: Path) -> None:
 def test_missing_prompt_version_fails_clearly() -> None:
     with pytest.raises(ConfigFileError, match="file not found"):
         load_prompt("system", "v99")
+
+
+def test_json_replies_may_contain_line_breaks_inside_strings() -> None:
+    """Found by the evaluation: models write multi-line SQL inside the JSON string."""
+    from app.core.llm import extract_json
+
+    # A real line break inside the JSON string value: not valid strict JSON.
+    reply = '```json\n{"sql": "SELECT count(*)\nFROM orders o", "tables_used": ["orders"]}\n```'
+    value = extract_json(reply)
+    assert isinstance(value, dict)
+    assert value["sql"] == "SELECT count(*)\nFROM orders o"

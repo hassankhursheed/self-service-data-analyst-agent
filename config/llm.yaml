@@ -1,12 +1,14 @@
 # LLM settings (brief sections 22 and 27). The API key comes from LLM_API_KEY; tracing
 # from the LANGSMITH_* environment variables. Bump `version` when anything here changes;
 # evaluation runs record it.
-version: 1
+version: 3
 
-# LangChain provider name (init_chat_model) and model. Evaluation pins a dated model
-# version before experiments so runs are repeatable.
+# LangChain provider name (init_chat_model) and model: a dated version, so the app and
+# the evaluation (config/eval.yaml) use exactly the same model. Ministral 14B is the
+# strongest model the project's Mistral free credits allow (Mistral Small and Medium
+# are refused with 429 on that plan).
 provider: mistralai
-model: mistral-small-latest
+model: ministral-14b-2512
 temperature: 0.0
 max_tokens: 1024
 
@@ -25,16 +27,17 @@ budget:
   max_tokens_per_question: 20000
   max_cost_usd_per_question: 0.05
 
-# Estimated prices (USD per million tokens) for cost tracking; check the provider's
-# current price list before relying on the numbers.
+# Estimated prices (USD per million tokens) for cost tracking, Ministral 14B list price
+# at the time of writing; check the provider's current price list before relying on them.
+# Calls on free credits are not billed, but the estimate still shows the real cost.
 pricing:
-  input_per_million_usd: 0.10
-  output_per_million_usd: 0.30
+  input_per_million_usd: 0.20
+  output_per_million_usd: 0.20
 
 # Prompt name -> version used by the agent (files in config/prompts/<name>/<version>.yaml).
 prompts:
   system: v1
-  intent: v2
+  intent: v3
   sql_generation: v2
   sql_repair: v1
   answer: v1
