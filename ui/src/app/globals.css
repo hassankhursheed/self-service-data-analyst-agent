@@ -1,50 +1,52 @@
 @import "tailwindcss";
 
-/* Design tokens: one accent (indigo), slate neutrals, semantic status colours.
-   Dark mode follows the operating system setting. */
+/* AskData design tokens: one accent (teal, from the "verified answer" logo), slate
+   neutrals, semantic status colours. The theme is light, dark or the system setting
+   (data-theme on <html>, set before paint by the script in app/layout.tsx). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-900: #312e81;
+  --color-brand-50: #e8f7f1;
+  --color-brand-100: #c9eedf;
+  --color-brand-200: #9fe1cb;
+  --color-brand-400: #5dcaa5;
+  --color-brand-500: #1d9e75;
+  --color-brand-600: #0f7a5c;
+  --color-brand-700: #0b6049;
+  --color-brand-900: #063d30;
 }
 
 :root {
   --surface: #ffffff;
-  --surface-muted: #f8fafc;
-  --canvas: #f1f5f9;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --chart-1: #4f46e5;
-  --chart-2: #0891b2;
+  --surface-muted: #f6f8f8;
+  --canvas: #eef2f1;
+  --border: #dfe6e4;
+  --text: #0f1f1b;
+  --text-muted: #5b6b67;
+  --chart-1: #1d9e75;
+  --chart-2: #3b6fd4;
   --chart-3: #d97706;
-  --chart-4: #db2777;
-  --chart-grid: #e2e8f0;
+  --chart-4: #c2417a;
+  --chart-grid: #dfe6e4;
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #0f172a;
-    --surface-muted: #131c31;
-    --canvas: #0b1120;
-    --border: #1e293b;
-    --text: #e2e8f0;
-    --text-muted: #94a3b8;
-    --chart-1: #818cf8;
-    --chart-2: #22d3ee;
-    --chart-3: #fbbf24;
-    --chart-4: #f472b6;
-    --chart-grid: #1e293b;
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  /* Soft deep slate-green rather than near-black (Step 26 review: "a little dark"). */
+  --surface: #182724;
+  --surface-muted: #1d2f2b;
+  --canvas: #111c1a;
+  --border: #2a3d38;
+  --text: #e8f0ed;
+  --text-muted: #a3b5b0;
+  --chart-1: #5dcaa5;
+  --chart-2: #7aa2f0;
+  --chart-3: #fbbf24;
+  --chart-4: #f07aaa;
+  --chart-grid: #2a3d38;
+  color-scheme: dark;
 }
 
 body {
@@ -91,8 +93,23 @@ body {
   animation: fade-up 0.25s ease-out both;
 }
 
+@keyframes step-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-step {
+  animation: step-pulse 1.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-step {
     animation: none;
   }
 }

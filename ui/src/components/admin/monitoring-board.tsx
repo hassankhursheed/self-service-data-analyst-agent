@@ -91,12 +91,12 @@ function Stat({ icon, label, value, hint, tone = "brand" }: { icon: ReactNode; l
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-muted text-xs font-medium uppercase tracking-wider">{label}</p>
-          <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight" data-testid={`stat-${label}`}>
+          <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl" data-testid={`stat-${label}`}>
             {value}
           </p>
           {hint && <p className="text-muted mt-0.5 text-xs">{hint}</p>}
         </div>
-        <div className={`rounded-xl p-2 ${tones[tone]}`}>{icon}</div>
+        <div className={`hidden rounded-xl p-2 sm:block ${tones[tone]}`}>{icon}</div>
       </div>
     </Card>
   );
@@ -141,7 +141,7 @@ export function MonitoringView({ metrics }: { metrics: Metrics }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Stat icon={<MessageSquareText className="size-4" />} label="Questions" value={int(metrics.questions)} hint={`${int(metrics.runs)} agent runs`} />
         <Stat icon={<CheckCircle2 className="size-4" />} tone="green" label="Answered" value={pct(rate(o.answered))} hint={`${int(o.answered)} of ${int(finished)} finished`} />
         <Stat icon={<ShieldAlert className="size-4" />} tone="amber" label="Blocked or rejected" value={pct(rate(o.blocked + o.rejected))} hint={`${int(o.blocked)} blocked · ${int(o.rejected)} rejected`} />
@@ -152,7 +152,7 @@ export function MonitoringView({ metrics }: { metrics: Metrics }) {
         <Stat icon={<HelpCircle className="size-4" />} label="Clarifications asked" value={int(metrics.clarifications_asked)} hint={`${int(o.awaiting_clarification)} still waiting for a reply`} />
         <Stat icon={<ThumbsUp className="size-4" />} tone="green" label="Helpful ratings" value={ratings ? pct(metrics.feedback.helpful / ratings) : "—"} hint={`${int(metrics.feedback.helpful)} helpful · ${int(metrics.feedback.not_helpful)} not helpful`} />
         <Stat icon={<KeyRound className="size-4" />} tone={metrics.failed_logins ? "red" : "green"} label="Failed logins" value={int(metrics.failed_logins)} />
-        <Card className="p-4 sm:col-span-2">
+        <Card className="col-span-2 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-muted text-xs font-medium uppercase tracking-wider">Latest evaluation run</p>
@@ -287,7 +287,7 @@ export function MonitoringBoard() {
             <input type="date" aria-label="To" className={`${inputClass} w-auto`} value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} />
           </div>
         )}
-        <Button variant="ghost" size="sm" onClick={() => setNonce((n) => n + 1)} aria-label="Refresh">
+        <Button variant="ghost" size="sm" className="min-h-10 min-w-10" onClick={() => setNonce((n) => n + 1)} aria-label="Refresh">
           <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>

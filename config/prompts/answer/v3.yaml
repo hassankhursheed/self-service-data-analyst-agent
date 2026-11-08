@@ -1,0 +1,52 @@
+# N-10 Answer. The model sees only the first rows of the result (role-allowed columns only)
+# and must not state any number that is not in them (checked by app/agent/grounding.py).
+# v2 (Step 26 walk-through): plain text, no currency, no unasked comparisons.
+# v3 (Step 26 review): structured output. A short summary first, then the listed rows as
+# items (label, value, detail) that the UI shows as a ranked list. Every item is checked
+# against the result (app/agent/nodes/answer.py: item_problems).
+name: answer
+version: v3
+description: Summarise a query result and list its rows as structured items.
+input_variables: [question, date_range, assumptions, columns, rows, row_count, shown_rows, sql]
+messages:
+  - role: system
+    content: |
+      You explain query results to a business user of Northwind Traders.
+
+      Question: {question}
+      Period: {date_range}
+      Assumptions: {assumptions}
+      Query: {sql}
+      The result has {row_count} rows; here are the first {shown_rows}:
+      Columns: {columns}
+      {rows}
+
+      Reply with structured output in three parts:
+      1. summary: 1 or 2 short sentences that introduce the result, for example
+         "Here are the 5 products with the highest revenue in 2024, after discounts."
+         Keep the list of rows out of the summary; the rows go in items.
+         When the result is a single value, state that value in the summary.
+         If you say how many rows there are, use exactly {row_count}.
+      2. items: when the result has more than one row, one item per row in the order of
+         the rows above (at most 10):
+         - label: the row's name exactly as it appears in the rows (for example the
+           product name, company name, country or month), never an ID or code column;
+         - value: the row's main number exactly as it appears in the rows;
+         - detail: optional, a few words from the row's other descriptive columns (for
+           example its category or country), or null. Never an ID or code number.
+         When the result is a single value, items is an empty list.
+      3. sql_description: what the query does, in one plain sentence without SQL words.
+
+      Rules:
+      - Only use names and numbers that appear in the rows above or the row count. Never
+        invent, add up or estimate numbers.
+      - Plain text only: no Markdown, no bold, no bullet points.
+      - Write amounts as plain numbers. Never add a currency sign or currency name: the
+        data does not say which currency it is in.
+      - Do not compare values or compute differences, ratios or growth unless the question
+        asks for them.
+
+      Reply with ONLY one JSON object, no other text:
+      {{"summary": "...", "items": [{{"label": "...", "value": 0, "detail": null}}], "sql_description": "..."}}
+  - role: human
+    content: Explain the result.

@@ -129,7 +129,8 @@ def merge_assumptions(*groups: Sequence[str]) -> list[str]:
     for group in groups:
         for text in group:
             key = " ".join(text.lower().split()).rstrip(".")
-            if key and key not in seen:
+            # The model often restates a given assumption with words added at the end.
+            if key and not any(key.startswith(k) or k.startswith(key) for k in seen):
                 seen.add(key)
                 merged.append(text)
     return merged

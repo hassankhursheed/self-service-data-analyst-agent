@@ -29,31 +29,29 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [ ] Step 25: Live Deployment (built and tested locally: production images, one-command
   Compose, demo reset, daily cost cap, Railway setup in docs/deployment.md; left: the user
   deploys on Railway, then the live HTTPS check with the demo accounts, scenario 28)
-- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Part A done: EXPLAIN
-  cost check, CSV export, alerts, 90-day log clean-up, 20-user load test (eval/LOAD_TEST.md);
-  left: Part B final docs and screenshots, Part C the 28 scenarios and deliverables)
+- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Part A done; Part B:
+  AskData name, logo, teal light/dark theme, phone layout, structured answers, README,
+  API endpoint list, demo script and 19 screenshots done; left: LangSmith trace
+  screenshot, live URL in the README, Part C: the 28 scenarios and the deliverables list)
 
 ## What is left
 
 - Evaluation (eval/RESULTS.md): 77.5% accuracy with verified examples (target 80%), 100%
   clarification, 0 leaks, 83.3% unsafe blocked (one malformed reply, nothing executed),
   5 ungrounded (all date fragments). Follow-ups: dates as grounded context in the
-  grounding check, a system-catalog rule in the question guardrails, tell the SQL prompt
-  region filtering is already applied, a stronger model on a paid plan.
+  grounding check, a system-catalog rule in the question guardrails, a stronger model on a paid plan
+  (region filtering in the SQL prompt was fixed in Step 26).
 - Step 25: the user creates the Railway project (docs/deployment.md), then the live HTTPS
   URL is checked with the demo accounts (scenario 28).
-- Step 26 Part B (README, api.md, setup guide, screenshots, demo script) and Part C (all
-  28 scenarios with correlation IDs, Section 31 checklist), done with the local run.
+- Step 26: the LangSmith trace screenshot (needs the owner's LangSmith login), the live
+  URL in the README after deployment, and Part C (all 28 scenarios with correlation IDs,
+  Section 31 checklist). A fresh evaluation run would show the effect of the Step 26 fixes.
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
   several API workers, alias-proof personal-column detection, a secret scanner in CI.
 - CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub
   (Settings → Secrets and variables → Actions); until then it is skipped with a notice.
-- Results go in the README too (brief §24), in Step 26.
-- Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
-  screenshots in `docs/screenshots/` (only `01-login.jpg` so far). Done once after Step 22,
-  when Monitoring, Review and Evaluation are filled in: the user signs in as
-  `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
-  not read demo passwords), then every screen is exercised and captured.
+- Done in Step 26: the live walk-through of every role and screen in the browser (desktop
+  and phone width) and the screenshots in `docs/screenshots/`.
 - Rate limits are in memory (one API process); a shared store is needed before running
   several API workers.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business

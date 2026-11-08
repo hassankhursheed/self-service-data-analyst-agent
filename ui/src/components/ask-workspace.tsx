@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowUp, MessageSquarePlus, Sparkles } from "lucide-react";
+import { ArrowUp, BarChart3, MessageSquarePlus, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { api, ApiError } from "@/lib/api";
+import { DATASET_NAME } from "@/lib/brand";
 import type { AgentResponse, AskResponse, ConversationDetail, RoleName } from "@/lib/types";
 
+import { AgentProgress } from "./answer/agent-progress";
 import { AnswerCard } from "./answer/answer-card";
 import { Alert, Badge, Button, Card, Skeleton } from "./ui";
 
@@ -34,6 +36,9 @@ const EXAMPLES: Record<string, string[]> = {
   ],
 };
 
+// Event handlers only (kept outside the component for the React compiler's purity check).
+const now = () => Date.now();
+
 interface Turn {
   key: string;
   question: string;
@@ -42,6 +47,7 @@ interface Turn {
   questionId: string | null;
   error?: string;
   pending?: boolean;
+  startedAt?: number;
 }
 
 function statusTone(status: string | undefined) {
@@ -99,7 +105,7 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
     const trimmed = question.trim();
     if (!trimmed || busy) return;
     const key = crypto.randomUUID();
-    setTurns((all) => [...all, { key, question: trimmed, questionId: null, pending: true }]);
+    setTurns((all) => [...all, { key, question: trimmed, questionId: null, pending: true, startedAt: now() }]);
     setText("");
     setBusy(true);
     try {
@@ -121,7 +127,7 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
   async function clarify(key: string, answer: string) {
     if (!conversationId) return;
     setBusy(true);
-    update(key, { pending: true });
+    update(key, { pending: true, startedAt: now() });
     try {
       const response = await api.post<AskResponse>("clarify", { conversation_id: conversationId, answer });
       update(key, { response, status: response.status ?? undefined, questionId: response.question_id, pending: false });
@@ -153,7 +159,7 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
     <div className="flex min-h-[calc(100dvh-10rem)] flex-col">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-semibold tracking-tight">{title ?? "Ask a question"}</h1>
+          <h1 className="line-clamp-2 text-xl font-semibold tracking-tight sm:truncate sm:text-2xl">{title ?? "Ask a question"}</h1>
           <p className="text-muted mt-1 text-sm">
             {conversationId ? "Follow-up questions use the earlier questions in this conversation." : "Ask in plain language. Every answer shows how it was calculated."}
           </p>
@@ -177,11 +183,12 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
 
         {!loading && turns.length === 0 && !loadError && (
           <Card className="overflow-hidden">
-            <div className="bg-gradient-to-br from-brand-600 to-indigo-500 px-6 py-8 text-white">
-              <Sparkles className="size-6 opacity-90" />
-              <p className="mt-3 text-lg font-semibold">What would you like to know?</p>
-              <p className="mt-1 max-w-xl text-sm text-white/80">
-                Answers come from read-only queries on the Northwind data you are allowed to see. Dates are relative to the business date 6 May 2025.
+            <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-6 py-8 text-white">
+              <div className="absolute -right-16 -top-16 size-56 rounded-full bg-brand-200/20 blur-2xl" aria-hidden />
+              <Sparkles className="relative size-6 opacity-90" />
+              <p className="relative mt-3 text-lg font-semibold">What would you like to know?</p>
+              <p className="relative mt-1 max-w-xl text-sm text-white/85">
+                Answers come from read-only queries on the {DATASET_NAME} data you are allowed to see. Dates are relative to the business date 6 May 2025.
               </p>
             </div>
             {examples.length > 0 && (
@@ -191,8 +198,9 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
                     key={example}
                     onClick={() => void ask(example)}
                     disabled={busy}
-                    className="rounded-xl border border-subtle px-4 py-3 text-left text-sm transition hover:border-brand-300 hover:bg-brand-50/60 dark:hover:bg-brand-900/20"
+                    className="group flex items-center gap-3 rounded-xl border border-subtle px-4 py-3 text-left text-sm transition hover:border-brand-400 hover:bg-brand-50/60 dark:hover:bg-brand-900/20"
                   >
+                    <BarChart3 className="size-4 shrink-0 text-brand-500 transition group-hover:scale-110" aria-hidden />
                     {example}
                   </button>
                 ))}
@@ -207,13 +215,7 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
               <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 px-4 py-2.5 text-sm text-white shadow-sm">{turn.question}</div>
             </div>
             <Card className="p-5 sm:p-6">
-              {turn.pending && (
-                <div className="space-y-3" aria-live="polite">
-                  <p className="text-muted text-sm">Checking the question, writing and running a safe query…</p>
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-40 w-full" />
-                </div>
-              )}
+              {turn.pending && <AgentProgress startedAt={turn.startedAt ?? 0} />}
               {!turn.pending && turn.error && <Alert title="The question could not be sent">{turn.error}</Alert>}
               {!turn.pending && !turn.error && turn.response && (
                 <AnswerCard
@@ -250,7 +252,7 @@ export function AskWorkspace({ role, conversationId: initialId }: { role: RoleNa
             onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
             onKeyDown={onKeyDown}
             rows={1}
-            placeholder={conversationId ? "Ask a follow-up, e.g. “now only for Germany”" : "e.g. Top 5 products by revenue last quarter"}
+            placeholder={conversationId ? "Ask a follow-up question" : "Ask a question about your data"}
             aria-label="Your question"
             className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-slate-400"
           />

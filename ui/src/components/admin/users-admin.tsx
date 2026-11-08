@@ -235,7 +235,44 @@ export function UsersAdmin() {
       {error && <Alert title="Could not load users">{error}</Alert>}
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Phones: one card per user with full-size actions. */}
+        <ul className="divide-y divide-[var(--border)] sm:hidden" data-testid="users-cards">
+          {loading && !data &&
+            [0, 1, 2].map((i) => (
+              <li key={i} className="p-4">
+                <Skeleton className="h-16 w-full" />
+              </li>
+            ))}
+          {data?.items.map((user) => (
+            <li key={user.id} className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{user.display_name}</p>
+                  <p className="text-muted font-mono text-xs">{user.username}</p>
+                </div>
+                {user.is_active ? <Badge tone="green">Active</Badge> : <Badge>Disabled</Badge>}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {user.role ? <Badge tone={user.role === "admin" ? "amber" : "brand"}>{ROLE_LABELS[user.role]}</Badge> : <Badge tone="red">No role</Badge>}
+                {user.region && <Badge>{REGION_LABELS[user.region]}</Badge>}
+                <span className="text-muted text-xs">Last login {user.last_login_at ? formatDateTime(user.last_login_at) : "never"}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="secondary" size="sm" className="min-h-10" onClick={() => setDialog({ kind: "edit", user })}>
+                  <Pencil className="size-3.5" /> Role
+                </Button>
+                <Button variant="secondary" size="sm" className="min-h-10" onClick={() => setDialog({ kind: "password", user })}>
+                  <KeyRound className="size-3.5" /> Password
+                </Button>
+                <Button variant="secondary" size="sm" className="min-h-10" loading={busyId === user.id} onClick={() => void toggle(user)}>
+                  {user.is_active ? <UserX className="size-3.5" /> : <UserCheck className="size-3.5" />}
+                  {user.is_active ? "Disable" : "Enable"}
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-sm" data-testid="users-table">
             <thead className="bg-muted text-muted text-left text-xs uppercase tracking-wider">
               <tr>

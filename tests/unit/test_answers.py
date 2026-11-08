@@ -75,6 +75,15 @@ def test_numeric_year_column_is_the_x_axis() -> None:
     assert (spec.type, spec.x, spec.y) == ("line", "year", ["revenue"])
 
 
+def test_id_columns_are_not_plotted() -> None:
+    """Step 26 walk-through: product_id appeared as a bar series next to revenue."""
+    rows = [(29, "Thüringer Rostbratwurst", Decimal("27537.13")), (38, "Côte de Blaye", Decimal(1))]
+    spec = choose_chart(
+        ["product_id", "product_name", "revenue"], rows, truncated=False, config=CHART
+    )
+    assert (spec.type, spec.x, spec.y) == ("bar", "product_name", ["revenue"])
+
+
 def test_category_comparison_is_a_bar_chart() -> None:
     spec = choose_chart(BY_CATEGORY.columns, BY_CATEGORY.rows, truncated=False, config=CHART)
     assert (spec.type, spec.x, spec.y, len(spec.data)) == ("bar", "category_name", ["revenue"], 8)
@@ -168,7 +177,21 @@ async def run(model: ScriptedModel, result: QueryResult = BY_CATEGORY) -> AgentS
 
 
 GOOD = {
-    "explanation": "Seafood led with 17,777.77.",
+    "explanation": "Here are the 8 categories by revenue, after discounts.",
+    "sql_description": "Sums revenue by category.",
+}
+# Step 26 review: structured output - a summary, then the rows as items.
+WITH_ITEMS = {
+    "summary": "Here are the revenue totals by category for 2024.",
+    "items": [
+        {"label": "Beverages", "value": 10000, "detail": None},
+        {"label": "Seafood", "value": "17,777.77", "detail": "after discounts"},
+    ],
+    "sql_description": "Sums revenue by category.",
+}
+WRONG_ITEM = {
+    "summary": "Here are the revenue totals by category for 2024.",
+    "items": [{"label": "Caviar", "value": 99, "detail": None}],
     "sql_description": "Sums revenue by category.",
 }
 INVENTED = {"explanation": "Revenue was 1,000,000.", "sql_description": "Sums revenue."}
@@ -198,7 +221,9 @@ async def test_ungrounded_twice_falls_back_to_a_template_from_the_rows() -> None
     assert state.answer is not None
     assert state.answer.source == "template"
     assert "1,000,000" not in state.answer.text
-    assert "Beverages" in state.answer.text
+    assert state.answer.text.startswith("Here are the 8 results")
+    assert "Beverages" not in state.answer.text
+    assert state.answer.items[0].label == "Beverages"  # the rows come as a structured list
     assert check_grounding(state.answer.text, BY_CATEGORY.columns, BY_CATEGORY.rows,
                            context_numbers={8.0, 3.0, 2024.0, 1.0, 31.0}).grounded  # fmt: skip
 
@@ -270,6 +295,7 @@ async def test_response_always_has_sql_description_assumptions_date_range_and_ro
     assert response.table is not None
     assert response.table.rows[0] == ["Beverages", 10000.0]
     assert response.correlation_id is not None
+    assert response.verified is True  # grounded LLM answer, normal confidence
 
 
 async def test_low_confidence_is_labelled_in_the_response() -> None:
@@ -279,6 +305,7 @@ async def test_low_confidence_is_labelled_in_the_response() -> None:
     assert response.low_confidence is True
     assert response.low_confidence_label is not None
     assert response.low_confidence_label.startswith("Low confidence")
+    assert response.verified is False  # never "Verified" when confidence is low
 
 
 async def test_large_results_are_paginated() -> None:
@@ -307,3 +334,101 @@ async def test_blocked_response_carries_the_reason() -> None:
     assert response.block is not None
     assert response.block.message
     assert response.answer is None
+
+
+def test_answers_are_plain_text_without_currency_signs() -> None:
+    """Step 26 walk-through: the model wrote "**Thüringer Rostbratwurst** (€27,537.13)"."""
+    from app.agent.nodes.answer import AnswerDraft, plain_text
+
+    assert plain_text("**Thüringer Rostbratwurst** (€27,537.13)") == (
+        "Thüringer Rostbratwurst (27,537.13)"
+    )
+    assert plain_text("Revenue was $ 1,200 and `orders` 5") == "Revenue was 1,200 and orders 5"
+    assert plain_text("A 5-star product") == "A 5-star product"
+    draft = AnswerDraft(explanation="**Total** €10", sql_description="Sums `revenue`.")
+    assert (draft.explanation, draft.sql_description) == ("Total 10", "Sums revenue.")
+
+
+def test_template_answer_leaves_out_id_columns() -> None:
+    from app.agent.nodes.answer import template_answer
+
+    result = QueryResult(
+        columns=["product_id", "product_name", "revenue"],
+        rows=[
+            (29, "Thüringer Rostbratwurst", Decimal("27537.13")),
+            (38, "Côte de Blaye", Decimal(1)),
+        ],
+        row_count=2,
+        truncated=False,
+    )
+    text = template_answer(result, "2024")
+    assert text == "Here are the 2 results for 2024."
+    assert "Thüringer" not in text  # no row names in the paragraph
+
+
+async def test_the_models_items_are_listed_under_the_summary() -> None:
+    model = ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[WITH_ITEMS])
+    state = await run(model)
+    assert state.answer is not None
+    assert state.answer.text == WITH_ITEMS["summary"]
+    assert [(i.label, i.value, i.detail) for i in state.answer.items] == [
+        ("Beverages", 10000.0, None),
+        ("Seafood", 17777.77, "after discounts"),
+    ]
+
+
+async def test_an_item_that_is_not_in_the_result_is_sent_back() -> None:
+    model = ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[WRONG_ITEM, WITH_ITEMS])
+    state = await run(model)
+    assert state.answer is not None
+    assert state.answer.source == "llm"
+    assert "'Caviar' is not in the result" in str(model.calls_by_kind["answer"][1][-1].content)
+
+
+async def test_without_model_items_the_list_is_built_from_the_rows() -> None:
+    state = await run(ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[GOOD]))
+    assert state.answer is not None
+    assert len(state.answer.items) == 8
+    assert state.answer.items[0].label == "Beverages"
+
+
+async def test_naming_rows_in_the_summary_is_allowed() -> None:
+    named = {**GOOD, "explanation": "Seafood and Beverages lead the categories."}
+    state = await run(ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[named]))
+    assert state.answer is not None
+    assert (state.answer.source, state.answer.text) == ("llm", named["explanation"])
+
+
+async def test_an_id_is_not_shown_as_an_item_detail() -> None:
+    with_ids = {
+        **WITH_ITEMS,
+        "items": [
+            {"label": "Beverages", "value": 10000, "detail": "category_id 1"},
+            {"label": "Seafood", "value": 17777.77, "detail": "ID: 8"},
+        ],
+    }
+    state = await run(ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[with_ids]))
+    assert state.answer is not None
+    assert [i.detail for i in state.answer.items] == [None, None]
+
+
+def test_an_id_code_is_not_accepted_as_an_item_label() -> None:
+    from app.agent.nodes.answer import DraftItem, item_problems
+
+    result = QueryResult(
+        columns=["customer_id", "company_name", "number_of_orders"],
+        rows=[("ERNSH", "Ernst Handel", 9), ("FOLKO", "Folk och fä HB", 9)],
+        row_count=2,
+        truncated=False,
+    )
+    assert item_problems([DraftItem(label="ERNSH", value=9)], result) == [
+        "'ERNSH' is an ID; use the row's name instead"
+    ]
+    assert item_problems([DraftItem(label="Ernst Handel", value=9)], result) == []
+
+
+def test_a_single_value_has_no_items() -> None:
+    from app.agent.nodes.answer import items_from_rows
+
+    one = QueryResult(columns=["revenue"], rows=[(Decimal(5),)], row_count=1, truncated=False)
+    assert items_from_rows(one) == []

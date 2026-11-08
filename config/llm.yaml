@@ -1,7 +1,7 @@
 # LLM settings (brief sections 22 and 27). The API key comes from LLM_API_KEY; tracing
 # from the LANGSMITH_* environment variables. Bump `version` when anything here changes;
 # evaluation runs record it.
-version: 4
+version: 6
 
 # LangChain provider name (init_chat_model) and model: a dated version, so the app and
 # the evaluation (config/eval.yaml) use exactly the same model. Ministral 14B is the
@@ -42,4 +42,4 @@ prompts:
   intent: v3
   sql_generation: v3
   sql_repair: v1
-  answer: v1
+  answer: v3

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarRange, Info, Lightbulb, Rows3 } from "lucide-react";
+import { AlertCircle, BadgeCheck, CalendarRange, Info, Lightbulb, Rows3 } from "lucide-react";
 
 import type { AgentResponse } from "@/lib/types";
 
@@ -9,6 +9,7 @@ import { ChartView } from "./chart-view";
 import { Clarification } from "./clarification";
 import { FeedbackBar } from "./feedback";
 import { isProblem, OutcomeMessage } from "./outcome";
+import { RankedResults } from "./ranked-results";
 import { ResultTable } from "./result-table";
 import { SqlPanel } from "./sql-panel";
 
@@ -29,6 +30,10 @@ export function AnswerCard({
 }) {
   const answered = response.status === "ANSWERED";
   const waiting = response.status === "CLARIFICATION_NEEDED" && response.clarification;
+  const items = response.items ?? [];
+  // Text first, then the rows as a ranked list (structured items from the API); the list
+  // replaces a bar chart of the same rows.
+  const listed = answered && items.length > 0;
   return (
     <div className="space-y-5" data-testid="answer-card" data-status={response.status ?? ""}>
       <OutcomeMessage response={response} />
@@ -48,19 +53,24 @@ export function AnswerCard({
         </p>
       )}
 
-      {answered && response.answer && (
-        <div className="space-y-2">
-          {response.low_confidence && (
-            <Badge tone="amber">
-              <AlertCircle className="size-3" /> {response.low_confidence_label ?? "Low confidence"}
+      {answered && response.answer && <p className="text-[15px] leading-relaxed">{response.answer}</p>}
+
+      {listed && <RankedResults items={items} valueLabel={response.chart?.y[0] ?? null} />}
+
+      {answered && (
+        <div className="flex flex-wrap gap-2" data-testid="answer-chips">
+          {response.verified && (
+            <Badge tone="green" className="!gap-1">
+              <span title="Every number in this answer was found in the query result">
+                <BadgeCheck className="inline size-3.5 align-[-3px]" /> Verified against the data
+              </span>
             </Badge>
           )}
-          <p className="text-[15px] leading-relaxed">{response.answer}</p>
-        </div>
-      )}
-
-      {answered && (response.date_range || response.row_count > 0) && (
-        <div className="flex flex-wrap gap-2">
+          {response.low_confidence && (
+            <Badge tone="amber">
+              <AlertCircle className="size-3" /> {response.low_confidence_label ?? "Low confidence: check this answer"}
+            </Badge>
+          )}
           {response.date_range && (
             <Badge tone="brand">
               <CalendarRange className="size-3" /> {response.date_range.label}
@@ -72,7 +82,7 @@ export function AnswerCard({
         </div>
       )}
 
-      {answered && <ChartView spec={response.chart} />}
+      {answered && !(listed && response.chart?.type === "bar") && <ChartView spec={response.chart} />}
 
       {answered && response.table && <ResultTable initial={response.table} conversationId={isLatest ? conversationId : null} />}
 

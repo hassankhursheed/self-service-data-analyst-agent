@@ -333,7 +333,10 @@ def test_assumptions_are_merged_once_each() -> None:
 
     merged = merge_assumptions(
         ["Revenue is calculated after discounts (net sales).", "Last quarter is Q1 2025."],
-        ["revenue is calculated after discounts (net sales)", "Categories come from categories."],
+        [
+            "revenue is calculated after discounts (net sales) as per the metric definition.",
+            "Categories come from categories.",
+        ],
     )
     assert merged == [
         "Revenue is calculated after discounts (net sales).",

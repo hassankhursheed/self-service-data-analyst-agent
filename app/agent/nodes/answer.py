@@ -2,23 +2,26 @@
 
 - Empty result: an honest "No ... matched these filters" message and a suggestion; no LLM.
 - Otherwise the LLM sees only the first ``rows_for_llm`` rows (role-allowed columns only)
-  and returns JSON with an explanation and a one-line SQL description.
+  and returns structured JSON: a short summary, the listed rows as ``items`` (label, value,
+  detail) and a one-line SQL description. The UI shows the summary, then the items as a
+  ranked list (Step 26 review). Every item must exist in the result with the same value.
 - Every number in the explanation must be grounded in the result (app/agent/grounding.py);
   one regeneration, then a plain template answer built from the rows. An unavailable LLM
   also falls back to the template, because the result itself is still correct.
 """
 
+import re
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.agent.charts import choose_chart
+from app.agent.charts import choose_chart, is_identifier
 from app.agent.deps import AgentDeps, usage_of
 from app.agent.grounding import check_grounding, context_numbers
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.nodes.sql_context import date_range_text
-from app.agent.state import AgentState, Answer
+from app.agent.state import AgentState, Answer, AnswerItem
 from app.core.enums import Confidence, NodeName, QuestionStatus
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
@@ -30,11 +33,75 @@ from app.safety.access_policy import get_access_policy
 _ENTITY_NAMES = {"order_details": "order lines"}
 
 
+_MARKDOWN = re.compile(r"(\*\*|__|`)")
+# A detail that is only an identifier ("product_id 29", "ID: 29") adds noise to the list.
+_ID_DETAIL = re.compile(r"(^|[\s_])id\b", re.IGNORECASE)
+_CURRENCY = re.compile(r"[€$£¥]\s?(?=[\d(-])")
+
+
+def plain_text(text: str) -> str:
+    """The answer is shown as plain text: no Markdown markers and no currency signs, which
+    the Northwind data does not have (Step 26 walk-through: "**€27,537.13**")."""
+    return _CURRENCY.sub("", _MARKDOWN.sub("", text)).strip()
+
+
+MAX_ITEMS = 10
+
+
+def _number(value: object) -> object:
+    """'27,537.13' or '27537.13' -> 27537.13; anything else is left for validation."""
+    if isinstance(value, str):
+        cleaned = plain_text(value).replace(",", "").strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return value
+    return value
+
+
+class DraftItem(BaseModel):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    label: str = Field(min_length=1, max_length=120)
+    value: float | None = None
+    detail: str | None = Field(default=None, max_length=160)
+
+    @field_validator("label", "detail", mode="before")
+    @classmethod
+    def _plain(cls, value: object) -> object:
+        return plain_text(value) if isinstance(value, str) else value
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def _value(cls, value: object) -> object:
+        return _number(value)
+
+
 class AnswerDraft(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     explanation: str = Field(min_length=1, max_length=1200)
+    items: list[DraftItem] = Field(default_factory=list, max_length=MAX_ITEMS)
     sql_description: str = Field(min_length=1, max_length=300)
+
+    @field_validator("explanation", "sql_description", mode="before")
+    @classmethod
+    def _plain(cls, value: object) -> object:
+        return plain_text(value) if isinstance(value, str) else value
+
+    @field_validator("items", mode="before")
+    @classmethod
+    def _items(cls, value: object) -> object:
+        return [] if value is None else value
+
+    @model_validator(mode="before")
+    @classmethod
+    def _summary(cls, data: object) -> object:
+        """Prompt v3 calls the text "summary"; earlier prompts called it "explanation"."""
+        if isinstance(data, dict) and "summary" in data and "explanation" not in data:
+            data = {**data, "explanation": data["summary"]}
+            del data["summary"]
+        return data
 
 
 def format_value(value: Any) -> str:  # noqa: ANN401 (result cells have any SQL type)
@@ -78,18 +145,81 @@ def template_answer(result: QueryResult, period_label: str | None) -> str:
             for c, v in zip(result.columns, result.rows[0], strict=False)
         )
         return f"Result{period}: {pairs}."
-    shown = [
-        ", ".join(
-            f"{c.replace('_', ' ')} {format_value(v)}"
-            for c, v in zip(result.columns, row, strict=False)
-        )
-        for row in result.rows[:3]
-    ]
-    more = " (cut at the row limit)" if result.truncated else ""
-    return (
-        f"The query returned {result.row_count} rows{period}{more}. "
-        f"Top results: {'; '.join(shown)}."
+    # Rows are shown as a ranked list and a table; the sentence only summarises (Step 26).
+    more = (
+        " (cut at the row limit; narrow the question to see everything)" if result.truncated else ""
     )
+    return f"Here are the {result.row_count} results{period}{more}."
+
+
+def _label_and_value_columns(result: QueryResult) -> tuple[int | None, int | None]:
+    """The first text column and the first numeric column that are not IDs."""
+    label = value = None
+    for i, column in enumerate(result.columns):
+        if is_identifier(column):
+            continue
+        cells = [row[i] for row in result.rows if row[i] is not None]
+        if label is None and cells and all(isinstance(c, str) for c in cells):
+            label = i
+        if (
+            value is None
+            and cells
+            and all(isinstance(c, int | float | Decimal) and not isinstance(c, bool) for c in cells)
+        ):
+            value = i
+    return label, value
+
+
+def items_from_rows(result: QueryResult, limit: int = MAX_ITEMS) -> list[AnswerItem]:
+    """The list built straight from the result (used when the model gives none)."""
+    if result.row_count < 2:
+        return []
+    label, value = _label_and_value_columns(result)
+    if label is None:
+        return []
+    return [
+        AnswerItem(
+            label=str(row[label]),
+            value=float(row[value]) if value is not None and row[value] is not None else None,
+        )
+        for row in result.rows[:limit]
+    ]
+
+
+def item_problems(items: list[DraftItem], result: QueryResult) -> list[str]:
+    """Items whose label is not a result row, or whose value differs from that row."""
+    problems: list[str] = []
+    for item in items:
+        wanted = item.label.strip().lower()
+
+        def matches(row: tuple[Any, ...], *, names_only: bool, wanted: str = wanted) -> bool:
+            return any(
+                isinstance(c, str)
+                and c.strip().lower() == wanted
+                and not (names_only and is_identifier(col))
+                for col, c in zip(result.columns, row, strict=False)
+            )
+
+        rows = [row for row in result.rows if matches(row, names_only=True)]
+        if not rows:
+            in_ids = any(matches(row, names_only=False) for row in result.rows)
+            problems.append(
+                f"{item.label!r} is an ID; use the row's name instead"
+                if in_ids
+                else f"{item.label!r} is not in the result"
+            )
+            continue
+        if item.value is None:
+            continue
+        numbers = [
+            float(c)
+            for row in rows
+            for c in row
+            if isinstance(c, int | float | Decimal) and not isinstance(c, bool)
+        ]
+        if not any(abs(item.value - n) <= max(0.01, abs(n) * 0.005) for n in numbers):
+            problems.append(f"{item.label!r} has value {item.value} which is not in its row")
+    return problems
 
 
 def template_description(state: AgentState) -> str:
@@ -167,6 +297,9 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
                 raise ValueError(
                     "these numbers are not in the result rows: " + ", ".join(check.ungrounded)
                 )
+            problems = item_problems(draft.items, result)
+            if problems:
+                raise ValueError("items must be rows of the result: " + "; ".join(problems[:5]))
 
         budget = deps.budget_for(state)
         try:
@@ -179,10 +312,19 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
                 max_regenerations=config.max_regenerations,
                 check=grounded,
             )
+            items = [
+                AnswerItem(
+                    label=i.label,
+                    value=i.value,
+                    detail=None if i.detail and _ID_DETAIL.search(i.detail) else i.detail,
+                )
+                for i in reply.value.items
+            ] or items_from_rows(result)
             answer = Answer(
                 text=reply.value.explanation,
                 sql_description=reply.value.sql_description,
                 chart=chart,
+                items=items,
                 grounded=True,
                 source="llm",
                 low_confidence_label=label,
@@ -197,6 +339,7 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
                 text=template_answer(result, period),
                 sql_description=template_description(state),
                 chart=chart,
+                items=items_from_rows(result),
                 grounded=True,
                 source="template",
                 low_confidence_label=label,

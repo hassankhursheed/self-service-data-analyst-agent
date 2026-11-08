@@ -214,7 +214,7 @@ function Queue({ onNotice }: { onNotice: (notice: Notice) => void }) {
           <button
             key={k || "all"}
             onClick={() => setKind(k)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${kind === k ? "bg-brand-600 text-white ring-brand-600" : "text-muted ring-[var(--border)] hover:text-[var(--text)]"}`}
+            className={`min-h-9 rounded-full px-3.5 py-1 text-xs font-medium ring-1 transition sm:min-h-0 ${kind === k ? "bg-brand-600 text-white ring-brand-600" : "text-muted ring-[var(--border)] hover:text-[var(--text)]"}`}
           >
             {k ? KIND[k].label : "All"}
           </button>
@@ -234,7 +234,7 @@ function Queue({ onNotice }: { onNotice: (notice: Notice) => void }) {
       {data && data.items.length > 0 && (
         <ul className="mt-3 divide-y divide-[var(--border)]" data-testid="review-queue">
           {data.items.map((item) => (
-            <li key={`${item.kind}-${item.id}`} className="flex flex-wrap items-start gap-4 px-5 py-4">
+            <li key={`${item.kind}-${item.id}`} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4 sm:px-5">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={KIND[item.kind].tone}>
@@ -336,7 +336,7 @@ function Library({ onNotice }: { onNotice: (notice: Notice) => void }) {
           <button
             key={label}
             onClick={() => setActive(value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${active === value ? "bg-brand-600 text-white ring-brand-600" : "text-muted ring-[var(--border)] hover:text-[var(--text)]"}`}
+            className={`min-h-9 rounded-full px-3.5 py-1 text-xs font-medium ring-1 transition sm:min-h-0 ${active === value ? "bg-brand-600 text-white ring-brand-600" : "text-muted ring-[var(--border)] hover:text-[var(--text)]"}`}
           >
             {label}
           </button>
@@ -352,7 +352,7 @@ function Library({ onNotice }: { onNotice: (notice: Notice) => void }) {
       {data && data.items.length > 0 && (
         <ul className="mt-3 divide-y divide-[var(--border)]" data-testid="verified-library">
           {data.items.map((query) => (
-            <li key={query.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
+            <li key={query.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4 sm:px-5">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   {query.is_active ? <Badge tone="green">Enabled</Badge> : <Badge>Disabled</Badge>}

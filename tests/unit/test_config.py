@@ -67,7 +67,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
 
 def test_settings_import_and_load(clean_env: pytest.MonkeyPatch) -> None:
     settings = _load()
-    assert settings.app.name == "Self-Service Data Analyst Agent"
+    assert settings.app.name == "AskData - Self-Service Data Analyst Agent"
     assert settings.app_env == "development"
     assert settings.langsmith_tracing is False
     assert settings.app_database_url.get_secret_value() == DUMMY_ENV["APP_DATABASE_URL"]

@@ -45,6 +45,12 @@ export interface TablePage {
   truncated: boolean;
 }
 
+export interface AnswerItem {
+  label: string;
+  value: number | null;
+  detail: string | null;
+}
+
 export interface AgentResponse {
   correlation_id: string | null;
   thread_id: string | null;
@@ -53,6 +59,8 @@ export interface AgentResponse {
   answer: string | null;
   low_confidence: boolean;
   low_confidence_label: string | null;
+  verified?: boolean;
+  items?: AnswerItem[];
   chart: ChartSpec | null;
   table: TablePage | null;
   row_count: number;

@@ -15,6 +15,48 @@ python scripts/run_api.py       # http://127.0.0.1:8000, docs at /docs
 `scripts/run_api.py` uses the selector event loop on Windows (psycopg's async pool needs
 it). The API needs `JWT_SECRET_KEY`, the database URLs and `LLM_API_KEY` in `.env`.
 
+## Endpoints
+
+Every response carries the `X-Correlation-ID` header and a `correlation_id` in the body.
+All routes except `/health` and `/auth/login` need `Authorization: Bearer <token>`;
+`/admin/*` needs the administrator role (403 `ADMIN_ONLY` otherwise). Request and
+response models: OpenAPI at `/docs` (`/openapi.json`).
+
+| Method | Path | Who | Purpose |
+| --- | --- | --- | --- |
+| GET | `/health` | anyone | API and database status |
+| POST | `/auth/login` | anyone | Username and password to an access token (login limit per address) |
+| GET | `/auth/me` | signed in | The caller with their current role and region |
+| POST | `/ask` | business roles | Ask a question (new conversation, or a follow-up with `conversation_id`); per-user limit and daily cost cap |
+| POST | `/clarify` | business roles | Answer the pending clarifying question of a conversation |
+| GET | `/conversations` | signed in | The caller's conversations (paged) |
+| GET | `/conversations/{id}` | owner | One conversation with its questions and the latest answer |
+| GET | `/conversations/{id}/table` | owner | One page of the latest result's rows |
+| GET | `/conversations/{id}/table.csv` | owner | All rows of the latest result as CSV (audited) |
+| POST | `/feedback` | owner | Helpful / not helpful (and a comment) for an answer |
+| GET | `/admin/users` | admin | Users with roles, regions, status, last login |
+| POST | `/admin/users` | admin | Create a user |
+| PATCH | `/admin/users/{id}` | admin | Change role, region, display name or active flag |
+| POST | `/admin/users/{id}/reset-password` | admin | Set a new password |
+| GET | `/admin/metrics` | admin | Monitoring numbers for a period (`from`, `to`) |
+| GET | `/admin/alerts` | admin | Most recent alerts |
+| GET | `/admin/blocked` | admin | Blocked queries with reasons |
+| GET | `/admin/errors` | admin | Agent errors |
+| POST | `/admin/errors/{id}/rerun` | admin | Re-run a failed question as its original user (once) |
+| GET | `/admin/review` | admin | Review queue: not helpful, blocked, failures |
+| GET | `/admin/verified-queries` | admin | Verified query library (enabled, disabled, all versions) |
+| POST | `/admin/verified-queries` | admin | Verify or correct a query into the library |
+| PATCH | `/admin/verified-queries/{id}` | admin | Enable or disable an example |
+| POST | `/admin/feedback/{id}/eval-case` | admin | Turn feedback into an evaluation case |
+| POST | `/admin/eval/run` | admin | Start an evaluation run (409 while one runs) |
+| GET | `/admin/eval/runs` | admin | Evaluation runs |
+| GET | `/admin/eval/runs/{id}` | admin | One run with every case result |
+
+An answered `/ask` response holds `answer` (the summary), `items` (the listed rows: label,
+value, detail, checked against the result), `verified`, `chart`, `table` (first page),
+`row_count`, `sql` (text and description), `assumptions`, `date_range`, `notices` and,
+when needed, `clarification` or `block`.
+
 ## Layout
 
 | Module | Responsibility |
@@ -44,8 +86,6 @@ it). The API needs `JWT_SECRET_KEY`, the database URLs and `LLM_API_KEY` in `.en
 - **Re-run:** `POST /admin/errors/{id}/rerun` runs the logged (masked) question again as
   the original user, with that user's *current* role and region; each error can be re-run
   once (409 afterwards).
-- **501 endpoints:** metrics, verified queries and evaluation routes exist with their final
-  models and return `NOT_IMPLEMENTED` until their step.
 
 - **CSV download:** `GET /conversations/{id}/table.csv` returns every result row of the
   latest question as CSV (what the table shows, already limited to the user's role and

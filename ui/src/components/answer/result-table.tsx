@@ -78,7 +78,7 @@ export function ResultTable({ initial, conversationId }: { initial: TablePage; c
             <a
               href={`/api/proxy/conversations/${conversationId}/table.csv`}
               download
-              className="ml-3 inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-200"
+              className="ml-1 inline-flex min-h-9 items-center gap-1 rounded-lg px-2 font-medium text-brand-600 hover:bg-brand-50 hover:underline dark:text-brand-200 dark:hover:bg-brand-900/30"
               data-testid="download-csv"
             >
               <Download className="size-3.5" aria-hidden />

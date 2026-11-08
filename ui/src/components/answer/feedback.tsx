@@ -44,11 +44,11 @@ export function FeedbackBar({ questionId }: { questionId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted text-sm">Was this answer helpful?</span>
-        <Button variant={rating === "helpful" ? "primary" : "secondary"} size="sm" disabled={busy} onClick={() => { setRating("helpful"); void send("helpful", comment); }}>
+        <span className="text-muted w-full text-sm sm:w-auto">Was this answer helpful?</span>
+        <Button variant={rating === "helpful" ? "primary" : "secondary"} size="sm" className="min-h-9" disabled={busy} onClick={() => { setRating("helpful"); void send("helpful", comment); }}>
           <ThumbsUp className="size-3.5" /> Helpful
         </Button>
-        <Button variant={rating === "not_helpful" ? "primary" : "secondary"} size="sm" disabled={busy} onClick={() => setRating("not_helpful")}>
+        <Button variant={rating === "not_helpful" ? "primary" : "secondary"} size="sm" className="min-h-9" disabled={busy} onClick={() => setRating("not_helpful")}>
           <ThumbsDown className="size-3.5" /> Not helpful
         </Button>
       </div>

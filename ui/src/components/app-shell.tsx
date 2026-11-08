@@ -3,13 +3,14 @@
 import clsx from "clsx";
 import {
   Activity,
-  BarChart3,
   ClipboardCheck,
+  Database,
   FlaskConical,
   History,
   LogOut,
   Menu,
   MessageSquareText,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -18,9 +19,12 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { logout } from "@/lib/api";
+import { DATASET_NAME } from "@/lib/brand";
 import { navFor, type NavItem } from "@/lib/nav";
 import { REGION_LABELS, ROLE_LABELS, type User } from "@/lib/types";
 
+import { Wordmark } from "./logo";
+import { ThemeToggle } from "./theme-toggle";
 import { Badge } from "./ui";
 
 const ICONS: Record<NavItem["icon"], ReactNode> = {
@@ -34,7 +38,7 @@ const ICONS: Record<NavItem["icon"], ReactNode> = {
 
 function initials(name: string): string {
   return name
-    .split(/[\s.]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
@@ -50,6 +54,35 @@ export function IdentityBadges({ user }: { user: User }) {
       {user.region && <Badge tone="neutral">{REGION_LABELS[user.region]}</Badge>}
       {user.role && user.role !== "admin" && !user.region && <Badge tone="neutral">All regions</Badge>}
     </div>
+  );
+}
+
+function scopeOf(user: User): string {
+  if (user.role === "admin") return "Admin · no business data";
+  if (!user.role) return "No data access";
+  return `${user.region ? REGION_LABELS[user.region] : "All regions"} · read-only`;
+}
+
+/** What this user's answers are limited to: shown at all times so access control is visible. */
+export function ScopeChip({ user }: { user: User }) {
+  return (
+    <span
+      className="hidden items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 md:inline-flex dark:border-brand-900 dark:bg-brand-900/40 dark:text-brand-200"
+      title="Every answer is limited to this scope by the database"
+      data-testid="scope-chip"
+    >
+      <ShieldCheck className="size-3.5" aria-hidden />
+      {scopeOf(user)}
+    </span>
+  );
+}
+
+function DatasetLabel() {
+  return (
+    <span className="text-muted hidden items-center gap-1.5 text-xs lg:inline-flex" data-testid="dataset-label">
+      <Database className="size-3.5" aria-hidden />
+      Dataset: <span className="font-medium text-[var(--text)]">{DATASET_NAME}</span>
+    </span>
   );
 }
 
@@ -86,11 +119,8 @@ function NavLinks({ user, onNavigate }: { user: User; onNavigate?: () => void })
 
 function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 px-3">
-      <div className="rounded-lg bg-brand-600 p-1.5 text-white shadow-sm">
-        <BarChart3 className="size-4" />
-      </div>
-      <span className="font-semibold tracking-tight">Northwind Analyst</span>
+    <Link href="/" className="flex items-center px-3" aria-label="AskData home">
+      <Wordmark size={30} />
     </Link>
   );
 }
@@ -106,7 +136,11 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
         <div className="flex-1 px-3">
           <NavLinks user={user} />
         </div>
-        <p className="text-muted px-6 text-xs">Fictional Northwind data · read-only</p>
+        <p className="text-muted px-6 text-xs">
+          Dataset: {DATASET_NAME} (fictional)
+          <br />
+          Read-only access
+        </p>
       </aside>
 
       {/* Drawer (mobile) */}
@@ -120,8 +154,16 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
                 <X className="size-5" />
               </button>
             </div>
-            <div className="px-3">
+            <div className="flex-1 px-3">
               <NavLinks user={user} onNavigate={() => setOpen(false)} />
+            </div>
+            <div className="text-muted space-y-1.5 border-t border-subtle px-6 pt-4 text-xs">
+              <p className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 text-brand-600" aria-hidden /> {scopeOf(user)}
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Database className="size-3.5" aria-hidden /> Dataset: {DATASET_NAME} (fictional)
+              </p>
             </div>
           </aside>
         </div>
@@ -136,8 +178,15 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
           >
             <Menu className="size-5" />
           </button>
-          <div className="flex-1" />
+          <Link href="/" className="lg:hidden" aria-label="AskData home">
+            <Wordmark size={26} />
+          </Link>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <ScopeChip user={user} />
+            <DatasetLabel />
+          </div>
           <div className="flex min-w-0 items-center gap-3">
+            <ThemeToggle />
             <div className="hidden min-w-0 text-right sm:block">
               <p className="truncate text-sm font-semibold" data-testid="user-name">
                 {name}
@@ -147,7 +196,7 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
               </div>
             </div>
             <div
-              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-indigo-400 text-sm font-semibold text-white"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-brand-400 text-sm font-semibold text-white"
               title={`${name} (${user.username})`}
               aria-hidden
             >
@@ -155,7 +204,8 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
             </div>
             <button
               onClick={() => void logout()}
-              className="text-muted inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm hover:bg-muted hover:text-[var(--text)]"
+              className="text-muted inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm hover:bg-muted hover:text-[var(--text)]"
+              aria-label="Log out"
             >
               <LogOut className="size-4" />
               <span className="hidden sm:inline">Log out</span>

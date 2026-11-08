@@ -13,7 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from app.agent.charts import ChartSpec, json_value
-from app.agent.state import AgentState
+from app.agent.state import AgentState, AnswerItem
 from app.core.enums import BlockReason, QuestionStatus
 
 
@@ -60,6 +60,11 @@ class AgentResponse(_Frozen):
     answer: str | None = None
     low_confidence: bool = False
     low_confidence_label: str | None = None
+    # Answered, every number in the explanation found in the result, and not low
+    # confidence: the UI shows a "Verified" badge (Step 26).
+    verified: bool = False
+    # The listed rows under the summary (Step 26 review), in rank order.
+    items: list[AnswerItem] = []
     chart: ChartSpec | None = None
     table: TablePage | None = None
     row_count: int = 0
@@ -123,6 +128,13 @@ def build_response(state: AgentState, *, page: int = 1, page_size: int = 50) -> 
         answer=answer.text if answer else None,
         low_confidence=state.low_confidence,
         low_confidence_label=answer.low_confidence_label if answer else None,
+        verified=bool(
+            answer
+            and answer.grounded
+            and state.status is QuestionStatus.ANSWERED
+            and not state.low_confidence
+        ),
+        items=list(answer.items) if answer else [],
         chart=answer.chart if answer else None,
         table=table_page(state, page, page_size),
         row_count=state.execution.row_count if state.execution else 0,

@@ -34,17 +34,25 @@ export function HistoryList() {
         <ul className="divide-y divide-[var(--border)]">
           {data.items.map((conversation) => (
             <li key={conversation.id}>
-              <Link href={`/?c=${conversation.id}`} className="flex items-center gap-4 px-5 py-4 transition hover:bg-muted">
+              <Link href={`/?c=${conversation.id}`} className="flex items-center gap-3 px-4 py-4 transition hover:bg-muted sm:gap-4 sm:px-5">
                 <div className="rounded-xl bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200">
                   <MessagesSquare className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{conversation.title}</p>
-                  <p className="text-muted text-xs">Last activity {formatDateTime(conversation.updated_at)}</p>
+                  <p className="line-clamp-2 font-medium sm:truncate">{conversation.title}</p>
+                  <p className="text-muted text-xs">
+                    Last activity {formatDateTime(conversation.updated_at)}
+                    <span className="sm:hidden">
+                      {" · "}
+                      {conversation.question_count} {conversation.question_count === 1 ? "question" : "questions"}
+                    </span>
+                  </p>
                 </div>
-                <Badge>
-                  {conversation.question_count} {conversation.question_count === 1 ? "question" : "questions"}
-                </Badge>
+                <span className="hidden sm:block">
+                  <Badge>
+                    {conversation.question_count} {conversation.question_count === 1 ? "question" : "questions"}
+                  </Badge>
+                </span>
                 <ChevronRight className="text-muted size-4" />
               </Link>
             </li>

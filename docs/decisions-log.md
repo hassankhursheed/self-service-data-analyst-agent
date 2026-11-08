@@ -418,3 +418,17 @@ Found by walking through every role in the browser on the production build.
 | 6 | CSV amounts had floating-point noise | Floats rounded to 2 decimals like the table, never in scientific notation | — | The file should match what the user sees. |
 | 7 | Assumptions were listed twice | `merge_assumptions` keeps each once | — | Clearer answers. |
 
+## Step 26 Part B: Product name, design and answer layout
+
+Reviewed with the user screen by screen in the browser (desktop and phone width).
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Product name | **AskData**, Northwind Traders shown as the dataset ("Dataset: Northwind Traders", fictional note on login and in the menu) | "Northwind Analyst"; renaming the dataset | The brief requires the Northwind data; the product name should not tie the tool to one company. Chosen by the user. |
+| Logo | "Verified answer": a question bubble whose bars grow into an answer, with a check badge; SVG component and favicon | A bubble-to-chart mark; an app-icon tile | Says "ask" and "trusted answer"; crisp at 16 px. Chosen by the user from three drafts. |
+| Colours and theme | Teal brand scale taken from the logo; light, dark or system theme with a header switch (saved per browser); the dark theme lifted from near-black to slate-green after review; light theme for screenshots and demos | Indigo; dark only | Matches the logo; managers expect light interfaces; the user found the first dark theme too dark. |
+| Trust cues | Scope chip ("Europe · read-only"), dataset label, "Verified against the data" badge (`verified` in the API: answered, grounded, not low confidence), progress steps while a question runs | Showing nothing until the answer arrives | Access control and verification are visible in the demo (brief §20). The steps follow typical timings because the API answers once; the last step stays active until the answer arrives. |
+| Answer layout | Structured output: the model returns `summary`, `items` (label, value, detail) and `sql_description`; the UI shows the summary, then the items as a ranked list (rank, name, value, bar), then badges, table, assumptions and SQL. Items must be rows of the result with the same value, names not ID columns, no ID-only details; otherwise sent back, then built from the rows | Product names inside a paragraph; rejecting answers that name rows (built first, then removed at the user's request); the model writing a list in prose | The user asked for text first and the products as a clear structured list. Checking every item against the result keeps the list exact. |
+| Phone layout | Logo in the phone header; sideways bar charts on phones; users as cards with full-size actions; two metric cards per row; review actions below the text; 36-40 px tap targets; scope and dataset in the menu drawer | Desktop tables scrolled sideways | Checked at 375 px: no page overflow on any screen. |
+| Code formatting | Hand-formatted long lines kept; Prettier changes reverted | Prettier at its 80-column default | The repository has no Prettier config; reformatting added about 1,000 lines of noise to the diff. |
+

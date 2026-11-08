@@ -30,6 +30,20 @@ npm --prefix ui test
 npm --prefix ui run build
 ```
 
+## Design (Step 26)
+
+- **Name and logo:** AskData; the "verified answer" mark (`components/logo.tsx`, also the
+  favicon). Wording in `lib/brand.ts`; the dataset is shown as "Dataset: Northwind
+  Traders" with the fictional-data note on the login page and in the menu.
+- **Theme:** teal brand scale (`app/globals.css`); light, dark or system with the header
+  switch (`components/theme-toggle.tsx`, saved per browser, applied before first paint).
+- **Answers:** the summary sentence, then the structured `items` as a ranked list
+  (`answer/ranked-results.tsx`), then the badges ("Verified against the data", period,
+  rows), the chart when there is no list (line charts, or more than 10 rows), the table,
+  assumptions and SQL. Progress steps while a question runs (`answer/agent-progress.tsx`).
+- **Phones (375 px and up):** logo in the header, menu drawer with scope and dataset,
+  sideways bar charts, users as cards, two metric cards per row, 36-40 px tap targets.
+
 ## Security model
 
 ```

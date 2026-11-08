@@ -121,12 +121,22 @@ class BlockedQueryRecord(_Frozen):
     detail: str | None = None
 
 
+class AnswerItem(_Frozen):
+    """One row of a list answer (rank order), checked against the query result."""
+
+    label: str
+    value: float | None = None
+    detail: str | None = None
+
+
 class Answer(_Frozen):
-    """What N-10 produced: explanation, SQL description and chart."""
+    """What N-10 produced: a summary, the listed rows, SQL description and chart."""
 
     text: str
     sql_description: str
     chart: ChartSpec
+    # Step 26 review: rows are a structured list shown under the summary, not prose.
+    items: list[AnswerItem] = []
     grounded: bool
     source: Literal["llm", "template", "empty"]
     low_confidence_label: str | None = None

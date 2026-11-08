@@ -52,10 +52,17 @@ def _is_number(value: Any) -> bool:  # noqa: ANN401
     return isinstance(value, int | float | Decimal) and not isinstance(value, bool)
 
 
+def is_identifier(column: str) -> bool:
+    """IDs are labels, not quantities (Step 26 walk-through: product_id was plotted)."""
+    name = column.lower()
+    return name == "id" or name.endswith("_id")
+
+
 def _numeric_columns(columns: list[str], rows: list[tuple[Any, ...]]) -> list[str]:
     return [
         c for i, c in enumerate(columns)
-        if rows and all(_is_number(r[i]) or r[i] is None for r in rows)
+        if not is_identifier(c)
+        and rows and all(_is_number(r[i]) or r[i] is None for r in rows)
         and any(_is_number(r[i]) for r in rows)
     ]  # fmt: skip
 
