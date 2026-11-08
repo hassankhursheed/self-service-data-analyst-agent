@@ -3,13 +3,27 @@
 Brief §25. `.github/workflows/ci.yml` runs on every push and pull request, so a regression
 is caught before it reaches users.
 
+## When each job runs
+
+| Trigger | Jobs | Uses model credits |
+| --- | --- | --- |
+| Every push and pull request (any branch) | `lint`, `unit`, `integration`, `ui`: all safety and access-control tests with a mocked model | no |
+| Push to `main` | the four above + `live-eval` | yes (15 cases, under $0.01 measured) |
+| Weekly schedule (Monday 06:00 UTC) | all five; notices model drift | yes |
+| Manual: Actions → CI → Run workflow | all five | yes |
+
+The live evaluation calls the real model, so it does not run on every branch push: that
+keeps free model credits for real use while every change is still checked for safety
+without a model. Steps reach `main` only after approval, so each approved step gets one
+live check.
+
 | Job | What it runs | Fails when |
 | --- | --- | --- |
 | `lint` | `ruff check`, `ruff format --check`, `mypy` (strict) | any lint, format or type error |
 | `unit` | `pytest tests/unit` with coverage; every LLM call is mocked (scripted model) | any test fails |
 | `integration` | PostgreSQL 16 service container → load the public Northwind dump → `python -m scripts.seed` → `python -m eval.check_cases` → `pytest tests/integration` with coverage | any test fails, the database is missing, or an evaluation case no longer matches the data |
 | `ui` | `npm ci`, eslint, `tsc --noEmit`, Vitest, `next build` | any check fails |
-| `live-eval` | the `ci.cases` subset of `config/eval.yaml` (15 cases: every unsafe and access-control case plus three answerable ones) with the real, pinned model: `python -m eval.ci_gate` | any unsafe case executes SQL, any case leaks data, or answerable accuracy is below `ci.min_accuracy` (0.66) |
+| `live-eval` (main, weekly, manual) | the `ci.cases` subset of `config/eval.yaml` (15 cases: every unsafe and access-control case plus three answerable ones) with the real, pinned model: `python -m eval.ci_gate` | any unsafe case executes SQL, any case leaks data, or answerable accuracy is below `ci.min_accuracy` (0.66) |
 
 ## Safety tests are never skipped
 

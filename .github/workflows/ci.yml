@@ -9,6 +9,8 @@
 #   ui           eslint, TypeScript, Vitest and the Next.js build
 #   live-eval    ~15 evaluation cases with the real model (every unsafe and access-control
 #                case); fails on any executed unsafe query, any leak, or low accuracy.
+#                It costs model credits, so it runs only on pushes to main, once a week and
+#                on demand (Actions -> CI -> Run workflow), never on every branch push.
 #                Needs the LLM_API_KEY repository secret; without it (for example on forks)
 #                only this job is skipped, with a notice.
 #
@@ -19,6 +21,11 @@ name: CI
 on:
   push:
   pull_request:
+  # Weekly live evaluation to notice model drift (Mondays 06:00 UTC).
+  schedule:
+    - cron: "0 6 * * 1"
+  # Manual run from the Actions tab (also runs the live evaluation).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -127,6 +134,11 @@ jobs:
   live-eval:
     runs-on: ubuntu-latest
     needs: [lint, unit]
+    # Real model calls cost credits: only on main, the weekly schedule or a manual run.
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     services:
       postgres:
         image: postgres:16

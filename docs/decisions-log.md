@@ -353,4 +353,4 @@ What was chosen, what was rejected and why. Newest step last.
 | CI credentials | Throwaway values in `ci.yml` for the per-run container | Secrets for them | They protect nothing outside the run; only `LLM_API_KEY` is a real secret. |
 | Coverage | `pytest-cov` with greenlet tracing; about 96% of `app/` | No measurement; line tracing only | Without greenlet tracing, async database code looked uncovered (57–70%). |
 | Environment-dependent test | Fixed `test_demo_password_maps_username_to_environment_variable` (it assumed a variable was unset) | — | Found by the first CI run. |
-
+| When live-eval runs | Push to `main`, a weekly schedule and manual runs | Every push and pull request | It spends model credits (the project runs on free Mistral credits); every push still runs all safety tests with a mocked model. Each approved step reaches `main` once, so it gets one live check, plus a weekly drift check. |
