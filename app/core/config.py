@@ -70,6 +70,7 @@ class AnalyticsConfig(BaseModel):
     role_statement_timeout_ms: int
     default_statement_timeout_ms: int
     default_row_limit: int
+    max_plan_cost: float = Field(default=0.0, ge=0)
 
 
 class AuthConfig(BaseModel):
@@ -115,6 +116,36 @@ class MonitoringConfig(BaseModel):
     max_period_days: int = Field(default=92, gt=0, le=366)
 
 
+class AlertThresholds(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    failure_rate: float = Field(default=0.3, gt=0, le=1)
+    blocked_attempts: int = Field(default=10, gt=0)
+    failed_logins: int = Field(default=10, gt=0)
+    daily_cost_usd: float = Field(default=1.5, gt=0)
+
+
+class AlertsConfig(BaseModel):
+    """Alert checks (``alerts`` section of config/app.yaml, docs/monitoring.md)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    enabled: bool = False
+    check_every_seconds: int = Field(default=300, ge=10)
+    window_minutes: int = Field(default=60, gt=0)
+    cooldown_minutes: int = Field(default=60, ge=0)
+    min_questions_for_failure_rate: int = Field(default=5, gt=0)
+    thresholds: AlertThresholds = AlertThresholds()
+
+
+class RetentionConfig(BaseModel):
+    """How long logs are kept (``retention`` section of config/app.yaml)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    log_days: int = Field(default=90, ge=1)
+
+
 class Settings(BaseSettings):
     """All settings for the application, validated at startup."""
 
@@ -137,6 +168,8 @@ class Settings(BaseSettings):
     auth: AuthConfig
     api: ApiConfig
     monitoring: MonitoringConfig = MonitoringConfig()
+    alerts: AlertsConfig = AlertsConfig()
+    retention: RetentionConfig = RetentionConfig()
 
     # --- From the environment (secrets and deployment-specific values) ---
     app_env: Literal["development", "test", "production"] = "development"
@@ -158,6 +191,9 @@ class Settings(BaseSettings):
     langsmith_api_key: SecretStr | None = None
     langsmith_project: str = "self-service-data-analyst-agent"
     langsmith_endpoint: str = "https://api.smith.langchain.com"
+    # Optional Slack incoming-webhook URL for alerts; without it alerts are only stored
+    # in app.alerts and logged.
+    alert_slack_webhook_url: SecretStr | None = None
     # Demo passwords for the seeded test users (config/test_users.yaml); seed only.
     demo_password_sales_europe: SecretStr | None = None
     demo_password_sales_americas: SecretStr | None = None

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Query, status
 from app.api.deps import CorrelationId, PagingDep, ServicesDep
 from app.api.errors import error_responses
 from app.api.schemas import (
+    AlertList,
     BlockedItem,
     BlockedList,
     CreateUserRequest,
@@ -216,6 +217,17 @@ async def metrics(
     """Operational health for a period of days (default: today in the monitoring zone)."""
     result = await services.metrics.metrics(date_from, date_to)
     return MetricsResponse(correlation_id=correlation_id, **result.model_dump())
+
+
+@router.get("/alerts", response_model=AlertList, responses=ERRORS)
+async def alerts(
+    _: AdminUser,
+    services: ServicesDep,
+    correlation_id: CorrelationId,
+    limit: Annotated[int, Query(ge=1, le=200)] = 20,
+) -> AlertList:
+    """The most recent alerts (newest first)."""
+    return AlertList(correlation_id=correlation_id, items=await services.alerts.recent(limit))
 
 
 @router.get("/review", response_model=ReviewList, responses=ERRORS)

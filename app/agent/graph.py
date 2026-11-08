@@ -137,7 +137,9 @@ class Agent:
             "graph_version": self.deps.agent_config.graph_version,
         }
         with redacted_tracing(self.deps.trace_client):
-            await self.graph.ainvoke(cast(Any, fresh), config)
+            await self.graph.ainvoke(
+                cast(Any, fresh), config, durability=self.deps.agent_config.checkpoint_durability
+            )
         return await self.state(thread_id)
 
     async def resume(self, thread_id: str, reply: str) -> AgentState:
@@ -149,7 +151,11 @@ class Agent:
         config["run_name"] = "clarification_reply"
         config["metadata"] = {"correlation_id": str(current.correlation_id)}
         with redacted_tracing(self.deps.trace_client):
-            await self.graph.ainvoke(Command(resume=mask_text(reply)), config)
+            await self.graph.ainvoke(
+                Command(resume=mask_text(reply)),
+                config,
+                durability=self.deps.agent_config.checkpoint_durability,
+            )
         return await self.state(thread_id)
 
     async def has_thread(self, thread_id: str) -> bool:

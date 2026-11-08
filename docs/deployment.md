@@ -54,6 +54,7 @@ Set these in `.env` locally, or in the host's dashboard (never in files) when de
 | `API_BASE_URL` | UI only | where the UI server reaches the API (`http://api:8000` in Compose) |
 | `UI_INSECURE_COOKIES` | UI only | `1` only for plain HTTP on localhost; leave unset behind HTTPS so cookies are `Secure` |
 | `API_PORT`, `UI_PORT` | no | host ports in Compose (default 8000, 3000) |
+| `ALERT_SLACK_WEBHOOK_URL` | no | Slack incoming webhook for alerts (docs/monitoring.md); without it alerts are stored and logged |
 
 Non-secret settings (CORS origins, rate limits, cost cap, page sizes, prompts, model) live
 in the versioned `config/` files; override nested values with `__`, for example
@@ -85,6 +86,7 @@ For a public demo use new, strong demo passwords set only in the host's dashboar
 | Questions per user | `config/app.yaml` `api.rate_limits.questions_per_minute` | 20 per minute |
 | Logins per address | `api.rate_limits.logins_per_minute_per_ip` | 10 per minute |
 | Daily cost cap | `api.daily_cost_cap_usd` | $2.00 per UTC day; then new questions get a friendly "try again tomorrow" (503) while the rest of the app works |
+| Expensive queries | `config/app.yaml` `analytics.max_plan_cost` | refused before running when the planner estimate is above 10,000 |
 | Per-question budget | `config/llm.yaml` `budget` | 20,000 tokens / $0.05 |
 | Query limits | `config/app.yaml` `analytics` | 10 s statement timeout, 1,000 rows |
 
@@ -184,6 +186,14 @@ Open `https://<ui domain>/login` and sign in as `sales.europe`, `finance`, `oper
 | `API_HOST=::` | Railway's private network uses IPv6 (and IPv4 in new environments) |
 | `API__TRUST_FORWARDED_FOR=true` | the API is only reachable from the UI, so it may use the visitor address the UI forwards for login limits and the audit log |
 | `${{Postgres.*}}` references | Railway fills in the database host, user and password |
+
+### Daily log clean-up on Railway (optional)
+
+Add one more service from the same repository, named `clean-logs`, with
+`RAILWAY_DOCKERFILE_PATH=docker/api.Dockerfile`, the same database variables as `api`
+(copy them in the Raw Editor), **Settings → Deploy → Custom start command**
+`python -m scripts.clean_logs --yes` and **Cron schedule** `0 3 * * *`. It runs once a
+day and exits. For a demo of a few weeks this is not needed.
 
 ### Reset and roll back on Railway
 

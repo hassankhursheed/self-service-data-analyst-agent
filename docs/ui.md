@@ -81,6 +81,9 @@ a role sees a "no data access" message.
 - `GET /auth/me`: the caller with their current role and region.
 - `GET /conversations/{id}/table?page=&page_size=`: one page of the latest question's
   rows (the table is paginated without re-running the query).
+- `GET /conversations/{id}/table.csv`: the **Download CSV** link under the result table
+  (formula-like cells are prefixed with `'`, so a spreadsheet never runs them).
+- `GET /admin/alerts`: the **Recent alerts** panel on the Monitoring page.
 
 ## Limitations
 

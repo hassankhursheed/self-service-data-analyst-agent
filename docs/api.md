@@ -47,6 +47,11 @@ it). The API needs `JWT_SECRET_KEY`, the database URLs and `LLM_API_KEY` in `.en
 - **501 endpoints:** metrics, verified queries and evaluation routes exist with their final
   models and return `NOT_IMPLEMENTED` until their step.
 
+- **CSV download:** `GET /conversations/{id}/table.csv` returns every result row of the
+  latest question as CSV (what the table shows, already limited to the user's role and
+  region). Owner only (404 otherwise); each download is an audit event `result_exported`.
+- **Alerts:** `GET /admin/alerts?limit=` lists the newest alerts (admin only).
+
 ## Settings (`config/app.yaml`, section `api`)
 
 | Setting | Default | Meaning |

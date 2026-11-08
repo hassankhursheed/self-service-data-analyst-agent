@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useState } from "react";
 
 import { api, ApiError } from "@/lib/api";
@@ -74,6 +74,17 @@ export function ResultTable({ initial, conversationId }: { initial: TablePage; c
         <span>
           {table.total_rows.toLocaleString("en-GB")} {table.total_rows === 1 ? "row" : "rows"}
           {table.truncated && " (limited by the row cap; narrow the question to see everything)"}
+          {conversationId && table.total_rows > 0 && (
+            <a
+              href={`/api/proxy/conversations/${conversationId}/table.csv`}
+              download
+              className="ml-3 inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-200"
+              data-testid="download-csv"
+            >
+              <Download className="size-3.5" aria-hidden />
+              Download CSV
+            </a>
+          )}
         </span>
         {table.total_pages > 1 && (
           <div className="flex items-center gap-2">

@@ -41,6 +41,8 @@ async function forward(request: Request, context: Context): Promise<Response> {
   const out = new Headers({ "Content-Type": response.headers.get("content-type") ?? "application/json" });
   const id = response.headers.get("x-correlation-id");
   if (id) out.set("X-Correlation-ID", id);
+  const disposition = response.headers.get("content-disposition");
+  if (disposition) out.set("Content-Disposition", disposition); // CSV downloads
   return new Response(response.body, { status: response.status, headers: out });
 }
 

@@ -189,7 +189,6 @@ def database_verified_loader(conninfo: str) -> VerifiedLoader:
     pool = lookup_pool(conninfo)
 
     def load() -> list[VerifiedExample]:
-        pool.open(wait=True)  # no-op once open
         with pool.connection() as conn:
             return load_active_examples(conn)
 

@@ -158,3 +158,22 @@ describe("/api/session", () => {
     expect(setCookie).not.toHaveBeenCalled();
   });
 });
+
+describe("CSV downloads through the proxy", () => {
+  it("allows the CSV path and passes the download header on", async () => {
+    expect(isAllowedPath("conversations/0b7d4c1a-6a8e-4c43-9f0f-2a1e5b8c9d10/table.csv")).toBe(true);
+    expect(isAllowedPath("conversations/0b7d4c1a-6a8e-4c43-9f0f-2a1e5b8c9d10/table.xlsx")).toBe(false);
+    jar.set("nw_session", "secret-token");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("a\r\n1\r\n", {
+        headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="r.csv"' },
+      }),
+    );
+    const response = await proxy.GET(
+      new Request("http://ui.test/api/proxy/x", { headers: { Host: "ui.test" } }),
+      ctx("conversations/0b7d4c1a-6a8e-4c43-9f0f-2a1e5b8c9d10/table.csv"),
+    );
+    expect(response.headers.get("content-disposition")).toContain("attachment");
+    expect(await response.text()).toBe("a\r\n1\r\n");
+  });
+});

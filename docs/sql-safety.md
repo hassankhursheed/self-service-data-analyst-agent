@@ -75,6 +75,16 @@ also refused. To make such a column usable, describe it in
 - `SELECT ... -- ; DROP TABLE orders` is allowed, and `final_sql` has no comment.
 - `SELECT ... /* note */; DROP TABLE orders` is two statements and is blocked.
 
+## Cost check before running (Step 26)
+
+After validation, `run_readonly` asks PostgreSQL for the plan (`EXPLAIN (FORMAT JSON)`,
+inside the same read-only transaction and role scope; nothing is executed). A query whose
+estimated total cost is above `analytics.max_plan_cost` (10,000) is not run: it ends
+`BLOCKED` with `TOO_EXPENSIVE`, is stored in `blocked_queries` with the estimate, and is
+not sent to repair. Measured on the seeded data: every verified example costs under 700; a
+cross join of `orders` and `order_details` costs about 14,000 (sales views) to 27,000
+(finance). The statement timeout stays as the second line of defence.
+
 ## Question check
 
 `validate_question(text)` (`app/safety/question_check.py`) runs before anything else:

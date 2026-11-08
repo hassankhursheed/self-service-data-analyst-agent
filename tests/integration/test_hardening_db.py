@@ -1,5 +1,6 @@
 """Step 24: schema drift detection, pooled lookups and non-blocking password hashing."""
 
+import asyncio
 import dataclasses
 import threading
 from collections.abc import Iterator
@@ -7,7 +8,6 @@ from collections.abc import Iterator
 import psycopg
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
-from psycopg_pool import ConnectionPool
 
 from app.agent.checkpoint import checkpoint_serializer
 from app.agent.deps import app_conninfo, database_semantic_loader
@@ -91,9 +91,9 @@ async def test_per_question_lookups_reuse_pooled_connections(
     import app.db.pools as pools
     import app.semantic.verified as verified_module
 
-    created: list[ConnectionPool] = []
+    created: list[pools.LookupPool] = []
 
-    def recording_pool(conninfo: str, **kwargs: int) -> ConnectionPool:
+    def recording_pool(conninfo: str, **kwargs: int) -> pools.LookupPool:
         pool = pools.lookup_pool(conninfo, **kwargs)
         created.append(pool)
         return pool
@@ -108,12 +108,28 @@ async def test_per_question_lookups_reuse_pooled_connections(
     try:
         assert len(created) == 2  # one pool per loader, not one connection per question
         for pool in created:
-            stats = pool.get_stats()
+            stats = pool.pool.get_stats()
             assert stats["connections_num"] <= 2
             assert stats["requests_num"] == 5
     finally:
         for pool in created:
             pool.close()
+
+
+async def test_many_questions_at_once_open_the_lookup_pool_only_once(
+    settings: Settings, seeded: SeedSummary
+) -> None:
+    """Found by the Step 26 load test: parallel first use made threads wait 30 s or fail."""
+    import time
+
+    load_semantic = database_semantic_loader(settings)
+    load_verified = database_verified_loader(app_conninfo(settings))
+    started = time.perf_counter()
+    results = await asyncio.gather(
+        *(load_semantic() for _ in range(20)), *(load_verified() for _ in range(20))
+    )
+    assert len(results) == 40
+    assert time.perf_counter() - started < 10  # far below the 30 s open timeout
 
 
 async def test_login_hashing_runs_off_the_event_loop(

@@ -28,6 +28,11 @@ analytics:
   role_statement_timeout_ms: 30000
   default_statement_timeout_ms: 10000
   default_row_limit: 1000
+  # Recommended extra (brief §12): before running a query, ask PostgreSQL for its plan
+  # (EXPLAIN, nothing is executed) and refuse it when the estimated total cost is above
+  # this. Verified examples cost under 700; a cross join of orders and order_details
+  # costs 13,000-27,000. 0 turns the check off.
+  max_plan_cost: 10000
 
 # Login and access tokens (app/auth, docs/authentication.md). The signing key is
 # JWT_SECRET_KEY in the environment.
@@ -65,3 +70,24 @@ api:
 monitoring:
   time_zone: UTC
   max_period_days: 92
+
+# Log retention (recommended extra, brief §27, docs/security.md): python -m scripts.clean_logs
+# removes audit log entries, node steps, blocked-query records, alerts and resolved errors
+# older than this many days. Conversations, questions and runs are kept.
+retention:
+  log_days: 90
+
+# Alerts (recommended extra, brief §26, docs/monitoring.md): checked by the API every
+# check_every_seconds over the last window_minutes; each alert is stored in app.alerts and,
+# when ALERT_SLACK_WEBHOOK_URL is set, sent to Slack. One alert per type per cooldown.
+alerts:
+  enabled: true
+  check_every_seconds: 300
+  window_minutes: 60
+  cooldown_minutes: 60
+  min_questions_for_failure_rate: 5
+  thresholds:
+    failure_rate: 0.3        # share of finished questions that FAILED in the window
+    blocked_attempts: 10     # blocked queries in the window
+    failed_logins: 10        # failed logins in the window
+    daily_cost_usd: 1.5      # estimated LLM cost today (UTC); the hard cap is api.daily_cost_cap_usd

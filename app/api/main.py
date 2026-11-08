@@ -28,6 +28,7 @@ from app.core.config import Settings, get_settings
 from app.core.log_masking import install_log_masking
 from app.db.session import create_app_engine, create_session_factory
 from app.eval.runner import EvalRunner, pinned_llm_factory, require_llm_key
+from app.services.alerts import AlertService
 from app.services.cost_cap import DailyCostCap
 from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
@@ -78,6 +79,14 @@ def create_app(
             )
             await evaluation.startup()
             stack.push_async_callback(evaluation.shutdown)
+            webhook = settings.alert_slack_webhook_url
+            alerts = AlertService(
+                sessions,
+                settings.alerts,
+                slack_webhook_url=webhook.get_secret_value() if webhook else None,
+            )
+            alerts.start()
+            stack.push_async_callback(alerts.stop)
             app.state.auth = auth
             app.state.services = Services(
                 api=settings.api,
@@ -92,6 +101,7 @@ def create_app(
                 metrics=MetricsService(sessions, settings.monitoring),
                 evaluation=evaluation,
                 cost_cap=DailyCostCap(sessions, settings.api.daily_cost_cap_usd),
+                alerts=alerts,
                 question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
                 login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
             )

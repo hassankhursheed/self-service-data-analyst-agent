@@ -63,6 +63,10 @@ class AgentConfig(BaseModel):
     answer: AnswerConfig
     verified_examples: VerifiedConfig
     conversation: ConversationConfig
+    # When LangGraph saves checkpoints: "exit" once per run (and at a clarification pause),
+    # "async"/"sync" after every node. The Postgres saver serialises every write behind one
+    # lock, so per-node saves made 20 parallel questions take ~27 s (Step 26 load test).
+    checkpoint_durability: Literal["exit", "async", "sync"] = "exit"
 
 
 def load_agent_config(path: Path = AGENT_CONFIG_FILE) -> AgentConfig:

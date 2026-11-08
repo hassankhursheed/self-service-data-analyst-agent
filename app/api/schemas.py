@@ -24,6 +24,7 @@ from app.core.enums import (
     RegionCode,
     RoleName,
 )
+from app.services.alerts import AlertInfo
 from app.services.evaluation import RunDetail, RunSummary
 from app.services.metrics import Metrics
 from app.services.users import UserView
@@ -199,6 +200,10 @@ class UserList(Page):
 
 class MetricsResponse(Envelope, Metrics):
     pass
+
+
+class AlertList(Envelope):
+    items: list[AlertInfo]
 
 
 class VerifiedQueryList(Page):

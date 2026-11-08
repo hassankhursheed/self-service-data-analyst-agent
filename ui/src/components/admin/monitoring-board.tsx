@@ -24,6 +24,8 @@ import { ROLE_LABELS, type RoleName } from "@/lib/types";
 
 import { Alert, Button, Card, EmptyState, inputClass, Skeleton } from "../ui";
 
+import { RecentAlerts } from "./recent-alerts";
+
 export interface Metrics {
   correlation_id: string;
   period_from: string;
@@ -310,6 +312,7 @@ export function MonitoringBoard() {
           <MonitoringView metrics={result.metrics} />
         </div>
       )}
+      <RecentAlerts refreshKey={nonce} />
     </div>
   );
 }

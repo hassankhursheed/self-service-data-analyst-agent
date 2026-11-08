@@ -34,6 +34,7 @@ describe("AnswerCard", () => {
     expect(screen.getAllByText("1 row").length).toBeGreaterThan(0);
     expect(screen.getByText("Revenue includes discounts.")).toBeInTheDocument();
     expect(screen.getByTestId("result-table")).toHaveTextContent("81,234.5");
+    expect(screen.getByTestId("download-csv")).toHaveAttribute("href", "/api/proxy/conversations/c1/table.csv");
     expect(screen.getByText("Sums order revenue for European customers.")).toBeInTheDocument();
     await userEvent.click(screen.getByText("How this was calculated"));
     expect(screen.getByText(answered.sql.text!)).toBeInTheDocument();

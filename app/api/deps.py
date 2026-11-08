@@ -12,6 +12,7 @@ from app.agent.conversations import ConversationService
 from app.api.ratelimit import SlidingWindowLimiter
 from app.auth.service import AuthService
 from app.core.config import ApiConfig
+from app.services.alerts import AlertService
 from app.services.cost_cap import DailyCostCap
 from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
@@ -37,6 +38,7 @@ class Services:
     metrics: MetricsService
     evaluation: EvaluationService
     cost_cap: DailyCostCap
+    alerts: AlertService
     question_limiter: SlidingWindowLimiter
     login_limiter: SlidingWindowLimiter
 

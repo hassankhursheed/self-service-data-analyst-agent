@@ -6,11 +6,15 @@ Every query runs in its own READ ONLY transaction that sets, with SET LOCAL:
   rows),
 - ``statement_timeout``.
 
+With ``max_cost`` the plan is checked first (``EXPLAIN``, which does not run the query)
+and a query whose estimated total cost is higher is refused with kind ``too_expensive``.
+
 The query itself is sent as a prepared statement, so only one statement can run, and
 ``set_config`` is not executable by the role, so a query cannot change its own scope.
 """
 
 import asyncio
+import json
 from functools import lru_cache
 from typing import Any
 
@@ -65,6 +69,23 @@ def session_statements(user_ctx: UserContext, timeout_ms: int, policy: AccessPol
     return statements
 
 
+def plan_cost(explain_json: object) -> float:
+    """Estimated total cost from ``EXPLAIN (FORMAT JSON)`` output."""
+    data = json.loads(explain_json) if isinstance(explain_json, str) else explain_json
+    if not isinstance(data, list) or not data or "Plan" not in data[0]:
+        raise ReadonlyQueryError("db_error", "unexpected EXPLAIN output")
+    return float(data[0]["Plan"]["Total Cost"])
+
+
+async def _check_plan_cost(conn: asyncpg.Connection, sql: str, max_cost: float) -> None:
+    # ``sql`` already passed the validator (one SELECT); EXPLAIN without ANALYZE only plans.
+    cost = plan_cost(await conn.fetchval("EXPLAIN (FORMAT JSON) " + sql))
+    if cost > max_cost:
+        raise ReadonlyQueryError(
+            "too_expensive", f"estimated cost {cost:.0f} is above the limit {max_cost:.0f}"
+        )
+
+
 async def run_readonly(
     sql: str,
     user_ctx: UserContext,
@@ -73,6 +94,7 @@ async def run_readonly(
     *,
     engine: AsyncEngine | None = None,
     policy: AccessPolicy | None = None,
+    max_cost: float = 0.0,
 ) -> QueryResult:
     """Execute one SELECT for ``user_ctx`` and return at most ``row_limit`` rows."""
     if row_limit <= 0:
@@ -87,6 +109,8 @@ async def run_readonly(
                 for statement in statements:
                     await conn.execute(statement)
                 async with asyncio.timeout(timeout_ms / 1000 + 5):
+                    if max_cost > 0:
+                        await _check_plan_cost(conn, sql, max_cost)
                     prepared = await conn.prepare(sql)
                     columns = [attr.name for attr in prepared.get_attributes()]
                     cursor = await prepared.cursor()

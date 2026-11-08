@@ -21,7 +21,7 @@ from app.auth.models import AuthenticatedUser
 from app.core.enums import FINAL_STATUSES, QuestionStatus
 from app.core.errors import AppError
 from app.core.masking import mask_text
-from app.db.models import Conversation, Question
+from app.db.models import AuditLog, Conversation, Question
 
 TITLE_LENGTH = 80
 
@@ -244,6 +244,27 @@ class ConversationService:
         if not await self.agent.has_thread(thread_id):
             return None
         return await self.agent.state(thread_id)
+
+    async def record_export(
+        self,
+        user: AuthenticatedUser,
+        conversation_id: uuid.UUID,
+        correlation_id: uuid.UUID,
+        *,
+        rows: int,
+    ) -> None:
+        """Audit a CSV download (who, which conversation, how many rows)."""
+        async with self.sessions() as session, session.begin():
+            session.add(
+                AuditLog(
+                    correlation_id=correlation_id,
+                    actor_user_id=user.user_id,
+                    event_type="result_exported",
+                    target_type="conversation",
+                    target_id=str(conversation_id),
+                    details={"format": "csv", "rows": rows},
+                )
+            )
 
     async def question_id_for(self, state: AgentState) -> uuid.UUID | None:
         if state.correlation_id is None:

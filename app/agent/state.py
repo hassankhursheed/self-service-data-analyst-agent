@@ -5,7 +5,6 @@ audit trail written by N-11.
 """
 
 import datetime as dt
-import uuid
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,6 +24,7 @@ from app.core.enums import (
     RegionCode,
     RoleName,
 )
+from app.core.ids import PlainUUID
 from app.db.analytics import QueryResult
 from app.safety.guardrails import GuardrailResult
 from app.safety.sql_validator import SqlValidationResult
@@ -47,9 +47,9 @@ class AgentRequest(_Frozen):
     region: RegionCode | None = None
     is_active: bool
     question: str
-    user_id: uuid.UUID | None = None
-    conversation_id: uuid.UUID | None = None
-    correlation_id: uuid.UUID | None = None
+    user_id: PlainUUID | None = None
+    conversation_id: PlainUUID | None = None
+    correlation_id: PlainUUID | None = None
 
 
 class StepRecord(_Frozen):
@@ -148,7 +148,7 @@ class Usage(_Frozen):
 
 class AgentState(BaseModel):
     request: AgentRequest
-    correlation_id: uuid.UUID | None = None
+    correlation_id: PlainUUID | None = None
     user: UserContext | None = None
     status: QuestionStatus | None = None
     question: str = ""

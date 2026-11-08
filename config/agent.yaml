@@ -2,6 +2,11 @@
 # it is recorded with every run (brief section 23).
 graph_version: "0.5.0"
 
+# When LangGraph saves conversation checkpoints: once per run and at a clarification
+# pause ("exit"), or after every node ("async"/"sync"). The Postgres checkpointer runs every
+# write behind one lock, so per-node saves serialised parallel questions (Step 26 load test).
+checkpoint_durability: exit
+
 # N-03 / N-04 (brief section 14, docs/intent-and-clarification.md).
 intent:
   # Missing parts that would change the answer: always ask.

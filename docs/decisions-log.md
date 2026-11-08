@@ -386,3 +386,21 @@ What was chosen, what was rejected and why. Newest step last.
 | Visitor address behind the UI | The UI forwards the proxy-appended `X-Forwarded-For` entry; the API uses it only with `api.trust_forwarded_for` (on for Railway, where the API is private) | Always trusting the header; per-UI-address limits | Otherwise ten failed logins from anyone would block every reviewer, and audit rows would all show the UI's address. |
 | Listen address | `API_HOST` variable (image default `0.0.0.0`, Railway `::`) | A custom start command in the dashboard | One variable fewer to get wrong; `::` reaches the private network on IPv6 and IPv4. |
 
+## Step 26 Part A: Recommended extras
+
+Chosen by the user: EXPLAIN cost check, CSV export, alerts, log clean-up, load test.
+Not built: BIRD subset (spends credits, low value), LiteLLM fallback (new dependency and a
+risky change to the LLM layer), Langfuse (another account). Per-user rate limiting already
+existed (20 questions per minute per user, Step 18).
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Cost check | `EXPLAIN (FORMAT JSON)` in the same read-only, role-scoped transaction; refuse when total cost > `analytics.max_plan_cost` (10,000) as `BLOCKED` / `TOO_EXPENSIVE`, not repaired | `EXPLAIN ANALYZE` (runs the query); a row estimate; relying on the timeout | Planning costs nothing; measured: verified examples < 700, a two-table cross join 14,000-27,000. The timeout stays as the second defence. |
+| CSV content | Exactly the stored result rows of the latest question (role and region already applied), with formula-like cells prefixed by `'`, UTF-8 with BOM, audited as `result_exported` | Re-running the query; an export of any earlier question | Nothing new is queried, so nothing can leak; the prefix stops spreadsheet formula injection; Excel reads the BOM. |
+| Alerts | Checked every 5 min in the API over the last hour; one row per type per cooldown in `app.alerts`; optional Slack webhook (`ALERT_SLACK_WEBHOOK_URL`) | Email (needs SMTP); a separate scheduler | Uses the existing table and data; Slack delivery is optional and failures never break the check. |
+| Log retention | `scripts/clean_logs.py` (dry run by default) deletes audit log, node steps, blocked queries, alerts and non-open errors older than 90 days | Deleting conversations and runs; partitioned tables | Logs are what grows; history stays until a demo reset; nothing references the deleted rows. |
+| Load test | In-process, real API/DB/validator/executor/audit/checkpoints, stand-in model with a 1 s wait per call, limits raised for the run, conversations removed after, tracing off | Calling Mistral (credits, rate limits); an external tool such as Locust | Measures our stack with a realistic model wait, repeatable for free. |
+| Found by the load test (1) | Lookup pools open once behind a lock (`LookupPool`) | `pool.open(wait=True)` on every use | Parallel first use made threads wait for the 30 s open timeout or fail: 7 of 60 questions failed. |
+| Found by the load test (2) | `PlainUUID` turns asyncpg's UUID subclass into `uuid.UUID` in the agent state and identity models | Allowing the asyncpg type in the checkpoint serializer | LangGraph refused to restore it from checkpoints; plain types need no extra allow-listing. |
+| Found by the load test (3) | `agent.checkpoint_durability: exit`: checkpoints saved once per run and at a clarification pause | Saving after every node (default); a bigger checkpoint pool (tried, no effect) | The Postgres saver runs every write behind one `asyncio.Lock`, so 20 parallel questions queued: p50 27 s, 44 questions per minute. With `exit`: p50 about 6 s, about 200 per minute. A crash mid-run loses only that run, which fails anyway. |
+

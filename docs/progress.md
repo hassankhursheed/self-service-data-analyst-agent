@@ -29,7 +29,9 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [ ] Step 25: Live Deployment (built and tested locally: production images, one-command
   Compose, demo reset, daily cost cap, Railway setup in docs/deployment.md; left: the user
   deploys on Railway, then the live HTTPS check with the demo accounts, scenario 28)
-- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (guide received; extras chosen by the user)
+- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Part A done: EXPLAIN
+  cost check, CSV export, alerts, 90-day log clean-up, 20-user load test (eval/LOAD_TEST.md);
+  left: Part B final docs and screenshots, Part C the 28 scenarios and deliverables)
 
 ## What is left
 
@@ -40,7 +42,8 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   region filtering is already applied, a stronger model on a paid plan.
 - Step 25: the user creates the Railway project (docs/deployment.md), then the live HTTPS
   URL is checked with the demo accounts (scenario 28).
-- Step 26 (guide received).
+- Step 26 Part B (README, api.md, setup guide, screenshots, demo script) and Part C (all
+  28 scenarios with correlation IDs, Section 31 checklist), done with the local run.
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
   several API workers, alias-proof personal-column detection, a secret scanner in CI.
 - CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub
@@ -51,9 +54,6 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   when Monitoring, Review and Evaluation are filled in: the user signs in as
   `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
   not read demo passwords), then every screen is exercised and captured.
-- Recommended extra for Step 26: alerts (email or Slack) when the failure rate,
-  blocked attempts, failed logins or daily cost pass configured thresholds, stored
-  in `alerts`.
 - Rate limits are in memory (one API process); a shared store is needed before running
   several API workers.
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business

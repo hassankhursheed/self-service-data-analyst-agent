@@ -102,7 +102,6 @@ def database_semantic_loader(settings: Settings) -> SemanticLoader:
     pool = lookup_pool(app_conninfo(settings))
 
     def load() -> SemanticLayer:
-        pool.open(wait=True)  # no-op once open
         with pool.connection() as conn:
             return load_active_semantic_layer(conn)
 
@@ -120,7 +119,14 @@ def analytics_executor(settings: Settings) -> Executor:
         return create_analytics_engine(settings)
 
     async def execute(sql: str, user: UserContext, timeout_ms: int, row_limit: int) -> QueryResult:
-        return await run_readonly(sql, user, timeout_ms, row_limit, engine=engine())
+        return await run_readonly(
+            sql,
+            user,
+            timeout_ms,
+            row_limit,
+            engine=engine(),
+            max_cost=settings.analytics.max_plan_cost,
+        )
 
     return execute
 

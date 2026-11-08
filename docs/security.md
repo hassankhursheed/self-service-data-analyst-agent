@@ -32,6 +32,13 @@ docs/sql-safety.md, docs/guardrails.md, docs/authentication.md, docs/audit-and-t
 | 8 | Schema check at API start-up and in CI | **Pass (added in Step 24)** | Start-up: `check_semantic_catalog` (pg_catalog, works for `app_rw`); the API refuses to start on drift (`api.schema_check_on_startup`). CI: `python -m scripts.schema_check` after the seed. Tests: `test_a_renamed_column_is_detected` (real rename inside a rolled-back transaction), `test_the_api_refuses_to_start_on_schema_drift`. |
 | 9 | Per-node latency visible in the audit and the dashboard | **Pass (dashboard added in Step 24)** | Audit: `agent_steps.latency_ms` for every node. Dashboard: "Time per step" (average and p95 per node) on Admin › Monitoring from `GET /admin/metrics` (`node_latency`). Test: `test_metrics_db.py` (seeded steps, p95 = 145 ms). |
 
+## Log retention (Step 26)
+
+`python -m scripts.clean_logs` (dry run; `--yes` deletes) removes audit log entries, node
+steps, blocked-query records, alerts and non-open agent errors older than
+`retention.log_days` (90). Conversations, questions, runs, feedback and evaluation results
+are kept. Run it daily (cron locally; on Railway a cron service, docs/deployment.md).
+
 ## What is left
 
 - **Rate limits are in memory** (one API process); a shared store (for example Redis) is

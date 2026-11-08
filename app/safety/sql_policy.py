@@ -65,6 +65,10 @@ BLOCK_MESSAGES: dict[BlockReason, str] = {
     BlockReason.NO_ALLOWED_DATA: (
         "I could not find data your role may use to answer this question."
     ),
+    BlockReason.TOO_EXPENSIVE: (
+        "This question would need a very large query (for example combining every order "
+        "with every order line), so it was not run. Please narrow it down."
+    ),
     BlockReason.DATABASE_REFUSED: (
         "The database refused this query for your role, so it was not run."
     ),

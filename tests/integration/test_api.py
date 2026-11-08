@@ -156,7 +156,7 @@ async def test_every_protected_route_refuses_missing_invalid_and_expired_tokens(
     ]
     async with running(app) as client:
         routes = protected_routes(app)
-        assert len(routes) == 23
+        assert len(routes) == 25  # Step 26: CSV download and admin alerts
         for method, path in routes:
             for headers, code in cases:
                 response = await client.request(method, path, headers=headers, json={})
@@ -373,6 +373,11 @@ async def test_conversations_are_listed_and_opened_for_their_owner_only(
         assert table.status_code == 200
         assert table.json()["table"]["rows"] == [[830]]
         assert table.json()["table"]["total_pages"] == 1
+        csv_file = await client.get(f"/conversations/{conversation_id}/table.csv", headers=finance)
+        assert csv_file.status_code == 200
+        assert csv_file.headers["content-type"].startswith("text/csv")
+        assert "attachment" in csv_file.headers["content-disposition"]
+        assert csv_file.text.lstrip("﻿").splitlines()[1] == "830"
         me = await client.get("/auth/me", headers=finance)
         assert me.json()["user"]["role"] == "finance_analyst"
         assert_correlated(me)
@@ -388,6 +393,11 @@ async def test_conversations_are_listed_and_opened_for_their_owner_only(
             404,
             "NOT_FOUND",
         )
+        assert_error(
+            await client.get(f"/conversations/{conversation_id}/table.csv", headers=operations),
+            404,
+            "NOT_FOUND",
+        )  # another user's result cannot be downloaded
         theirs = await client.get("/conversations", params={"page_size": 100}, headers=operations)
         assert all(c["id"] != conversation_id for c in theirs.json()["items"])
         follow = await client.post(

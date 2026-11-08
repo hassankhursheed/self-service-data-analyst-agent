@@ -254,3 +254,22 @@ async def test_sales_manager_query_runs_with_their_region() -> None:
     await run(ScriptedModel(ORDERS_2024, sql=[GOOD_SQL]), executor, req)
     _, user = executor.calls[0]
     assert (user.role, user.region) == (RoleName.SALES_MANAGER, RegionCode.AMERICAS)
+
+
+async def test_too_expensive_query_ends_blocked_without_repair() -> None:
+    executor = FakeExecutor(ReadonlyQueryError("too_expensive", "estimated cost 20000 is above"))
+    model = ScriptedModel(ORDERS_2024, sql=[GOOD_SQL])
+    state = await run(model, executor)
+    assert (state.status, state.block_reason) == (S.BLOCKED, BlockReason.TOO_EXPENSIVE)
+    assert state.user_message is not None
+    assert "narrow it down" in state.user_message
+    assert model.calls_by_kind["repair"] == []
+
+
+def test_plan_cost_reads_explain_json() -> None:
+    from app.db.analytics import plan_cost
+
+    assert plan_cost('[{"Plan": {"Total Cost": 26931.5}}]') == 26931.5
+    assert plan_cost([{"Plan": {"Total Cost": 3}}]) == 3.0
+    with pytest.raises(ReadonlyQueryError):
+        plan_cost("[]")

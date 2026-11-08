@@ -3,8 +3,9 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 
+from app.agent.csv_export import result_csv
 from app.agent.response import build_response, table_page
 from app.agent.state import AgentState
 from app.api.deps import CorrelationId, PagingDep, ServicesDep
@@ -122,6 +123,28 @@ async def latest_table_page(
     latest = await services.conversations.latest_state(user, conversation_id)
     table = table_page(latest, page, page_size) if latest is not None else None
     return TablePageResponse(correlation_id=correlation_id, table=table)
+
+
+@router.get("/conversations/{conversation_id}/table.csv", response_class=Response,
+            responses={**ERRORS, 200: {"content": {"text/csv": {}}}})  # fmt: skip
+async def latest_table_csv(
+    conversation_id: uuid.UUID, user: CurrentUser, services: ServicesDep,
+    correlation_id: CorrelationId,
+) -> Response:  # fmt: skip
+    """All result rows of the latest question as CSV (what the table shows). Audited."""
+    latest = await services.conversations.latest_state(user, conversation_id)
+    if latest is None or latest.execution is None:
+        raise ApiError("NOT_FOUND", "There is no result to download for this conversation.")
+    result = latest.execution
+    await services.conversations.record_export(
+        user, conversation_id, correlation_id, rows=result.row_count
+    )
+    name = f"northwind-result-{str(conversation_id)[:8]}.csv"
+    return Response(
+        content="﻿" + result_csv(result.columns, result.rows),  # BOM: Excel reads UTF-8
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
 
 
 @router.post("/feedback", response_model=FeedbackResponse, responses=ERRORS)

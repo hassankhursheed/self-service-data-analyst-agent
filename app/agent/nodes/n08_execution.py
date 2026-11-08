@@ -3,6 +3,7 @@
 - success: EXECUTED
 - database error: EXECUTION_FAILED (N-09 may repair it)
 - statement timeout: FAILED with a clear message (not repaired)
+- estimated plan cost too high (EXPLAIN check): BLOCKED, recorded (not run, not repaired)
 - refused by the database (permissions, read-only): BLOCKED, recorded
 - database unreachable: retried with backoff, then FAILED
 """
@@ -81,8 +82,12 @@ def make_execution_node(deps: AgentDeps) -> NodeFn:
                         node=NodeName.EXECUTION, code=DbTimeout.code, detail=err.message
                     ),
                 }
-            if err.kind in _REFUSED:
-                reason = BlockReason.DATABASE_REFUSED
+            if err.kind in _REFUSED or err.kind == "too_expensive":
+                reason = (
+                    BlockReason.TOO_EXPENSIVE
+                    if err.kind == "too_expensive"
+                    else BlockReason.DATABASE_REFUSED
+                )
                 return {
                     "executions": record(ExecutionStatus.DB_ERROR, error=err.message),
                     "status": S.BLOCKED,

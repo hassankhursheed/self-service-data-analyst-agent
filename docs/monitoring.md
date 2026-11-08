@@ -49,5 +49,21 @@ average latency, cost and tokens, repair success, clarifications, helpful rating
 logins, latest evaluation run), a stacked bar chart of outcomes per day, and bar lists of
 questions by role and blocked queries by reason.
 
-Alerts (email or Slack above thresholds, stored in `alerts`) are a recommended extra for
-Step 26.
+## Alerts (Step 26)
+
+`app/services/alerts.py` runs inside the API every `alerts.check_every_seconds` (300) and
+measures the last `alerts.window_minutes` (60):
+
+| Alert | Measured | Default threshold |
+| --- | --- | --- |
+| `failure_rate` | share of finished questions that FAILED (only with at least 5) | 30% |
+| `blocked_attempts` | blocked queries | 10 |
+| `failed_logins` | failed logins | 10 |
+| `daily_cost` | estimated LLM cost since 00:00 UTC | $1.50 (the hard stop is `api.daily_cost_cap_usd`) |
+
+A value above its threshold stores one row in `app.alerts` (at most one per type per
+`cooldown_minutes`), logs a warning and, when `ALERT_SLACK_WEBHOOK_URL` is set, posts to
+Slack (`sent_at` records delivery; a failed post never breaks the check). Email is not
+built: it needs an SMTP account, and Slack covers the requirement. The Monitoring page
+shows the latest alerts (`GET /admin/alerts`). The check runs in the one API process, like
+the rate limits.

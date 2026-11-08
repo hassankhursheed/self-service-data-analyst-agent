@@ -1,11 +1,11 @@
 """Identity models shared by auth, the API and the agent."""
 
 import datetime as dt
-import uuid
 
 from pydantic import BaseModel, ConfigDict
 
 from app.core.enums import RegionCode, RoleName
+from app.core.ids import PlainUUID
 
 
 class AuthenticatedUser(BaseModel):
@@ -16,7 +16,7 @@ class AuthenticatedUser(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    user_id: uuid.UUID
+    user_id: PlainUUID
     username: str
     role: RoleName | None
     region: RegionCode | None = None
@@ -31,7 +31,7 @@ class AuthenticatedUser(BaseModel):
 class TokenClaims(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    user_id: uuid.UUID
+    user_id: PlainUUID
     token_version: int
     issued_at: dt.datetime
     expires_at: dt.datetime
