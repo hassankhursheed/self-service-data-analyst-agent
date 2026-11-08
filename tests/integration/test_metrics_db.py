@@ -93,6 +93,14 @@ class Seeder:
         self.conn.execute("UPDATE app.questions SET status = %s WHERE id = %s", (status, question))
         return uuid.UUID(str(row[0]))
 
+    def steps(self, run: uuid.UUID, latencies: dict[str, int]) -> None:
+        for seq, (node, ms) in enumerate(latencies.items(), start=1):
+            self.conn.execute(
+                "INSERT INTO app.agent_steps (run_id, seq, node_name, to_status, latency_ms) "
+                "VALUES (%s, %s, %s, 'ANSWERED', %s)",
+                (run, seq, node, ms),
+            )
+
     def queries(self, run: uuid.UUID, kinds: list[str]) -> None:
         for attempt, kind in enumerate(kinds, start=1):
             self.conn.execute(
@@ -112,6 +120,7 @@ def seeded_runs(owner_conn: psycopg.Connection, seeded: SeedSummary) -> Iterator
     q1 = s.question("finance", "finance_analyst", at(DAY, 9))
     r = s.run(q1, 1, "ANSWERED", at(DAY, 9), 100, (100, 20), "0.0010")
     s.queries(r, ["initial"])
+    s.steps(r, {"N-03": 40, "N-06": 50, "N-08": 10})
     # Q2 finance: one clarification, then answered after one repair (one run: runs are
     # written when a question finishes).
     q2 = s.question("finance", "finance_analyst", at(DAY, 10))
@@ -120,6 +129,7 @@ def seeded_runs(owner_conn: psycopg.Connection, seeded: SeedSummary) -> Iterator
         (q2, "By revenue or orders?", at(DAY, 10, 1)),
     )
     r = s.run(q2, 1, "ANSWERED", at(DAY, 10, 5), 300, (150, 30), "0.0015")
+    s.steps(r, {"N-03": 60, "N-06": 150, "N-08": 30})
     s.queries(r, ["initial", "repair"])
     # Q3 sales: blocked by the validator.
     q3 = s.question("sales.europe", "sales_manager", at(DAY, 11))
@@ -206,6 +216,11 @@ async def test_each_metric_returns_the_expected_number(
         (1, 0, 0, 0, 1),
     ]
     assert sum(p.cost_usd for p in m.daily) == m.cost_usd
+    by_node = {n.node: n for n in m.node_latency}
+    assert [n.node for n in m.node_latency] == ["N-06", "N-03", "N-08"]  # slowest first
+    assert (by_node["N-06"].steps, by_node["N-06"].avg_ms) == (2, 100.0)
+    assert by_node["N-06"].p95_ms == 145.0  # 50 + 0.95 * (150 - 50)
+    assert by_node["N-03"].label == "Intent"
 
 
 async def test_a_paused_question_counts_as_awaiting_clarification(

@@ -25,6 +25,7 @@ from app.core.llm import ainvoke_structured
 from app.core.masking import mask_text
 from app.core.prompts import load_prompt
 from app.db.analytics import QueryResult
+from app.safety.access_policy import get_access_policy
 
 _ENTITY_NAMES = {"order_details": "order lines"}
 
@@ -46,9 +47,25 @@ def format_value(value: Any) -> str:  # noqa: ANN401 (result cells have any SQL 
     return str(value)
 
 
-def rows_text(result: QueryResult, limit: int) -> str:
-    """Top rows for the LLM, with personal values such as phone numbers masked (section 27)."""
-    lines = [mask_text(" | ".join(format_value(v) for v in row)) for row in result.rows[:limit]]
+def personal_columns() -> frozenset[str]:
+    """Result columns whose values never reach the LLM (``llm_hidden_columns`` in
+    config/access_policy.yaml): contact names, addresses, phone numbers and similar."""
+    return frozenset(c.lower() for c in get_access_policy().llm_hidden_columns)
+
+
+def rows_text(result: QueryResult, limit: int, hidden: frozenset[str] = frozenset()) -> str:
+    """Top rows for the LLM (section 27): values of personal columns are replaced by
+    [PERSONAL] and other personal values such as phone numbers are masked. The user still
+    sees the full table if their role allows it."""
+    hide = [column.lower() in hidden for column in result.columns]
+    lines = [
+        mask_text(
+            " | ".join(
+                "[PERSONAL]" if h else format_value(v) for v, h in zip(row, hide, strict=False)
+            )
+        )
+        for row in result.rows[:limit]
+    ]
     return "\n".join(lines)
 
 
@@ -110,9 +127,14 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
         if result.row_count == 0:
             text = empty_message(state, config.empty_suggestion)
             answer = Answer(
-                text=text, sql_description=template_description(state), chart=chart,
-                grounded=True, source="empty", low_confidence_label=label, confidence=confidence,
-            )  # fmt: skip
+                text=text,
+                sql_description=template_description(state),
+                chart=chart,
+                grounded=True,
+                source="empty",
+                low_confidence_label=label,
+                confidence=confidence,
+            )
             return {"status": QuestionStatus.ANSWERED, "answer": answer, "user_message": text}
 
         shown = min(config.rows_for_llm, result.row_count)
@@ -130,7 +152,7 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
                 date_range=date_range_text(state),
                 assumptions="; ".join(state.assumptions) or "none",
                 columns=", ".join(result.columns),
-                rows=rows_text(result, config.rows_for_llm),
+                rows=rows_text(result, config.rows_for_llm, personal_columns()),
                 row_count=str(result.row_count),
                 shown_rows=str(shown),
                 sql=state.executed_sql or "",

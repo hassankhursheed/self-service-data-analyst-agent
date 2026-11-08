@@ -44,7 +44,7 @@ async def _ask_response(
             HTTP_REJECTIONS[state.block_reason],
             state.user_message or "This request is not allowed.",
         )
-    response = build_response(state)
+    response = build_response(state, page_size=services.api.result_page_size)
     return AskResponse(
         **response.model_dump(),
         conversation_id=conversation_id,
@@ -103,7 +103,9 @@ async def get_conversation(
         id=detail.id,
         title=detail.title,
         questions=detail.questions,
-        latest=build_response(latest) if latest is not None and latest.status else None,
+        latest=build_response(latest, page_size=services.api.result_page_size)
+        if latest is not None and latest.status
+        else None,
     )
 
 

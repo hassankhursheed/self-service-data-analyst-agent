@@ -13,17 +13,22 @@ _RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"(?i)(\b[a-z][a-z0-9+.-]*://[^:/\s@]+:)([^@\s]+)(@)"), r"\1[MASKED]\3"),
     # password=..., secret: ..., api_key="..."
     (
-        re.compile(r"(?i)\b(password|passwd|pwd|secret|api[_-]?key|token)\b(\s*[:=]\s*)(\"[^\"]*\"|'[^']*'|\S+)"),
+        re.compile(
+            r"(?i)\b(password|passwd|pwd|secret|api[_-]?key|token)\b(\s*[:=]\s*)(\"[^\"]*\"|'[^']*'|\S+)"
+        ),
         r"\1\2[MASKED]",
     ),
     (re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{10,}"), "Bearer [MASKED]"),
     (re.compile(r"\b(sk|pk|ls|lsv2)[-_][A-Za-z0-9_-]{12,}\b"), "[MASKED_KEY]"),
-    (re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}\b"), "[MASKED_TOKEN]"),  # noqa: E501
+    (
+        re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}\b"),
+        "[MASKED_TOKEN]",
+    ),
     (re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"), "[MASKED_EMAIL]"),
     (re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{1,4}){3,8}\b"), "[MASKED_IBAN]"),
     # 13-19 digits, optionally grouped (cards, bank accounts)
     (re.compile(r"\b(?:\d[ -]?){12,18}\d\b"), "[MASKED_NUMBER]"),
-]  # fmt: skip
+]
 
 
 # Phone-like runs: digits with spaces, dashes, dots or brackets, 7 to 15 digits in total.
@@ -57,4 +62,29 @@ def mask_value(value: Any) -> Any:  # noqa: ANN401 (masks JSON-like data of any 
         return {k: mask_value(v) for k, v in value.items()}
     if isinstance(value, list | tuple):
         return [mask_value(v) for v in value]
+    return value
+
+
+# Keys whose values are query result rows: never sent to traces, only their count.
+_ROW_KEYS = frozenset({"rows"})
+
+
+def redact_for_trace(value: Any) -> Any:  # noqa: ANN401 (traced inputs/outputs of any shape)
+    """What LangSmith may store (Step 24): result rows are replaced by their count and
+    every string is masked. Used as the tracing client's hide_inputs / hide_outputs."""
+    if isinstance(value, dict):
+        return {
+            key: (
+                f"[{len(item)} rows not traced]"
+                if key in _ROW_KEYS and isinstance(item, list | tuple)
+                else redact_for_trace(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list | tuple):
+        return [redact_for_trace(item) for item in value]
+    if isinstance(value, str):
+        return mask_text(value)
+    if hasattr(value, "model_dump"):
+        return redact_for_trace(value.model_dump(mode="json"))
     return value

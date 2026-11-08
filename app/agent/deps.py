@@ -8,8 +8,8 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
+from typing import Any
 
-import psycopg
 from langchain_core.messages import BaseMessage
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -17,12 +17,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from app.agent.audit import AuditSink, DatabaseAuditSink, MemoryAuditSink
 from app.agent.config import AgentConfig, get_agent_config
 from app.agent.state import AgentState, Usage
+from app.agent.tracing import redacting_client
 from app.core.config import Settings, get_settings
 from app.core.context import UserContext
 from app.core.enums import RoleName
 from app.core.llm import BudgetTracker, LLMClient, LLMConfig, create_llm_client, get_llm_config
 from app.core.prompts import load_prompt
 from app.db.analytics import QueryResult, run_readonly
+from app.db.pools import lookup_pool
 from app.db.session import create_analytics_engine, create_app_engine, create_session_factory
 from app.safety.access_policy import get_access_policy
 from app.safety.sql_policy import SqlPolicy, get_sql_policy
@@ -55,6 +57,8 @@ class AgentDeps:
     row_limit: int
     audit: AuditSink = field(default_factory=MemoryAuditSink)
     load_verified: VerifiedLoader = field(default=no_verified_examples)
+    # LangSmith client that redacts traces (None: tracing off or env defaults).
+    trace_client: Any = None
     sleep: Sleep = field(default=asyncio.sleep)
 
     def budget_for(self, state: AgentState) -> BudgetTracker:
@@ -88,17 +92,18 @@ def usage_of(budget: BudgetTracker) -> Usage:
     )
 
 
-def _app_conninfo(settings: Settings) -> str:
+def app_conninfo(settings: Settings) -> str:
     url = make_url(settings.app_database_url.get_secret_value()).set(drivername="postgresql")
     return url.render_as_string(hide_password=False)
 
 
 def database_semantic_loader(settings: Settings) -> SemanticLoader:
     """Read the active semantic layer from the database for every question (app role)."""
-    conninfo = _app_conninfo(settings)
+    pool = lookup_pool(app_conninfo(settings))
 
     def load() -> SemanticLayer:
-        with psycopg.connect(conninfo, connect_timeout=5) as conn:
+        pool.open(wait=True)  # no-op once open
+        with pool.connection() as conn:
             return load_active_semantic_layer(conn)
 
     async def load_async() -> SemanticLayer:
@@ -135,7 +140,8 @@ def default_deps() -> AgentDeps:
         agent_config=get_agent_config(),
         calendar=load_calendar(),
         load_semantic=database_semantic_loader(settings),
-        load_verified=database_verified_loader(_app_conninfo(settings)),
+        load_verified=database_verified_loader(app_conninfo(settings)),
+        trace_client=redacting_client(settings),
         executor=analytics_executor(settings),
         sql_policy=get_sql_policy(),
         statement_timeout_ms=settings.analytics.default_statement_timeout_ms,

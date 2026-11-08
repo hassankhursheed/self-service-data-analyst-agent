@@ -29,7 +29,9 @@ from app.services.metrics import Metrics
 from app.services.users import UserView
 from app.services.verified_library import LibraryItem, ReviewItem
 
-MAX_QUESTION_CHARS = 4000  # hard cap on the body; the guardrail applies the real limit
+# Transport caps on request bodies only. The real question limit is max_question_length
+# in config/sql_policy.yaml (applied by the guardrails and audited).
+MAX_QUESTION_CHARS = 4000
 MAX_COMMENT_CHARS = 1000
 
 

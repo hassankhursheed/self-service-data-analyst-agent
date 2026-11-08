@@ -55,3 +55,6 @@ verified_examples:
   # Keyword similarity (0-1) an example needs to be offered.
   min_score: 0.4
 
+# Follow-ups (brief section 18): earlier questions of the conversation sent as history.
+conversation:
+  max_history_turns: 5

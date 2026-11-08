@@ -26,6 +26,7 @@ const metrics: Metrics = {
   failed_logins: 2,
   latest_eval_run: null,
   daily: [{ date: "2026-11-07", questions: 10, answered: 6, blocked: 2, rejected: 0, failed: 2, cost_usd: "0.0125" }],
+  node_latency: [{ node: "N-06", label: "SQL generation", steps: 11, avg_ms: 2100, p95_ms: 4800 }],
 };
 
 describe("MonitoringView", () => {
@@ -42,5 +43,7 @@ describe("MonitoringView", () => {
     expect(screen.getByText("Sales manager")).toBeInTheDocument();
     expect(screen.getByText("Write request")).toBeInTheDocument();
     expect(screen.getByText(/No evaluation run yet/)).toBeInTheDocument();
+    expect(screen.getByTestId("node-latency")).toHaveTextContent("SQL generation");
+    expect(screen.getByTestId("node-latency")).toHaveTextContent("4.80 s");
   });
 });

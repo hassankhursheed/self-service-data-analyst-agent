@@ -103,3 +103,19 @@ def test_p95_uses_linear_interpolation_like_percentile_cont() -> None:
     assert p95([10.0 * i for i in range(1, 21)]) == 190.5
     assert p95([100.0, 300.0, 400.0, 500.0, 600.0]) == 580.0
     assert p95([5.0, 1.0, 3.0]) == 4.8  # order does not matter: 3 + 0.9 * (5 - 3)
+
+
+def test_every_endpoint_is_async() -> None:
+    """Step 24: no route blocks the event loop with a sync handler."""
+    import inspect
+
+    from fastapi.routing import APIRoute
+
+    from app.api.routes import admin, public, questions
+
+    routes = [
+        r for m in (public, questions, admin) for r in m.router.routes if isinstance(r, APIRoute)
+    ]
+    assert len(routes) >= 24
+    sync = [r.path for r in routes if not inspect.iscoroutinefunction(r.endpoint)]
+    assert sync == []

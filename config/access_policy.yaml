@@ -1,6 +1,6 @@
 # Who may see which Northwind tables, columns and rows (docs/access-control.md).
 # The seed script builds one schema of secure views per business role from this file.
-version: 1
+version: 2
 
 roles:
   sales_manager:
@@ -33,6 +33,12 @@ region_keys:
 
 # Sensitive columns. A listed column is hidden from every role not in visible_to.
 # Columns not listed are visible to every role that can see the table.
+# Result columns whose values are never sent to the LLM (answer prompt), even when the
+# user may see them in the table (brief §27, Step 24). Only names that always mean
+# personal data: country, city or region are business columns elsewhere.
+llm_hidden_columns: [contact_name, contact_title, phone, fax, address, postal_code,
+                     home_phone, birth_date, extension, notes, photo, photo_path]
+
 sensitive_columns:
   employees:
     address: {visible_to: [], reason: "employee home address"}

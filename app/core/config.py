@@ -99,6 +99,8 @@ class ApiConfig(BaseModel):
     cors_origins: list[str]
     rate_limits: RateLimitConfig
     default_page_size: int = Field(gt=0)
+    result_page_size: int = Field(default=50, gt=0, le=1000)
+    schema_check_on_startup: bool = True
     max_page_size: int = Field(gt=0)
 
 

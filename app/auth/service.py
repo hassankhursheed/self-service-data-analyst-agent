@@ -1,5 +1,6 @@
 """Login and token validation against the users, roles and regions tables."""
 
+import asyncio
 import datetime as dt
 import uuid
 
@@ -61,7 +62,10 @@ class AuthService:
     ) -> TokenResponse:  # fmt: skip
         async with self.sessions() as session, session.begin():
             user = await session.scalar(select(User).where(User.username == username.strip()))
-            password_ok = verify_password(user.password_hash if user else _DUMMY_HASH, password)
+            # Argon2 is slow on purpose: run it off the event loop (Step 24).
+            password_ok = await asyncio.to_thread(
+                verify_password, user.password_hash if user else _DUMMY_HASH, password
+            )
             if user is None or not password_ok or not user.is_active:
                 reason = (
                     "unknown_user"

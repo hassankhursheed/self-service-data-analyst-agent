@@ -24,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.config import PROJECT_ROOT
 from app.core.enums import RoleName
 from app.core.yaml_config import load_yaml_model
+from app.db.pools import lookup_pool
 from app.safety.sql_policy import SqlPolicy
 from app.safety.sql_validator import validate
 from app.semantic.models import SemanticLayer
@@ -185,8 +186,11 @@ def load_active_examples(conn: psycopg.Connection) -> list[VerifiedExample]:
 def database_verified_loader(conninfo: str) -> VerifiedLoader:
     """Read the enabled examples for every question, so changes apply at once."""
 
+    pool = lookup_pool(conninfo)
+
     def load() -> list[VerifiedExample]:
-        with psycopg.connect(conninfo, connect_timeout=5) as conn:
+        pool.open(wait=True)  # no-op once open
+        with pool.connection() as conn:
             return load_active_examples(conn)
 
     async def load_async() -> list[VerifiedExample]:

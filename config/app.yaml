@@ -46,6 +46,11 @@ api:
     questions_per_minute: 20
     logins_per_minute_per_ip: 10
   default_page_size: 20
+  # Rows of a result returned per page to the UI (the table is paginated).
+  result_page_size: 50
+  # Refuse to start when the semantic layer names a table or column the database no
+  # longer has (Step 24), so a renamed column is found before users see errors.
+  schema_check_on_startup: true
   max_page_size: 100
 
 # Admin Monitoring page (app/services/metrics.py, docs/monitoring.md). Operational

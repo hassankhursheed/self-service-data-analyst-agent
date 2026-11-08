@@ -4,6 +4,7 @@ Every action requires an admin, is validated, and is written to the audit log. D
 a user or resetting a password bumps ``token_version`` so existing tokens stop working.
 """
 
+import asyncio
 import datetime as dt
 import re
 import uuid
@@ -161,7 +162,7 @@ class UserAdminService:
             if await session.scalar(select(User.id).where(User.username == username)):
                 raise UsernameTaken(username)
             user = User(username=username, display_name=display_name.strip() or username,
-                        password_hash=hash_password(password))  # fmt: skip
+                        password_hash=await asyncio.to_thread(hash_password, password))  # fmt: skip
             session.add(user)
             await session.flush()
             await self._set_role_and_region(session, user.id, role, region, actor)
@@ -198,7 +199,7 @@ class UserAdminService:
         self._check_password(new_password)
         async with self.sessions() as session, session.begin():
             user = await self._get(session, user_id)
-            user.password_hash = hash_password(new_password)
+            user.password_hash = await asyncio.to_thread(hash_password, new_password)
             user.token_version += 1
             self._audit(session, actor, "password_reset", user.id, {"username": user.username},
                         correlation_id)  # fmt: skip

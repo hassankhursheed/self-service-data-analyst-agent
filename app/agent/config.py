@@ -48,6 +48,12 @@ class AnswerConfig(BaseModel):
     chart: ChartConfig
 
 
+class ConversationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    max_history_turns: int = Field(ge=0, le=20)
+
+
 class AgentConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -56,6 +62,7 @@ class AgentConfig(BaseModel):
     sql: SqlConfig
     answer: AnswerConfig
     verified_examples: VerifiedConfig
+    conversation: ConversationConfig
 
 
 def load_agent_config(path: Path = AGENT_CONFIG_FILE) -> AgentConfig:

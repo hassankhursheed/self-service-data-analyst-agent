@@ -108,6 +108,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/database
+      - name: Semantic layer matches the database (schema drift)
+        run: python -m scripts.schema_check
       - name: Evaluation cases still match the data
         run: python -m eval.check_cases
       - name: Integration tests (real database, scripted LLM)

@@ -49,3 +49,29 @@ async def test_default_deps_load_real_data_and_run_read_only(
         deps.row_limit,
     )
     assert everyone.rows == [(21,)]
+
+
+async def test_each_part_logs_in_as_its_own_database_user(
+    settings: Settings, seeded: SeedSummary
+) -> None:
+    """Step 24: the agent's SQL runs as analytics_ro; the app's own data as app_rw."""
+    from sqlalchemy import text
+
+    from app.db.session import create_app_engine
+
+    deps = default_deps()
+    finance = UserContext(username="finance", role=RoleName.FINANCE_ANALYST)
+    # One login for every query; each transaction points at the role's view schema and
+    # sets the role and region the views filter on.
+    who = await deps.executor(
+        "SELECT session_user AS login, current_user AS db_user, "
+        "current_setting('search_path') AS views, current_setting('app.user_role') AS role",
+        finance,
+        deps.statement_timeout_ms,
+        deps.row_limit,
+    )
+    assert who.rows == [("analytics_ro", "analytics_ro", "finance_ro", "finance_analyst")]
+    engine = create_app_engine(settings)
+    async with engine.connect() as conn:
+        assert (await conn.execute(text("SELECT session_user"))).scalar() == "app_rw"
+    await engine.dispose()

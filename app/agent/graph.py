@@ -32,6 +32,7 @@ from app.agent.nodes.n08_execution import make_execution_node
 from app.agent.nodes.n09_repair import make_repair_node
 from app.agent.nodes.n11_audit import make_audit_node
 from app.agent.state import AgentRequest, AgentState, ConversationTurn
+from app.agent.tracing import redacted_tracing
 from app.agent.transitions import END as ROUTE_END
 from app.agent.transitions import ROUTES, next_node
 from app.core.enums import NodeName
@@ -135,7 +136,8 @@ class Agent:
             "region": request.region.value if request.region else None,
             "graph_version": self.deps.agent_config.graph_version,
         }
-        await self.graph.ainvoke(cast(Any, fresh), config)
+        with redacted_tracing(self.deps.trace_client):
+            await self.graph.ainvoke(cast(Any, fresh), config)
         return await self.state(thread_id)
 
     async def resume(self, thread_id: str, reply: str) -> AgentState:
@@ -146,7 +148,8 @@ class Agent:
         config = self._config(thread_id)
         config["run_name"] = "clarification_reply"
         config["metadata"] = {"correlation_id": str(current.correlation_id)}
-        await self.graph.ainvoke(Command(resume=mask_text(reply)), config)
+        with redacted_tracing(self.deps.trace_client):
+            await self.graph.ainvoke(Command(resume=mask_text(reply)), config)
         return await self.state(thread_id)
 
     async def has_thread(self, thread_id: str) -> bool:

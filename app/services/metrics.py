@@ -79,6 +79,29 @@ class DailyPoint(_Frozen):
     cost_usd: Decimal
 
 
+class NodeLatency(_Frozen):
+    node: str
+    label: str
+    steps: int
+    avg_ms: float
+    p95_ms: float
+
+
+NODE_LABELS = {
+    "N-01": "Intake",
+    "N-02": "Guardrails",
+    "N-03": "Intent",
+    "N-04": "Clarification",
+    "N-05": "Context",
+    "N-06": "SQL generation",
+    "N-07": "Validation",
+    "N-08": "Execution",
+    "N-09": "Repair",
+    "N-10": "Answer",
+    "N-11": "Audit",
+}
+
+
 class Metrics(_Frozen):
     period_from: dt.date
     period_to: dt.date
@@ -101,6 +124,8 @@ class Metrics(_Frozen):
     failed_logins: int
     latest_eval_run: EvalRunSummary | None
     daily: list[DailyPoint]
+    # Time spent in each graph node (agent_steps), slowest first (Step 24).
+    node_latency: list[NodeLatency] = []
 
 
 def p95(values: Sequence[float]) -> float | None:
@@ -167,6 +192,15 @@ _QUERIES: dict[str, str] = {
         FROM app.questions
         WHERE created_at >= :start AND created_at < :end
         GROUP BY 1, 2
+    """,
+    "node_latency": """
+        SELECT s.node_name, count(*) AS steps, avg(s.latency_ms) AS avg_ms,
+               percentile_cont(0.95) WITHIN GROUP (ORDER BY s.latency_ms) AS p95_ms
+        FROM app.agent_steps s
+        JOIN app.agent_runs r ON r.id = s.run_id
+        WHERE r.started_at >= :start AND r.started_at < :end
+        GROUP BY s.node_name
+        ORDER BY avg_ms DESC
     """,
     "daily_cost": """
         SELECT (started_at AT TIME ZONE :tz)::date AS day,
@@ -282,4 +316,14 @@ class MetricsService:
             if latest
             else None,
             daily=[DailyPoint(**values) for values in days.values()],
+            node_latency=[
+                NodeLatency(
+                    node=node,
+                    label=NODE_LABELS.get(node, node),
+                    steps=steps,
+                    avg_ms=round(float(avg), 1),
+                    p95_ms=round(float(p95), 1),
+                )
+                for node, steps, avg, p95 in rows["node_latency"]
+            ],
         )

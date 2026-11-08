@@ -55,6 +55,7 @@ export interface Metrics {
     started_at: string;
   } | null;
   daily: { date: string; questions: number; answered: number; blocked: number; rejected: number; failed: number; cost_usd: string | number }[];
+  node_latency?: { node: string; label: string; steps: number; avg_ms: number; p95_ms: number }[];
 }
 
 type Preset = "today" | "7" | "30" | "custom";
@@ -191,6 +192,39 @@ export function MonitoringView({ metrics }: { metrics: Metrics }) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </Card>
+
+      <Card className="p-5">
+        <p className="text-sm font-semibold">Time per step</p>
+        <p className="text-muted text-xs">Average and p95 time spent in each node of the agent, slowest first.</p>
+        {(metrics.node_latency ?? []).length === 0 ? (
+          <p className="text-muted mt-3 text-sm">No runs in this period.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-sm" data-testid="node-latency">
+              <thead className="text-muted text-left text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="py-2 pr-4 font-semibold">Step</th>
+                  <th className="py-2 pr-4 text-right font-semibold">Runs</th>
+                  <th className="py-2 pr-4 text-right font-semibold">Average</th>
+                  <th className="py-2 text-right font-semibold">p95</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(metrics.node_latency ?? []).map((n) => (
+                  <tr key={n.node} className="border-t border-subtle">
+                    <td className="py-2 pr-4">
+                      <span className="text-muted font-mono text-xs">{n.node}</span> {n.label}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{int(n.steps)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">{ms(n.avg_ms)}</td>
+                    <td className="py-2 text-right tabular-nums">{ms(n.p95_ms)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">

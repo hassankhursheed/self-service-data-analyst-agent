@@ -21,9 +21,11 @@ from app.api.errors import install_error_handlers
 from app.api.middleware import HEADER, CorrelationIdMiddleware
 from app.api.ratelimit import SlidingWindowLimiter
 from app.api.routes import admin, public, questions
+from app.api.startup import check_schema
 from app.auth.service import AuthService
 from app.auth.tokens import TokenService
 from app.core.config import Settings, get_settings
+from app.core.log_masking import install_log_masking
 from app.db.session import create_app_engine, create_session_factory
 from app.eval.runner import EvalRunner, pinned_llm_factory, require_llm_key
 from app.services.evaluation import EvaluationService
@@ -41,6 +43,7 @@ def create_app(
     checkpointer: BaseCheckpointSaver[Any] | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
+    install_log_masking()  # every log record is masked (Step 24)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -50,6 +53,8 @@ def create_app(
             sessions = create_session_factory(engine)
             saver = checkpointer or await stack.enter_async_context(postgres_checkpointer(settings))
             deps = agent_deps or default_deps()
+            if settings.api.schema_check_on_startup:
+                await check_schema(settings, deps)
             agent = Agent(deps, saver)
             conversations = ConversationService(agent, sessions)
             tokens = TokenService(

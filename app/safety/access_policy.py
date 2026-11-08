@@ -43,6 +43,8 @@ class AccessPolicy(_Strict):
     roles: dict[RoleName, RolePolicy]
     region_keys: dict[str, str]
     sensitive_columns: dict[str, dict[str, SensitiveColumn]]
+    # Column names whose values never reach the LLM prompt (Step 24).
+    llm_hidden_columns: list[str] = []
 
     @model_validator(mode="after")
     def _consistent(self) -> "AccessPolicy":

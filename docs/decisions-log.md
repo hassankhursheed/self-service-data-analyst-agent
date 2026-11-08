@@ -354,3 +354,18 @@ What was chosen, what was rejected and why. Newest step last.
 | Coverage | `pytest-cov` with greenlet tracing; about 96% of `app/` | No measurement; line tracing only | Without greenlet tracing, async database code looked uncovered (57–70%). |
 | Environment-dependent test | Fixed `test_demo_password_maps_username_to_environment_variable` (it assumed a variable was unset) | — | Found by the first CI run. |
 | When live-eval runs | Push to `main`, a weekly schedule and manual runs | Every push and pull request | It spends model credits (the project runs on free Mistral credits); every push still runs all safety tests with a mocked model. Each approved step reaches `main` once, so it gets one live check, plus a weekly drift check. |
+
+## Step 24: Security, Privacy and Performance Hardening
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Secret scan | A one-off script over every blob in git history: secret patterns plus exact matching of the local `.env` secret values (names reported, values never printed) | Downloading gitleaks | No scanner was installed and downloads need approval; exact matching of the real values is the strongest check that nothing leaked. Nothing real was found. |
+| Personal data in the answer prompt | `llm_hidden_columns` in `config/access_policy.yaml`: values become `[PERSONAL]`; `mask_text` on the rest | All `sensitive_columns`; nothing extra | Found: contact names could reach the LLM. `sensitive_columns` also lists employee `country`/`city`/`region`, which are business columns elsewhere, so an explicit list of always-personal names is used. |
+| Traces | A LangSmith client with `hide_inputs`/`hide_outputs` (`redact_for_trace`), used through `tracing_context` for every graph run | `LANGSMITH_HIDE_INPUTS=true` (hides everything) | Found: result rows reached traces. Redaction keeps traces useful (steps, SQL, statuses) without the rows. |
+| Logs | A global log record factory masks every message and traceback | Masking only our own log calls | Library and traceback text can contain user input too. |
+| Schema drift at start-up | `pg_catalog`-based check as `app_rw`; refuse to start; full owner check (with metrics) in CI | Owner credentials in the API; `information_schema` | The API must not hold owner rights; `information_schema` hides tables the role cannot read, `pg_catalog` does not. |
+| Lookups per question | One small `psycopg_pool` per loader | A new connection per question | Found: two lookups opened a connection for every question. |
+| Password hashing | Argon2 in `asyncio.to_thread` | On the event loop | Found: a login blocked every other request for the hashing time. |
+| Limits in config | Follow-up history turns (`agent.yaml`) and result page size (`app.yaml`) moved to config; request-body caps and column-size field lengths stay in code | Moving every number | Behavioural limits are configurable; transport caps and schema sizes are not settings. |
+| Per-node latency on the dashboard | `node_latency` (average, p95, count per node) from `agent_steps` | Only in the audit tables | The guide asks for it on the dashboard; the audit already had it. |
+

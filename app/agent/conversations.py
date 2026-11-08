@@ -23,7 +23,6 @@ from app.core.errors import AppError
 from app.core.masking import mask_text
 from app.db.models import Conversation, Question
 
-MAX_HISTORY_TURNS = 5
 TITLE_LENGTH = 80
 
 
@@ -208,7 +207,8 @@ class ConversationService:
         previous = await self.agent.state(thread_id)
         if previous.status is None or previous.awaiting_reply:
             return list(previous.history)
-        return [*previous.history, turn_from_state(previous)][-MAX_HISTORY_TURNS:]
+        turns = self.agent.deps.agent_config.conversation.max_history_turns
+        return [*previous.history, turn_from_state(previous)][-turns:] if turns else []
 
     async def _record_question(
         self,
