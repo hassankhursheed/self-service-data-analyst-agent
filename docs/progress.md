@@ -24,7 +24,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 20: Verified Query Library and Feedback Loop (Week 3, brief section 16)
 - [x] Step 21: Monitoring Dashboard (Week 3, brief section 26)
 - [x] Step 22: Evaluation Set and Experiments (Week 4, brief section 24)
-- [ ] Step 23: Automated Tests and CI Pipeline (guide received)
+- [x] Step 23: Automated Tests and CI Pipeline (Week 3-4, brief section 25)
 - [ ] Step 24: Security, Privacy and Performance Hardening (guide received)
 - [ ] Step 25: Live Deployment (guide received; host choice needed before deploying)
 - [ ] Step 26: Recommended Extras, Final Docs and Full Verification (guide received; extras chosen by the user)
@@ -36,7 +36,9 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   5 ungrounded (all date fragments). Follow-ups: dates as grounded context in the
   grounding check, a system-catalog rule in the question guardrails, tell the SQL prompt
   region filtering is already applied, a stronger model on a paid plan.
-- Steps 23 to 26 (guides received; built one at a time after Step 22 is approved).
+- Steps 24 to 26 (guides received; built one at a time).
+- CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub
+  (Settings → Secrets and variables → Actions); until then it is skipped with a notice.
 - Results go in the README too (brief §24), in Step 26.
 - Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
   screenshots in `docs/screenshots/` (only `01-login.jpg` so far). Done once after Step 22,

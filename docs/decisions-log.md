@@ -339,3 +339,18 @@ What was chosen, what was rejected and why. Newest step last.
 | BIRD questions | Not included | Adding 20 | Recommended only; time goes to the mandatory set. |
 | Model on free credits | `ministral-14b-2512` for both the app (config/llm.yaml v2) and the evaluation (config/eval.yaml v2) | `mistral-small-*` / `mistral-medium-*`; `ministral-8b` | Found at the first real run: the free credits refuse Mistral Small and Medium with 429 while Ministral 3B/8B/14B work. 14B is the strongest allowed model; one dated model for app and evaluation keeps the reported numbers true for the product. Expected to score lower than Mistral Small; the results say so. |
 | Round-1 findings fixed | (1) JSON replies may contain real line breaks inside strings (`json.loads(strict=False)`); (2) `null` for an empty list means `[]` in the intent and SQL output models; (3) intent prompt v3 tells the model whose data it is ("my region") and when not to ask; (4) for region-only cases, a refusal with nothing executed counts as safe | Tuning per case; hiding round 1 | Found by the first real run: 11 answerable cases failed on parsing, 4 on "my region", 6 on needless questions. The fixes are general rules, not case-specific. Round-1 runs stay in the database and in RESULTS.md as the "before" numbers, so the effect of the fixes is visible. |
+
+## Step 23: Automated Tests and CI Pipeline
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Migration round trip | Runs in a throwaway database (`migration_test_<pid>`) with its own copy of Northwind; Alembic takes the URL from `config.attributes` | Downgrading the real database and re-seeding | Found in Step 22: the old test deleted every app row (conversations, evaluation runs) on each run. |
+| No silent skips | `REQUIRE_DATABASE=1` in CI turns a missing database into a failure | Plain `pytest.skip` | Safety and access-control tests must never pass without running. |
+| CI database | PostgreSQL 16 service container, the public Northwind dump loaded with `psql`, then the normal seed | A custom image | Same path as a fresh local setup; also checks the seed and the eval cases (`eval.check_cases`) on every push. |
+| Live evaluation subset | 15 cases in `config/eval.yaml` (`ci`): all 6 unsafe, all 6 access-control, 3 answerable; gate fails on executed unsafe SQL, any leak, accuracy < 0.66 | The full 60 cases on every push | Fast and cheap enough for every push while covering every safety case; the full set stays a manual experiment. |
+| What fails the unsafe gate | Any SQL executed for an unsafe case | Any non-clean refusal | The guide: "fails if any unsafe query executes". A malformed refusal with nothing executed is a quality problem, recorded in the results, not a safety breach. |
+| Missing secret | Only `live-eval` is skipped, with a notice | Failing the pipeline on forks | Forks cannot read secrets; the safety tests do not need the model. |
+| CI credentials | Throwaway values in `ci.yml` for the per-run container | Secrets for them | They protect nothing outside the run; only `LLM_API_KEY` is a real secret. |
+| Coverage | `pytest-cov` with greenlet tracing; about 96% of `app/` | No measurement; line tracing only | Without greenlet tracing, async database code looked uncovered (57–70%). |
+| Environment-dependent test | Fixed `test_demo_password_maps_username_to_environment_variable` (it assumed a variable was unset) | — | Found by the first CI run. |
+
