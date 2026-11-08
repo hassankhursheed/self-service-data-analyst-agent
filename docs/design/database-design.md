@@ -189,6 +189,10 @@ erDiagram
         text failure_reason
         integer latency_ms
         numeric cost_usd
+        uuid correlation_id
+        boolean leaked
+        boolean ungrounded
+        jsonb details
         timestamptz created_at
     }
     eval_runs {
@@ -214,6 +218,10 @@ erDiagram
         uuid started_by FK
         timestamptz started_at
         timestamptz finished_at
+        jsonb settings
+        integer cases_total
+        integer cases_passed
+        text error_message
         timestamptz updated_at
         timestamptz created_at
     }

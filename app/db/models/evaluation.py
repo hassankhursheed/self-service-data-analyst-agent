@@ -3,6 +3,7 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -19,12 +20,14 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    false,
     func,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import FINAL_STATUSES, CaseType, EvalRunStatus, ExpectedBehaviour
+from app.core.enums import CaseType, EvalRunStatus, ExpectedBehaviour, QuestionStatus
 from app.db.models.base import Base, CreatedAtMixin, TimestampMixin, check_in
 
 
@@ -97,13 +100,20 @@ class EvalRun(TimestampMixin, Base):
     )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Everything else that makes the run repeatable: cases version, semantic mode,
+    # verified-library fingerprint, LLM config version, case selection (Step 22).
+    settings: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}")
+    cases_total: Mapped[int | None] = mapped_column(Integer)
+    cases_passed: Mapped[int | None] = mapped_column(Integer)
+    error_message: Mapped[str | None] = mapped_column(Text)
 
 
 class EvalResult(CreatedAtMixin, Base):
     __tablename__ = "eval_results"
     __table_args__ = (
         UniqueConstraint("run_id", "case_id"),
-        check_in("final_status", FINAL_STATUSES, nullable=True),
+        # Any status: an ambiguous case ends in CLARIFICATION_NEEDED.
+        check_in("final_status", QuestionStatus, nullable=True),
         Index(None, "passed"),
     )
 
@@ -118,3 +128,8 @@ class EvalResult(CreatedAtMixin, Base):
     failure_reason: Mapped[str | None] = mapped_column(Text)
     latency_ms: Mapped[int | None] = mapped_column(Integer)
     cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    correlation_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    leaked: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    ungrounded: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    # Expected vs actual preview for the Evaluation page.
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default="{}")

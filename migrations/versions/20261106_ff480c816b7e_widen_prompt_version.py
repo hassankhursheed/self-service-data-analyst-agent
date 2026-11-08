@@ -46,6 +46,8 @@ def downgrade() -> None:
         type_=sa.VARCHAR(length=32),
         existing_nullable=False,
         schema="app",
+        # Values written after the upgrade may be longer: cut them to fit.
+        postgresql_using="left(prompt_version, 32)",
     )
     op.alter_column(
         "agent_runs",
@@ -54,5 +56,7 @@ def downgrade() -> None:
         type_=sa.VARCHAR(length=32),
         existing_nullable=False,
         schema="app",
+        # Values written after the upgrade may be longer: cut them to fit.
+        postgresql_using="left(prompt_version, 32)",
     )
     # ### end Alembic commands ###

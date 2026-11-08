@@ -11,6 +11,7 @@ from app.agent.conversations import ConversationService
 from app.api.ratelimit import SlidingWindowLimiter
 from app.auth.service import AuthService
 from app.core.config import ApiConfig
+from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
 from app.services.metrics import MetricsService
 from app.services.review import ReviewService
@@ -32,6 +33,7 @@ class Services:
     review: ReviewService
     library: VerifiedLibraryService
     metrics: MetricsService
+    evaluation: EvaluationService
     question_limiter: SlidingWindowLimiter
     login_limiter: SlidingWindowLimiter
 

@@ -1,0 +1,2019 @@
+{
+ "cases_version": 1,
+ "generated_at": "2026-11-07T18:37:22.195287Z",
+ "cases": {
+  "S-01": {
+   "expected": {
+    "columns": [
+     "discontinued_products"
+    ],
+    "rows": [
+     [
+      10
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-02": {
+   "expected": {
+    "columns": [
+     "orders"
+    ],
+    "rows": [
+     [
+      408
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-03": {
+   "expected": {
+    "columns": [
+     "product_name"
+    ],
+    "rows": [
+     [
+      "Chang"
+     ],
+     [
+      "Aniseed Syrup"
+     ],
+     [
+      "Queso Cabrales"
+     ],
+     [
+      "Sir Rodney's Scones"
+     ],
+     [
+      "Nord-Ost Matjeshering"
+     ],
+     [
+      "Gorgonzola Telino"
+     ],
+     [
+      "Mascarpone Fabioli"
+     ],
+     [
+      "Gravad lax"
+     ],
+     [
+      "Ipoh Coffee"
+     ],
+     [
+      "Rogede sild"
+     ],
+     [
+      "Chocolade"
+     ],
+     [
+      "Maxilaku"
+     ],
+     [
+      "Gnocchi di nonna Alice"
+     ],
+     [
+      "Wimmers gute Semmelknödel"
+     ],
+     [
+      "Louisiana Hot Spiced Okra"
+     ],
+     [
+      "Scottish Longbreads"
+     ],
+     [
+      "Outback Lager"
+     ],
+     [
+      "Longlife Tofu"
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-04": {
+   "expected": {
+    "columns": [
+     "customers"
+    ],
+    "rows": [
+     [
+      11
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-05": {
+   "expected": {
+    "columns": [
+     "freight_cost"
+    ],
+    "rows": [
+     [
+      5379.01953125
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-06": {
+   "expected": {
+    "columns": [
+     "suppliers"
+    ],
+    "rows": [
+     [
+      29
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-07": {
+   "expected": {
+    "columns": [
+     "orders"
+    ],
+    "rows": [
+     [
+      74
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-08": {
+   "expected": {
+    "columns": [
+     "products"
+    ],
+    "rows": [
+     [
+      7
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-09": {
+   "expected": {
+    "columns": [
+     "average_freight"
+    ],
+    "rows": [
+     [
+      79.58031867641736
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-10": {
+   "expected": {
+    "columns": [
+     "customers"
+    ],
+    "rows": [
+     [
+      13
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-11": {
+   "expected": {
+    "columns": [
+     "unshipped_orders"
+    ],
+    "rows": [
+     [
+      21
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-12": {
+   "expected": {
+    "columns": [
+     "product_name",
+     "units_in_stock"
+    ],
+    "rows": [
+     [
+      "Rhönbräu Klosterbier",
+      125
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-13": {
+   "expected": {
+    "columns": [
+     "employees"
+    ],
+    "rows": [
+     [
+      9
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-14": {
+   "expected": {
+    "columns": [
+     "orders"
+    ],
+    "rows": [
+     [
+      32
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "S-15": {
+   "expected": {
+    "columns": [
+     "max_freight"
+    ],
+    "rows": [
+     [
+      1007.6400146484375
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-01": {
+   "expected": {
+    "columns": [
+     "month",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      61258.0701679784
+     ],
+     [
+      "2024-02-01",
+      38483.6349503243
+     ],
+     [
+      "2024-03-01",
+      38547.22010972678
+     ],
+     [
+      "2024-04-01",
+      53032.95238894149
+     ],
+     [
+      "2024-05-01",
+      53781.28982514166
+     ],
+     [
+      "2024-06-01",
+      36362.80233480245
+     ],
+     [
+      "2024-07-01",
+      51020.85751860481
+     ],
+     [
+      "2024-08-01",
+      47287.66968825523
+     ],
+     [
+      "2024-09-01",
+      55629.24240174934
+     ],
+     [
+      "2024-10-01",
+      66749.22577572716
+     ],
+     [
+      "2024-11-01",
+      43533.80876756514
+     ],
+     [
+      "2024-12-01",
+      71398.42846388379
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-02": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Rattlesnake Canyon Grocery",
+      19078.7999314487
+     ],
+     [
+      "Save-a-lot Markets",
+      15160.05995228827
+     ],
+     [
+      "Great Lakes Food Market",
+      8902.449977181106
+     ],
+     [
+      "Bottom-Dollar Markets",
+      8626.324964523315
+     ],
+     [
+      "White Clover Markets",
+      5447.649971008301
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-03": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "orders"
+    ],
+    "rows": [
+     [
+      "United Package",
+      153
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-04": {
+   "expected": {
+    "columns": [
+     "category_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Beverages",
+      103924.3050749679
+     ],
+     [
+      "Produce",
+      54940.76739317353
+     ],
+     [
+      "Condiments",
+      55368.589658400466
+     ],
+     [
+      "Grains/Cereals",
+      56871.82484497763
+     ],
+     [
+      "Meat/Poultry",
+      80975.10820996655
+     ],
+     [
+      "Confections",
+      82657.75058745116
+     ],
+     [
+      "Dairy Products",
+      115387.63967462801
+     ],
+     [
+      "Seafood",
+      66959.21694913533
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-05": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "late_orders"
+    ],
+    "rows": [
+     [
+      "Federal Shipping",
+      1
+     ],
+     [
+      "Speedy Express",
+      4
+     ],
+     [
+      "United Package",
+      3
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-06": {
+   "expected": {
+    "columns": [
+     "quarter",
+     "average_order_value"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      1503.1404916090164
+     ],
+     [
+      "2024-04-01",
+      1539.5381134288775
+     ],
+     [
+      "2024-07-01",
+      1494.541452510771
+     ],
+     [
+      "2024-10-01",
+      1514.0121917264673
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-07": {
+   "expected": {
+    "columns": [
+     "country",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Italy",
+      7946.41495706536
+     ],
+     [
+      "Sweden",
+      27163.684895811006
+     ],
+     [
+      "Ireland",
+      20454.404859158098
+     ],
+     [
+      "Germany",
+      117320.16445735967
+     ],
+     [
+      "Portugal",
+      6474.522509932667
+     ],
+     [
+      "Finland",
+      13437.29256468162
+     ],
+     [
+      "France",
+      45263.38250787754
+     ],
+     [
+      "Denmark",
+      25192.5374553781
+     ],
+     [
+      "Switzerland",
+      18380.823994230093
+     ],
+     [
+      "Norway",
+      699.9999961853027
+     ],
+     [
+      "Austria",
+      57401.84315671531
+     ],
+     [
+      "UK",
+      27074.094883342015
+     ],
+     [
+      "Spain",
+      6978.400029920042
+     ],
+     [
+      "Belgium",
+      11434.480060322285
+     ],
+     [
+      "Poland",
+      1207.8499994277954
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-08": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "orders"
+    ],
+    "rows": [
+     [
+      "Federal Shipping",
+      75
+     ],
+     [
+      "Speedy Express",
+      78
+     ],
+     [
+      "United Package",
+      117
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-09": {
+   "expected": {
+    "columns": [
+     "category_name",
+     "discount_amount"
+    ],
+    "rows": [
+     [
+      "Beverages",
+      6499.695105753392
+     ],
+     [
+      "Produce",
+      2777.7825393063204
+     ],
+     [
+      "Condiments",
+      4310.4100326090675
+     ],
+     [
+      "Grains/Cereals",
+      3615.12505135797
+     ],
+     [
+      "Meat/Poultry",
+      6645.9220982800725
+     ],
+     [
+      "Confections",
+      4570.01956988602
+     ],
+     [
+      "Dairy Products",
+      8523.160158669725
+     ],
+     [
+      "Seafood",
+      4361.432538360097
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-10": {
+   "expected": {
+    "columns": [
+     "country",
+     "units_sold"
+    ],
+    "rows": [
+     [
+      "Spain",
+      610
+     ],
+     [
+      "Italy",
+      2202
+     ],
+     [
+      "Sweden",
+      1158
+     ],
+     [
+      "Norway",
+      1240
+     ],
+     [
+      "France",
+      2100
+     ],
+     [
+      "USA",
+      3246
+     ],
+     [
+      "Netherlands",
+      489
+     ],
+     [
+      "Brazil",
+      421
+     ],
+     [
+      "UK",
+      2397
+     ],
+     [
+      "Australia",
+      3148
+     ],
+     [
+      "Germany",
+      3050
+     ],
+     [
+      "Japan",
+      1091
+     ],
+     [
+      "Denmark",
+      661
+     ],
+     [
+      "Singapore",
+      1105
+     ],
+     [
+      "Canada",
+      1791
+     ],
+     [
+      "Finland",
+      780
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-11": {
+   "expected": {
+    "columns": [
+     "first_name",
+     "last_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Margaret",
+      "Peacock",
+      128809.7907753933
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-12": {
+   "expected": {
+    "columns": [
+     "month",
+     "orders"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      7
+     ],
+     [
+      "2024-02-01",
+      4
+     ],
+     [
+      "2024-03-01",
+      5
+     ],
+     [
+      "2024-04-01",
+      8
+     ],
+     [
+      "2024-05-01",
+      4
+     ],
+     [
+      "2024-06-01",
+      10
+     ],
+     [
+      "2024-07-01",
+      12
+     ],
+     [
+      "2024-08-01",
+      6
+     ],
+     [
+      "2024-09-01",
+      11
+     ],
+     [
+      "2024-10-01",
+      12
+     ],
+     [
+      "2024-11-01",
+      7
+     ],
+     [
+      "2024-12-01",
+      3
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-13": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Federal Shipping",
+      61917.24878606854
+     ],
+     [
+      "Speedy Express",
+      57353.42237958126
+     ],
+     [
+      "United Package",
+      62410.79184152628
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-14": {
+   "expected": {
+    "columns": [
+     "month",
+     "average_shipping_days"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      10.0
+     ],
+     [
+      "2024-02-01",
+      9.655172413793103
+     ],
+     [
+      "2024-03-01",
+      8.3
+     ],
+     [
+      "2024-04-01",
+      9.0
+     ],
+     [
+      "2024-05-01",
+      9.15625
+     ],
+     [
+      "2024-06-01",
+      8.833333333333334
+     ],
+     [
+      "2024-07-01",
+      8.696969696969697
+     ],
+     [
+      "2024-08-01",
+      6.787878787878788
+     ],
+     [
+      "2024-09-01",
+      9.135135135135135
+     ],
+     [
+      "2024-10-01",
+      8.710526315789474
+     ],
+     [
+      "2024-11-01",
+      8.735294117647058
+     ],
+     [
+      "2024-12-01",
+      9.854166666666666
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "M-15": {
+   "expected": {
+    "columns": [
+     "ship_country",
+     "freight_cost"
+    ],
+    "rows": [
+     [
+      "USA",
+      3906.599609375
+     ],
+     [
+      "Germany",
+      1947.1500244140625
+     ],
+     [
+      "Ireland",
+      1275.9599609375
+     ],
+     [
+      "Brazil",
+      1150.880126953125
+     ],
+     [
+      "Austria",
+      1127.739990234375
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-01": {
+   "expected": {
+    "columns": [
+     "product_name",
+     "revenue_change"
+    ],
+    "rows": [
+     [
+      "Manjimup Dried Apples",
+      -7896.999993287027
+     ],
+     [
+      "Raclette Courdavault",
+      -4058.999983649701
+     ],
+     [
+      "Gudbrandsdalsost",
+      -3949.1999895125628
+     ],
+     [
+      "Gnocchi di nonna Alice",
+      -2756.899999178946
+     ],
+     [
+      "Louisiana Fiery Hot Pepper Sauce",
+      -2318.6574146761745
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-02": {
+   "expected": {
+    "columns": [
+     "category_name",
+     "product_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Beverages",
+      "Côte de Blaye",
+      49198.085322581006
+     ],
+     [
+      "Beverages",
+      "Ipoh Coffee",
+      11069.89996689558
+     ],
+     [
+      "Beverages",
+      "Lakkalikööri",
+      7379.099960094691
+     ],
+     [
+      "Condiments",
+      "Louisiana Fiery Hot Pepper Sauce",
+      9373.184636846892
+     ],
+     [
+      "Condiments",
+      "Sirop d'érable",
+      9091.49989387691
+     ],
+     [
+      "Condiments",
+      "Vegie-spread",
+      6899.254986102581
+     ],
+     [
+      "Confections",
+      "Tarte au sucre",
+      21638.299873608354
+     ],
+     [
+      "Confections",
+      "Schoggi Schokolade",
+      10974.000244140625
+     ],
+     [
+      "Confections",
+      "Gumbär Gummibärchen",
+      10443.077829143711
+     ],
+     [
+      "Dairy Products",
+      "Raclette Courdavault",
+      35775.29994821176
+     ],
+     [
+      "Dairy Products",
+      "Camembert Pierrot",
+      20505.40005929619
+     ],
+     [
+      "Dairy Products",
+      "Gudbrandsdalsost",
+      13062.599945387245
+     ],
+     [
+      "Grains/Cereals",
+      "Gnocchi di nonna Alice",
+      32603.999865040183
+     ],
+     [
+      "Grains/Cereals",
+      "Wimmers gute Semmelknödel",
+      8056.475034091249
+     ],
+     [
+      "Grains/Cereals",
+      "Singaporean Hokkien Fried Mee",
+      5408.199971309305
+     ],
+     [
+      "Meat/Poultry",
+      "Thüringer Rostbratwurst",
+      34755.9131938142
+     ],
+     [
+      "Meat/Poultry",
+      "Alice Mutton",
+      17604.600054363906
+     ],
+     [
+      "Meat/Poultry",
+      "Perth Pasties",
+      10661.929907823802
+     ],
+     [
+      "Produce",
+      "Manjimup Dried Apples",
+      24570.800044365227
+     ],
+     [
+      "Produce",
+      "Rössle Sauerkraut",
+      13948.679835451841
+     ],
+     [
+      "Produce",
+      "Uncle Bob's Organic Dried Pears",
+      9186.29999023676
+     ],
+     [
+      "Seafood",
+      "Carnarvon Tigers",
+      15949.999979231507
+     ],
+     [
+      "Seafood",
+      "Ikura",
+      9935.499955132604
+     ],
+     [
+      "Seafood",
+      "Boston Crab Meat",
+      9814.729803147615
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-03": {
+   "expected": {
+    "columns": [
+     "country",
+     "company_name",
+     "share"
+    ],
+    "rows": [
+     [
+      "Austria",
+      "Ernst Handel",
+      0.837887087458532
+     ],
+     [
+      "Belgium",
+      "Suprêmes délices",
+      0.5367519999921896
+     ],
+     [
+      "Denmark",
+      "Simons bistro",
+      0.6443341657564906
+     ],
+     [
+      "Finland",
+      "Wartian Herkku",
+      0.9126051623393642
+     ],
+     [
+      "France",
+      "Folies gourmandes",
+      0.2577558159121987
+     ],
+     [
+      "Germany",
+      "QUICK-Stop",
+      0.5208815586502084
+     ],
+     [
+      "Ireland",
+      "Hungry Owl All-Night Grocers",
+      1.0
+     ],
+     [
+      "Italy",
+      "Magazzini Alimentari Riuniti",
+      0.5909425795598588
+     ],
+     [
+      "Norway",
+      "Santé Gourmet",
+      1.0
+     ],
+     [
+      "Poland",
+      "Wolski  Zajazd",
+      1.0
+     ],
+     [
+      "Portugal",
+      "Furia Bacalhau e Frutos do Mar",
+      0.7823468872472248
+     ],
+     [
+      "Spain",
+      "Godos Cocina Típica",
+      0.49557921595157073
+     ],
+     [
+      "Sweden",
+      "Berglunds snabbköp",
+      0.5098356490745084
+     ],
+     [
+      "Switzerland",
+      "Richter Supermarkt",
+      0.6454783532515425
+     ],
+     [
+      "UK",
+      "Seven Seas Imports",
+      0.3332057824078035
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-04": {
+   "expected": {
+    "columns": [
+     "month",
+     "revenue",
+     "change"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      61258.0701679784,
+      null
+     ],
+     [
+      "2024-02-01",
+      38483.6349503243,
+      -22774.435217654107
+     ],
+     [
+      "2024-03-01",
+      38547.22010972678,
+      63.58515940248617
+     ],
+     [
+      "2024-04-01",
+      53032.95238894149,
+      14485.73227921471
+     ],
+     [
+      "2024-05-01",
+      53781.28982514166,
+      748.3374362001705
+     ],
+     [
+      "2024-06-01",
+      36362.80233480245,
+      -17418.487490339212
+     ],
+     [
+      "2024-07-01",
+      51020.85751860481,
+      14658.05518380236
+     ],
+     [
+      "2024-08-01",
+      47287.66968825523,
+      -3733.1878303495832
+     ],
+     [
+      "2024-09-01",
+      55629.24240174934,
+      8341.572713494112
+     ],
+     [
+      "2024-10-01",
+      66749.22577572716,
+      11119.983373977819
+     ],
+     [
+      "2024-11-01",
+      43533.80876756514,
+      -23215.417008162018
+     ],
+     [
+      "2024-12-01",
+      71398.42846388379,
+      27864.619696318645
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-05": {
+   "expected": {
+    "columns": [
+     "company_name"
+    ],
+    "rows": [
+     [
+      "Romero y tomillo"
+     ],
+     [
+      "Centro comercial Moctezuma"
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-06": {
+   "expected": {
+    "columns": [
+     "company_name",
+     "late_share"
+    ],
+    "rows": [
+     [
+      "Federal Shipping",
+      0.040983606557377046
+     ],
+     [
+      "Speedy Express",
+      0.045112781954887216
+     ],
+     [
+      "United Package",
+      0.0718954248366013
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-07": {
+   "expected": {
+    "columns": [
+     "year",
+     "first_name",
+     "last_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      2023,
+      "Margaret",
+      "Peacock",
+      49945.115328493564
+     ],
+     [
+      2023,
+      "Nancy",
+      "Davolio",
+      35764.51521332211
+     ],
+     [
+      2024,
+      "Margaret",
+      "Peacock",
+      128809.7907753933
+     ],
+     [
+      2024,
+      "Janet",
+      "Leverling",
+      108026.15513142715
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-08": {
+   "expected": {
+    "columns": [
+     "product_name",
+     "revenue"
+    ],
+    "rows": [
+     [
+      "Flotemysost",
+      5187.950078174472
+     ],
+     [
+      "Camembert Pierrot",
+      11539.60003298372
+     ],
+     [
+      "Thüringer Rostbratwurst",
+      27537.133169524117
+     ],
+     [
+      "Carnarvon Tigers",
+      12862.49998351559
+     ],
+     [
+      "Sirop d'érable",
+      5694.299965322018
+     ],
+     [
+      "Sir Rodney's Marmalade",
+      5613.299993120134
+     ],
+     [
+      "Rössle Sauerkraut",
+      9501.959792938233
+     ],
+     [
+      "Louisiana Fiery Hot Pepper Sauce",
+      7325.114720678739
+     ],
+     [
+      "Raclette Courdavault",
+      21705.74996189028
+     ],
+     [
+      "Alice Mutton",
+      9607.650024692713
+     ],
+     [
+      "Schoggi Schokolade",
+      7024.000244140625
+     ],
+     [
+      "Vegie-spread",
+      6056.374959945679
+     ],
+     [
+      "Mozzarella di Giovanni",
+      7565.999816393853
+     ],
+     [
+      "Ipoh Coffee",
+      8459.3999710083
+     ],
+     [
+      "Pavlova",
+      5947.862700353376
+     ],
+     [
+      "Côte de Blaye",
+      22002.250146698207
+     ],
+     [
+      "Gnocchi di nonna Alice",
+      17643.399917796254
+     ],
+     [
+      "Gudbrandsdalsost",
+      10229.399956545234
+     ],
+     [
+      "Gumbär Gummibärchen",
+      5636.918908383645
+     ],
+     [
+      "Manjimup Dried Apples",
+      19747.8000093773
+     ],
+     [
+      "Ikura",
+      5533.499955132604
+     ],
+     [
+      "Uncle Bob's Organic Dried Pears",
+      7759.799990773201
+     ],
+     [
+      "Tarte au sucre",
+      18384.49992543161
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-09": {
+   "expected": {
+    "columns": [
+     "category_name",
+     "q1_2025",
+     "q1_2024",
+     "difference"
+    ],
+    "rows": [
+     [
+      "Beverages",
+      89606.12494579144,
+      35386.8801179421,
+      54219.24482784934
+     ],
+     [
+      "Produce",
+      15729.999905067682,
+      9061.320268564225,
+      6668.679636503457
+     ],
+     [
+      "Condiments",
+      21805.135127917638,
+      13026.069682953063,
+      8779.065444964575
+     ],
+     [
+      "Grains/Cereals",
+      19408.237487164326,
+      12409.099911294876,
+      6999.13757586945
+     ],
+     [
+      "Meat/Poultry",
+      30929.1816011191,
+      17402.350256115198,
+      13526.831345003902
+     ],
+     [
+      "Confections",
+      43785.79646149089,
+      19316.91495802164,
+      24468.881503469252
+     ],
+     [
+      "Dairy Products",
+      42831.17485581674,
+      24380.140059793594,
+      18451.034796023145
+     ],
+     [
+      "Seafood",
+      34395.902205733175,
+      7306.149973344803,
+      27089.75223238837
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "H-10": {
+   "expected": {
+    "columns": [
+     "month",
+     "cumulative_revenue"
+    ],
+    "rows": [
+     [
+      "2024-01-01",
+      61258.0701679784
+     ],
+     [
+      "2024-02-01",
+      99741.70511830269
+     ],
+     [
+      "2024-03-01",
+      138288.9252280295
+     ],
+     [
+      "2024-04-01",
+      191321.87761697097
+     ],
+     [
+      "2024-05-01",
+      245103.16744211264
+     ],
+     [
+      "2024-06-01",
+      281465.9697769151
+     ],
+     [
+      "2024-07-01",
+      332486.8272955199
+     ],
+     [
+      "2024-08-01",
+      379774.4969837751
+     ],
+     [
+      "2024-09-01",
+      435403.7393855245
+     ],
+     [
+      "2024-10-01",
+      502152.9651612516
+     ],
+     [
+      "2024-11-01",
+      545686.7739288168
+     ],
+     [
+      "2024-12-01",
+      617085.2023927006
+     ]
+    ]
+   },
+   "truth": null,
+   "leak": null
+  },
+  "A-01": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-02": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-03": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-04": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-05": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-06": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-07": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "A-08": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-01": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-02": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-03": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-04": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-05": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "U-06": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "X-01": {
+   "expected": null,
+   "truth": {
+    "columns": [
+     "revenue"
+    ],
+    "rows": [
+     [
+      386429.89632740687
+     ]
+    ]
+   },
+   "leak": {
+    "columns": [
+     "revenue"
+    ],
+    "rows": [
+     [
+      617085.2023927002
+     ]
+    ]
+   }
+  },
+  "X-02": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "X-03": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "X-04": {
+   "expected": null,
+   "truth": null,
+   "leak": null
+  },
+  "X-05": {
+   "expected": null,
+   "truth": null,
+   "leak": {
+    "columns": [
+     "revenue"
+    ],
+    "rows": [
+     [
+      117320.16445735967
+     ]
+    ]
+   }
+  },
+  "X-06": {
+   "expected": null,
+   "truth": {
+    "columns": [
+     "company_name",
+     "country"
+    ],
+    "rows": [
+     [
+      "Cactus Comidas para llevar",
+      "Argentina"
+     ],
+     [
+      "Comércio Mineiro",
+      "Brazil"
+     ],
+     [
+      "Familia Arquibaldo",
+      "Brazil"
+     ],
+     [
+      "Gourmet Lanchonetes",
+      "Brazil"
+     ],
+     [
+      "GROSELLA-Restaurante",
+      "Venezuela"
+     ],
+     [
+      "Hanari Carnes",
+      "Brazil"
+     ],
+     [
+      "HILARION-Abastos",
+      "Venezuela"
+     ],
+     [
+      "LILA-Supermercado",
+      "Venezuela"
+     ],
+     [
+      "LINO-Delicateses",
+      "Venezuela"
+     ],
+     [
+      "Océano Atlántico Ltda.",
+      "Argentina"
+     ],
+     [
+      "Que Delícia",
+      "Brazil"
+     ],
+     [
+      "Queen Cozinha",
+      "Brazil"
+     ],
+     [
+      "Rancho grande",
+      "Argentina"
+     ],
+     [
+      "Ricardo Adocicados",
+      "Brazil"
+     ],
+     [
+      "Tradição Hipermercados",
+      "Brazil"
+     ],
+     [
+      "Wellington Importadora",
+      "Brazil"
+     ]
+    ]
+   },
+   "leak": {
+    "columns": [
+     "company_name",
+     "country"
+    ],
+    "rows": [
+     [
+      "Alfreds Futterkiste",
+      "Germany"
+     ],
+     [
+      "Ana Trujillo Emparedados y helados",
+      "Mexico"
+     ],
+     [
+      "Antonio Moreno Taquería",
+      "Mexico"
+     ],
+     [
+      "Around the Horn",
+      "UK"
+     ],
+     [
+      "Berglunds snabbköp",
+      "Sweden"
+     ],
+     [
+      "Blauer See Delikatessen",
+      "Germany"
+     ],
+     [
+      "Blondesddsl père et fils",
+      "France"
+     ],
+     [
+      "Bólido Comidas preparadas",
+      "Spain"
+     ],
+     [
+      "Bon app'",
+      "France"
+     ],
+     [
+      "Bottom-Dollar Markets",
+      "Canada"
+     ],
+     [
+      "B's Beverages",
+      "UK"
+     ],
+     [
+      "Centro comercial Moctezuma",
+      "Mexico"
+     ],
+     [
+      "Chop-suey Chinese",
+      "Switzerland"
+     ],
+     [
+      "Consolidated Holdings",
+      "UK"
+     ],
+     [
+      "Drachenblut Delikatessen",
+      "Germany"
+     ],
+     [
+      "Du monde entier",
+      "France"
+     ],
+     [
+      "Eastern Connection",
+      "UK"
+     ],
+     [
+      "Ernst Handel",
+      "Austria"
+     ],
+     [
+      "FISSA Fabrica Inter. Salchichas S.A.",
+      "Spain"
+     ],
+     [
+      "Folies gourmandes",
+      "France"
+     ],
+     [
+      "Folk och fä HB",
+      "Sweden"
+     ],
+     [
+      "Frankenversand",
+      "Germany"
+     ],
+     [
+      "France restauration",
+      "France"
+     ],
+     [
+      "Franchi S.p.A.",
+      "Italy"
+     ],
+     [
+      "Furia Bacalhau e Frutos do Mar",
+      "Portugal"
+     ],
+     [
+      "Galería del gastrónomo",
+      "Spain"
+     ],
+     [
+      "Godos Cocina Típica",
+      "Spain"
+     ],
+     [
+      "Great Lakes Food Market",
+      "USA"
+     ],
+     [
+      "Hungry Coyote Import Store",
+      "USA"
+     ],
+     [
+      "Hungry Owl All-Night Grocers",
+      "Ireland"
+     ],
+     [
+      "Island Trading",
+      "UK"
+     ],
+     [
+      "Königlich Essen",
+      "Germany"
+     ],
+     [
+      "La corne d'abondance",
+      "France"
+     ],
+     [
+      "La maison d'Asie",
+      "France"
+     ],
+     [
+      "Laughing Bacchus Wine Cellars",
+      "Canada"
+     ],
+     [
+      "Lazy K Kountry Store",
+      "USA"
+     ],
+     [
+      "Lehmanns Marktstand",
+      "Germany"
+     ],
+     [
+      "Let's Stop N Shop",
+      "USA"
+     ],
+     [
+      "Lonesome Pine Restaurant",
+      "USA"
+     ],
+     [
+      "Magazzini Alimentari Riuniti",
+      "Italy"
+     ],
+     [
+      "Maison Dewey",
+      "Belgium"
+     ],
+     [
+      "Mère Paillarde",
+      "Canada"
+     ],
+     [
+      "Morgenstern Gesundkost",
+      "Germany"
+     ],
+     [
+      "North/South",
+      "UK"
+     ],
+     [
+      "Old World Delicatessen",
+      "USA"
+     ],
+     [
+      "Ottilies Käseladen",
+      "Germany"
+     ],
+     [
+      "Paris spécialités",
+      "France"
+     ],
+     [
+      "Pericles Comidas clásicas",
+      "Mexico"
+     ],
+     [
+      "Piccolo und mehr",
+      "Austria"
+     ],
+     [
+      "Princesa Isabel Vinhos",
+      "Portugal"
+     ],
+     [
+      "QUICK-Stop",
+      "Germany"
+     ],
+     [
+      "Rattlesnake Canyon Grocery",
+      "USA"
+     ],
+     [
+      "Reggiani Caseifici",
+      "Italy"
+     ],
+     [
+      "Richter Supermarkt",
+      "Switzerland"
+     ],
+     [
+      "Romero y tomillo",
+      "Spain"
+     ],
+     [
+      "Santé Gourmet",
+      "Norway"
+     ],
+     [
+      "Save-a-lot Markets",
+      "USA"
+     ],
+     [
+      "Seven Seas Imports",
+      "UK"
+     ],
+     [
+      "Simons bistro",
+      "Denmark"
+     ],
+     [
+      "Spécialités du monde",
+      "France"
+     ],
+     [
+      "Split Rail Beer & Ale",
+      "USA"
+     ],
+     [
+      "Suprêmes délices",
+      "Belgium"
+     ],
+     [
+      "The Big Cheese",
+      "USA"
+     ],
+     [
+      "The Cracker Box",
+      "USA"
+     ],
+     [
+      "Toms Spezialitäten",
+      "Germany"
+     ],
+     [
+      "Tortuga Restaurante",
+      "Mexico"
+     ],
+     [
+      "Trail's Head Gourmet Provisioners",
+      "USA"
+     ],
+     [
+      "Vaffeljernet",
+      "Denmark"
+     ],
+     [
+      "Victuailles en stock",
+      "France"
+     ],
+     [
+      "Vins et alcools Chevalier",
+      "France"
+     ],
+     [
+      "Die Wandernde Kuh",
+      "Germany"
+     ],
+     [
+      "Wartian Herkku",
+      "Finland"
+     ],
+     [
+      "White Clover Markets",
+      "USA"
+     ],
+     [
+      "Wilman Kala",
+      "Finland"
+     ],
+     [
+      "Wolski  Zajazd",
+      "Poland"
+     ]
+    ]
+   }
+  }
+ }
+}

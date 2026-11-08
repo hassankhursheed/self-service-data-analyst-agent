@@ -245,18 +245,23 @@ Every user-management action is written to the audit log.
 
 ### `POST /admin/eval/run`
 - **Access:** admin.
-- **Request:** `EvalRunRequest {dataset: str, dataset_version: int | null, experiment_name: str, verified_examples_enabled: bool, subset: [case_key] | null}`
-- **Response:** `202 EvalRunStarted {correlation_id, run_id, status: "running"}` (the run continues in the background).
-- **Errors:** 400, 401, 403, 404 (unknown dataset), 409 (a run is already in progress), 500.
+- **Request:** `EvalRunRequest {dataset: "northwind-eval", dataset_version: int | null, experiment_name, verified_examples_enabled: bool, semantic_mode: "full" | "names_only", subset: [case_id] | null, case_types: [CaseType] | null}`
+- **Response:** `202 EvalRunStarted {correlation_id, run_id, status: "running"}`; the run continues in the background (docs/evaluation.md).
+- **Errors:** 400 (unknown dataset or version, no cases selected, no LLM key), 401, 403, 409 (a run is already in progress), 500.
 
 ```json
-{"dataset": "northwind-eval", "dataset_version": null, "experiment_name": "with-verified-examples", "verified_examples_enabled": true, "subset": null}
+{"dataset": "northwind-eval", "experiment_name": "with-verified-examples", "verified_examples_enabled": true, "semantic_mode": "full", "subset": null, "case_types": null}
 ```
 
 ### `GET /admin/eval/runs`
 - **Access:** admin.
-- **Request:** query `page`, `page_size`; `GET /admin/eval/runs/{id}` returns one run with its failing cases.
-- **Response:** `200 EvalRunList {correlation_id, items: [{run_id, experiment_name, model_name, status, execution_accuracy, clarification_rate, unsafe_blocked_rate, access_leaks, ungrounded_answers, latency_p50_ms, latency_p95_ms, avg_cost_usd, started_at, finished_at}], total, page, page_size}`
+- **Request:** query `page`, `page_size`.
+- **Response:** `200 EvalRunList {correlation_id, items: [{run_id, experiment_name, model_name, status, semantic_version, verified_examples_enabled, cases_total, cases_passed, execution_accuracy, clarification_rate, unsafe_blocked_rate, access_leaks, ungrounded_answers, latency_p50_ms, latency_p95_ms, avg_cost_usd, started_at, finished_at, error_message, settings, progress}], targets, total, page, page_size}`
+- **Errors:** 401, 403, 500.
+
+### `GET /admin/eval/runs/{id}`
+- **Access:** admin.
+- **Response:** `200 {correlation_id, run: {...as above}, results: [{case_key, case_type, question, test_user, expected_behaviour, passed, final_status, failure_reason, leaked, ungrounded, latency_ms, cost_usd, details: {sql, answer, expected, actual, ...}}]}`, failing cases first.
 - **Errors:** 401, 403, 404, 500.
 
 ## Endpoint summary

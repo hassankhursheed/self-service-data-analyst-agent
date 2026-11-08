@@ -239,3 +239,49 @@ async def test_intent_prompt_only_offers_metrics_the_role_may_use() -> None:
     assert "units_sold" in prompt_text
     assert "- revenue:" not in prompt_text
     assert "Business today is 2025-05-06" in prompt_text
+
+
+def test_null_lists_from_the_model_mean_empty_lists() -> None:
+    """Found by the evaluation: Ministral writes null instead of [] for empty lists."""
+    from app.agent.intent import IntentAnalysis
+    from app.agent.sql_output import GeneratedSQL
+
+    parsed = IntentAnalysis.model_validate(
+        {
+            "summary": "Orders in 2024",
+            "metric": "number_of_orders",
+            "metric_options": None,
+            "entities": None,
+            "missing": None,
+            "assumptions": None,
+            "options": None,
+        }
+    )
+    assert (parsed.metric_options, parsed.entities, parsed.missing, parsed.options) == (
+        [],
+        [],
+        [],
+        [],
+    )
+    sql = GeneratedSQL.model_validate(
+        {
+            "sql": "SELECT 1",
+            "tables_used": ["orders"],
+            "metrics_used": None,
+            "assumptions": None,
+            "confidence": "high",
+        }
+    )
+    assert (sql.metrics_used, sql.assumptions) == ([], [])
+    with pytest.raises(ValueError, match="tables_used"):
+        GeneratedSQL.model_validate({"sql": "SELECT 1", "tables_used": None, "confidence": "high"})
+
+
+def test_the_intent_prompt_says_whose_data_it_is() -> None:
+    from app.agent.nodes.n03_intent import user_scope
+    from app.core.enums import RegionCode
+
+    sales = user_scope(RoleName.SALES_MANAGER, RegionCode.EUROPE)
+    assert "EUROPE" in sales
+    assert "my region" in sales
+    assert "all regions" in user_scope(RoleName.FINANCE_ANALYST, None)

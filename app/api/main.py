@@ -25,6 +25,8 @@ from app.auth.service import AuthService
 from app.auth.tokens import TokenService
 from app.core.config import Settings, get_settings
 from app.db.session import create_app_engine, create_session_factory
+from app.eval.runner import EvalRunner, pinned_llm_factory, require_llm_key
+from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
 from app.services.metrics import MetricsService
 from app.services.review import ReviewService
@@ -47,7 +49,8 @@ def create_app(
             stack.push_async_callback(engine.dispose)
             sessions = create_session_factory(engine)
             saver = checkpointer or await stack.enter_async_context(postgres_checkpointer(settings))
-            agent = Agent(agent_deps or default_deps(), saver)
+            deps = agent_deps or default_deps()
+            agent = Agent(deps, saver)
             conversations = ConversationService(agent, sessions)
             tokens = TokenService(
                 settings.jwt_secret_key.get_secret_value(), settings.auth,
@@ -55,6 +58,20 @@ def create_app(
             )  # fmt: skip
             auth = AuthService(sessions, tokens)
             limits = settings.api.rate_limits
+            # Evaluation uses the same dependencies as the agent; production runs use the
+            # pinned model (config/eval.yaml), tests keep their scripted model.
+            evaluation = EvaluationService(
+                sessions,
+                lambda: EvalRunner(
+                    sessions,
+                    lambda: deps,
+                    settings=settings,
+                    make_llm=None if agent_deps else pinned_llm_factory(settings),
+                ),
+                preflight=None if agent_deps else lambda: require_llm_key(settings),
+            )
+            await evaluation.startup()
+            stack.push_async_callback(evaluation.shutdown)
             app.state.auth = auth
             app.state.services = Services(
                 api=settings.api,
@@ -67,6 +84,7 @@ def create_app(
                 review=ReviewService(sessions, conversations),
                 library=VerifiedLibraryService(sessions, agent.deps.load_semantic),
                 metrics=MetricsService(sessions, settings.monitoring),
+                evaluation=evaluation,
                 question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
                 login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
             )

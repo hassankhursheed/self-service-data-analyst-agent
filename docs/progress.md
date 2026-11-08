@@ -23,26 +23,26 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 19: User Interface (Week 3, brief section 20)
 - [x] Step 20: Verified Query Library and Feedback Loop (Week 3, brief section 16)
 - [x] Step 21: Monitoring Dashboard (Week 3, brief section 26)
-- [ ] Step 22: Evaluation Set and Experiments (guide received; plan first)
-- [ ] Step 23: (title added when the guide arrives)
-- [ ] Step 24: (title added when the guide arrives)
-- [ ] Step 25: (title added when the guide arrives)
-- [ ] Step 26: Full documentation (per the README stub)
+- [x] Step 22: Evaluation Set and Experiments (Week 4, brief section 24)
+- [ ] Step 23: Automated Tests and CI Pipeline (guide received)
+- [ ] Step 24: Security, Privacy and Performance Hardening (guide received)
+- [ ] Step 25: Live Deployment (guide received; host choice needed before deploying)
+- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (guide received; extras chosen by the user)
 
 ## What is left
 
-- Steps 22 to 26 (guide for Step 22 received; it needs a plan first).
-- UI placeholder to fill: Admin › Evaluation (Step 22). Monitoring shows the latest
-  evaluation run once Step 22 writes `eval_runs`. The
-  evaluation must show whether verified examples improved accuracy (brief §16):
-  `verified_examples.enabled` in config/agent.yaml switches retrieval off.
+- Evaluation (eval/RESULTS.md): 77.5% accuracy with verified examples (target 80%), 100%
+  clarification, 0 leaks, 83.3% unsafe blocked (one malformed reply, nothing executed),
+  5 ungrounded (all date fragments). Follow-ups: dates as grounded context in the
+  grounding check, a system-catalog rule in the question guardrails, tell the SQL prompt
+  region filtering is already applied, a stronger model on a paid plan.
+- Steps 23 to 26 (guides received; built one at a time after Step 22 is approved).
+- Results go in the README too (brief §24), in Step 26.
 - Deferred (agreed with the user): the live end-to-end check of the UI and the remaining
   screenshots in `docs/screenshots/` (only `01-login.jpg` so far). Done once after Step 22,
   when Monitoring, Review and Evaluation are filled in: the user signs in as
   `sales.europe`, `finance`, `admin` and `no.role` in the browser pane (the assistant does
   not read demo passwords), then every screen is exercised and captured.
-- API endpoints that return 501 until Step 22: `POST /admin/eval/run` and
-  `GET /admin/eval/runs`. Their final request and response models exist.
 - Recommended extra for Step 26: alerts (email or Slack) when the failure rate,
   blocked attempts, failed logins or daily cost pass configured thresholds, stored
   in `alerts`.
@@ -51,5 +51,5 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
   reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
 - Still open:
-  - The LLM model must be pinned to a dated version before evaluation runs.
-  - Draft evaluation cases have 27 of the 60+ required; correct SQL is written in Step 22.
+  - Model: `ministral-14b-2512` for the app and the evaluation (free credits refuse
+    Mistral Small / Medium). Revisit when a paid plan is available.

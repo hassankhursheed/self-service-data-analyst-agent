@@ -42,6 +42,14 @@ class IntentAnalysis(BaseModel):
     standalone_question: str | None = None
 
     @field_validator(
+        "metric_options", "entities", "missing", "assumptions", "options", mode="before"
+    )
+    @classmethod
+    def _null_is_empty(cls, value: object) -> object:
+        """Some models write null for an empty list; both mean "nothing" (Step 22)."""
+        return [] if value is None else value
+
+    @field_validator(
         "time_phrase", "metric", "grouping", "clarifying_question", "standalone_question"
     )
     @classmethod

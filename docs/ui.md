@@ -63,7 +63,7 @@ browser ──(same-origin, httpOnly cookie)──> Next.js server routes ──
 | Admin › Users | `/admin/users` | Filter by role and status; create a user; change role and region (sales managers need a region); disable / enable; reset password |
 | Admin › Review | `/admin/review` | Review queue (not-helpful answers, blocked queries, failures) with Verify or correct, Make eval case and Re-run; Verified library with versions, roles, Correct (new version) and Enable / Disable |
 | Admin › Monitoring | `/admin/monitoring` | Period picker (today, 7 / 30 days, custom); metric cards, outcomes per day chart, questions by role, blocked by reason, latest evaluation run (docs/monitoring.md) |
-| Admin › Evaluation | `/admin/evaluation` | Placeholder filled in Step 22 |
+| Admin › Evaluation | `/admin/evaluation` | Start a run (name, verified examples, semantic mode, case types); runs with progress; compare up to three runs against the targets; open a run for every case with SQL, answer and expected vs actual rows (docs/evaluation.md) |
 
 The header always shows the user, their role and region, and a logout button. Admins
 only see the admin pages (business questions are off for them, brief §8); a user without

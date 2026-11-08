@@ -4,7 +4,7 @@ from app.agent.deps import AgentDeps, usage_of
 from app.agent.intent import IntentAnalysis, IntentOutcome, decide
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.state import AgentErrorInfo, AgentState
-from app.core.enums import NodeName, QuestionStatus, RoleName
+from app.core.enums import NodeName, QuestionStatus, RegionCode, RoleName
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.prompts import load_prompt
@@ -61,6 +61,17 @@ def _with_interpretation(notices: list[str], question: str, interpreted: str | N
     return [*kept, f"Interpreted as: {interpreted}"] if interpreted else kept
 
 
+def user_scope(role: RoleName, region: RegionCode | None) -> str:
+    """Who is asking, for the intent prompt (v3): role and the data they can see."""
+    label = role.value.replace("_", " ")
+    if region is not None:
+        return (
+            f"a {label} for the {region.value} sales region; their data is already "
+            f"limited to that region, so 'my region' means {region.value}."
+        )
+    return f"a {label}; they see the data of all regions."
+
+
 def make_intent_node(deps: AgentDeps) -> NodeFn:
     @agent_node(NodeName.INTENT)
     async def intent_and_ambiguity(state: AgentState) -> NodeUpdate:
@@ -70,6 +81,7 @@ def make_intent_node(deps: AgentDeps) -> NodeFn:
         layer = await deps.load_semantic()
         values = {
             "business_today": deps.calendar.reference_date.isoformat(),
+            "user_scope": user_scope(state.user.role, state.user.region),
             "metrics": _metrics_text(layer, state.user.role),
             "tables": _tables_text(layer, state.user.role),
             "history": _history_text(state),

@@ -17,6 +17,7 @@ export const PROXY_ALLOWED = [
   /^admin\/(users|blocked|errors|review|metrics|verified-queries|eval\/runs|eval\/run)$/,
   /^admin\/verified-queries\/[0-9a-f-]{36}$/,
   /^admin\/feedback\/\d+\/eval-case$/,
+  /^admin\/eval\/runs\/[0-9a-f-]{36}$/,
   /^admin\/users\/[0-9a-f-]{36}$/,
   /^admin\/users\/[0-9a-f-]{36}\/reset-password$/,
   /^admin\/errors\/\d+\/rerun$/,

@@ -72,6 +72,8 @@ python scripts/run_api.py       # API on http://127.0.0.1:8000 (docs at /docs)
 npm --prefix ui install         # once; then: npm --prefix ui run dev (http://localhost:3000)
 npm --prefix ui run lint && npm --prefix ui run typecheck && npm --prefix ui test
 docker compose --profile app up -d --build   # whole stack: db + api + ui
+python -m eval.check_cases --write             # after changing eval/cases.yaml
+python -m eval.run_eval --experiment NAME      # evaluation run (needs LLM_API_KEY)
 pytest                          # integration tests skip if the database is down
 ruff check .
 ruff format --check .
