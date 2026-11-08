@@ -1,11 +1,13 @@
 """Step 18: API building blocks that need no database."""
 
 import uuid
+from types import SimpleNamespace
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 
+from app.api.deps import client_ip, forwarded_client_ip
 from app.api.errors import STATUS_BY_CODE, ApiError, RateLimited, install_error_handlers
 from app.api.middleware import HEADER, CorrelationIdMiddleware, parse_correlation_id
 from app.api.ratelimit import SlidingWindowLimiter
@@ -119,3 +121,30 @@ def test_every_endpoint_is_async() -> None:
     assert len(routes) >= 24
     sync = [r.path for r in routes if not inspect.iscoroutinefunction(r.endpoint)]
     assert sync == []
+
+
+def _request(trust: bool | None, headers: dict[str, str]) -> Request:
+    app = FastAPI()
+    if trust is not None:
+        app.state.services = SimpleNamespace(api=SimpleNamespace(trust_forwarded_for=trust))
+    scope = {
+        "type": "http",
+        "app": app,
+        "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+        "client": ("10.0.0.5", 1234),
+    }
+    return Request(scope)
+
+
+def test_client_ip_ignores_forwarded_addresses_unless_trusted() -> None:
+    forwarded = {"X-Forwarded-For": "203.0.113.7"}
+    assert client_ip(_request(False, forwarded)) == "10.0.0.5"
+    assert client_ip(_request(None, forwarded)) == "10.0.0.5"
+    assert client_ip(_request(True, forwarded)) == "203.0.113.7"
+
+
+def test_client_ip_uses_the_last_forwarded_entry_and_rejects_garbage() -> None:
+    assert client_ip(_request(True, {"X-Forwarded-For": "6.6.6.6, 2001:db8::1"})) == "2001:db8::1"
+    assert client_ip(_request(True, {"X-Forwarded-For": "not-an-ip"})) == "10.0.0.5"
+    assert client_ip(_request(True, {})) == "10.0.0.5"
+    assert forwarded_client_ip(None) is None

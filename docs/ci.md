@@ -69,7 +69,7 @@ copy of Northwind, so running the suite never deletes application data.
 ```bash
 ruff check . && ruff format --check . && mypy
 pytest tests/unit
-REQUIRE_DATABASE=1 pytest tests/integration     # needs docker compose up -d and the seed
+REQUIRE_DATABASE=1 pytest tests/integration     # needs docker compose up -d db and the seed
 python -m eval.ci_gate                           # needs LLM_API_KEY
 npm --prefix ui run lint && npm --prefix ui run typecheck && npm --prefix ui test
 ```

@@ -7,7 +7,7 @@ are served at `/docs` while the API runs.
 ## Run it
 
 ```bash
-docker compose up -d            # PostgreSQL with Northwind
+docker compose up -d db         # PostgreSQL with Northwind
 python -m scripts.seed          # once: migrations, users, roles, views, semantic layer
 python scripts/run_api.py       # http://127.0.0.1:8000, docs at /docs
 ```

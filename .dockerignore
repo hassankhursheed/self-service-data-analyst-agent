@@ -9,7 +9,17 @@
 .mypy_cache
 .ruff_cache
 ui
-data
+# Only the public Northwind dump, for hosted databases that start empty (--load-northwind).
+data/*
+!data/northwind
+data/northwind/*
+!data/northwind/northwind.sql
+!data/northwind/LICENSE
 docs
 tests
-eval
+# Only the evaluation set and its expected results go into the image.
+eval/*
+!eval/cases.yaml
+!eval/expected
+*.md
+!README.md

@@ -36,6 +36,7 @@ STATUS_BY_CODE: dict[str, int] = {
     "RATE_LIMITED": 429,
     "NOT_IMPLEMENTED": 501,
     "SERVICE_UNAVAILABLE": 503,
+    "DAILY_BUDGET_REACHED": 503,
 }
 GENERIC_MESSAGE = "Something went wrong. Please try again; the team has been notified."
 
@@ -88,7 +89,11 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error(request: Request, exc: AppError) -> JSONResponse:
         status = STATUS_BY_CODE.get(exc.code, 500)
-        if status >= 500 and exc.code not in {"NOT_IMPLEMENTED", "SERVICE_UNAVAILABLE"}:
+        if status >= 500 and exc.code not in {
+            "NOT_IMPLEMENTED",
+            "SERVICE_UNAVAILABLE",
+            "DAILY_BUDGET_REACHED",
+        }:
             logger.error("error %s for correlation_id=%s: %s", exc.code, correlation_id_of(request),
                          exc.detail)  # fmt: skip
         return error_response(request, status, exc.code, exc.user_message)

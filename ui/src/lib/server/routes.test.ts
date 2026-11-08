@@ -113,6 +113,36 @@ describe("/api/session", () => {
     );
   });
 
+  it("forwards the visitor address the hosting proxy appended", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      json({ correlation_id: "c", access_token: "t", token_type: "bearer", expires_in: 3600, user: { username: "finance" } }),
+    );
+    await session.POST(
+      new Request("http://ui.test/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Host: "ui.test", "X-Forwarded-For": "6.6.6.6, 203.0.113.7" },
+        body: "{}",
+      }),
+    );
+    const headers = (fetchSpy.mock.calls[0]?.[1] as RequestInit).headers as Record<string, string>;
+    expect(headers["X-Forwarded-For"]).toBe("203.0.113.7");
+  });
+
+  it("forwards no address when there is no proxy", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      json({ correlation_id: "c", access_token: "t", token_type: "bearer", expires_in: 3600, user: { username: "finance" } }),
+    );
+    await session.POST(
+      new Request("http://ui.test/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Host: "ui.test" },
+        body: "{}",
+      }),
+    );
+    const headers = (fetchSpy.mock.calls[0]?.[1] as RequestInit).headers as Record<string, string>;
+    expect(headers["X-Forwarded-For"]).toBeUndefined();
+  });
+
   it("passes login errors through without setting a cookie", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       json({ correlation_id: "c", error: { code: "INVALID_CREDENTIALS", message: "The username or password is not correct." } }, { status: 401 }),

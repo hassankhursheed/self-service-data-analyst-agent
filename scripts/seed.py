@@ -1,6 +1,9 @@
 """Idempotent seed: prepares the database, Northwind data, access rules and test users.
 
-Usage: python -m scripts.seed
+Usage: python -m scripts.seed [--load-northwind]
+
+``--load-northwind`` first loads the public Northwind dump when the database has none of
+its tables (a hosted, empty PostgreSQL; locally the ``db`` container loads it).
 
 Steps (each safe to run again):
 1. wait until PostgreSQL accepts connections;
@@ -15,6 +18,7 @@ Steps (each safe to run again):
 10. add the seeded verified examples (config/verified_queries.yaml) that are not there yet.
 """
 
+import argparse
 import sys
 import time
 
@@ -34,6 +38,7 @@ from app.db.setup.northwind_data import (
     load_regions,
     sync_regions,
 )
+from app.db.setup.northwind_load import load_northwind_if_missing
 from app.db.setup.users import load_test_users, sync_roles, sync_test_users
 from app.safety.access_policy import load_access_policy
 from app.semantic.calendar import load_calendar
@@ -56,6 +61,7 @@ class SeedSummary(BaseModel):
     calendar_version: int
     reference_date: str
     verified_examples_added: int
+    northwind_loaded_now: bool = False
 
 
 def wait_for_database(settings: Settings) -> None:
@@ -70,11 +76,15 @@ def wait_for_database(settings: Settings) -> None:
             time.sleep(1)
 
 
-def run_migrations() -> None:
-    command.upgrade(Config(str(PROJECT_ROOT / "alembic.ini")), "head")
+def run_migrations(settings: Settings | None = None) -> None:
+    """Upgrade the app schema of the database ``settings`` point at (default: the env)."""
+    cfg = Config(str(PROJECT_ROOT / "alembic.ini"))
+    if settings is not None:
+        cfg.attributes["url"] = settings.owner_sqlalchemy_url()
+    command.upgrade(cfg, "head")
 
 
-def run_seed(settings: Settings | None = None) -> SeedSummary:
+def run_seed(settings: Settings | None = None, *, load_northwind: bool = False) -> SeedSummary:
     settings = settings or get_settings()
     policy = load_access_policy()
     regions = load_regions()
@@ -84,7 +94,11 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
     verified = load_seed_file()
 
     wait_for_database(settings)
-    run_migrations()
+    loaded_now = False
+    if load_northwind:
+        with psycopg.connect(settings.owner_conninfo(), autocommit=True) as conn:
+            loaded_now = load_northwind_if_missing(conn)
+    run_migrations(settings)
     setup_checkpoint_tables(settings)
     with psycopg.connect(settings.owner_conninfo(), autocommit=True) as conn:
         ensure_analytics_schema(conn)
@@ -115,17 +129,27 @@ def run_seed(settings: Settings | None = None) -> SeedSummary:
         calendar_version=calendar_version,
         reference_date=calendar.reference_date.isoformat(),
         verified_examples_added=verified_added,
+        northwind_loaded_now=loaded_now,
     )
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Idempotent database seed.")
+    parser.add_argument(
+        "--load-northwind",
+        action="store_true",
+        help="load the Northwind dump first if the database has none of its tables",
+    )
+    args = parser.parse_args()
     try:
-        summary = run_seed()
+        summary = run_seed(load_northwind=args.load_northwind)
     except (SeedError, ConfigFileError) as exc:
         print(f"Seed failed: {exc}", file=sys.stderr)
         return 1
     shift = "applied now" if summary.date_shift_applied_now else "already applied"
     print("Seed complete")
+    if summary.northwind_loaded_now:
+        print("  northwind:       loaded from the public dump")
     print(f"  date shift:      +{summary.date_shift_years} years ({shift})")
     print(f"  customers/region: {summary.customers_per_region}")
     print(f"  roles:           {summary.roles}")

@@ -1,5 +1,6 @@
 """Shared route dependencies: the service container, correlation ID, paging, rate limits."""
 
+import ipaddress
 import uuid
 from dataclasses import dataclass
 from typing import Annotated
@@ -11,6 +12,7 @@ from app.agent.conversations import ConversationService
 from app.api.ratelimit import SlidingWindowLimiter
 from app.auth.service import AuthService
 from app.core.config import ApiConfig
+from app.services.cost_cap import DailyCostCap
 from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
 from app.services.metrics import MetricsService
@@ -34,6 +36,7 @@ class Services:
     library: VerifiedLibraryService
     metrics: MetricsService
     evaluation: EvaluationService
+    cost_cap: DailyCostCap
     question_limiter: SlidingWindowLimiter
     login_limiter: SlidingWindowLimiter
 
@@ -48,8 +51,29 @@ def correlation_id(request: Request) -> uuid.UUID:
     return value
 
 
+def forwarded_client_ip(header: str | None) -> str | None:
+    """The address the nearest proxy (our UI server) put last in ``X-Forwarded-For``."""
+    if not header:
+        return None
+    candidate = header.split(",")[-1].strip()
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return None
+
+
 def client_ip(request: Request) -> str | None:
-    return request.client.host if request.client else None
+    """The caller's address for login limits and the audit log.
+
+    Behind the UI server every request comes from the UI's address, so with
+    ``api.trust_forwarded_for`` (only where the API is not reachable from the internet)
+    the address the UI forwards is used instead.
+    """
+    direct = request.client.host if request.client else None
+    container: Services | None = getattr(request.app.state, "services", None)
+    if container is not None and container.api.trust_forwarded_for:
+        return forwarded_client_ip(request.headers.get("x-forwarded-for")) or direct
+    return direct
 
 
 @dataclass(frozen=True)

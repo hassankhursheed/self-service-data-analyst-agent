@@ -6,7 +6,7 @@ How the Northwind data is prepared. Decisions and reasons are in
 ## One command
 
 ```bash
-docker compose up -d          # PostgreSQL 16; loads data/northwind/northwind.sql on first start
+docker compose up -d db       # PostgreSQL 16; loads data/northwind/northwind.sql on first start
 python -m scripts.seed        # everything below; safe to run any number of times
 ```
 

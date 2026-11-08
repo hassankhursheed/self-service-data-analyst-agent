@@ -1,16 +1,19 @@
 import { cookies } from "next/headers";
 
 import { API_BASE_URL, SECURE_COOKIES, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/server/config";
-import { errorJson, sameOriginJson } from "@/lib/server/guard";
+import { clientIp, errorJson, sameOriginJson } from "@/lib/server/guard";
 
 /** Log in: the API's token goes into an httpOnly cookie; the browser gets only the user. */
 export async function POST(request: Request): Promise<Response> {
   if (!sameOriginJson(request)) return errorJson(403, "FORBIDDEN", "Request refused.");
   let response: Response;
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const ip = clientIp(request);
+    if (ip) headers["X-Forwarded-For"] = ip;
     response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: await request.text(),
       cache: "no-store",
     });

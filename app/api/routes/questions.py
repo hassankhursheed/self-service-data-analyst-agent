@@ -57,6 +57,7 @@ async def ask(
     body: AskRequest, user: CurrentUser, services: ServicesDep, correlation_id: CorrelationId
 ) -> AskResponse:
     services.question_limiter.check(f"user:{user.user_id}")
+    await services.cost_cap.check()  # daily demo budget (Step 25)
     conversation_id = body.conversation_id
     if conversation_id is None:
         conversation_id = await services.conversations.start_conversation(user, body.question)
@@ -71,6 +72,7 @@ async def clarify(
     body: ClarifyRequest, user: CurrentUser, services: ServicesDep, request: Request
 ) -> AskResponse:
     services.question_limiter.check(f"user:{user.user_id}")
+    await services.cost_cap.check()  # daily demo budget (Step 25)
     state = await services.conversations.clarify(user, body.conversation_id, body.answer)
     # The resumed run keeps its question's correlation ID; use it for this response too,
     # so header, body, audit rows and trace all match.

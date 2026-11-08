@@ -98,9 +98,11 @@ class ApiConfig(BaseModel):
     version: str
     cors_origins: list[str]
     rate_limits: RateLimitConfig
+    daily_cost_cap_usd: float = Field(default=0.0, ge=0)
     default_page_size: int = Field(gt=0)
     result_page_size: int = Field(default=50, gt=0, le=1000)
     schema_check_on_startup: bool = True
+    trust_forwarded_for: bool = False
     max_page_size: int = Field(gt=0)
 
 

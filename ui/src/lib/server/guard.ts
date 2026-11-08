@@ -21,3 +21,15 @@ export function sameOriginJson(request: Request): boolean {
 export function errorJson(status: number, code: string, message: string): Response {
   return Response.json({ correlation_id: "", error: { code, message } }, { status });
 }
+
+/**
+ * The visitor's address as the hosting proxy reports it: the last X-Forwarded-For entry,
+ * which the nearest proxy appended itself (earlier entries can be made up by the
+ * visitor), else X-Real-IP. Forwarded to the API for per-address login limits; the API
+ * uses it only when api.trust_forwarded_for is on.
+ */
+export function clientIp(request: Request): string | null {
+  const last = request.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  if (last) return last;
+  return request.headers.get("x-real-ip")?.trim() || null;
+}

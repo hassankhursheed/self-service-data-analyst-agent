@@ -369,3 +369,20 @@ What was chosen, what was rejected and why. Newest step last.
 | Limits in config | Follow-up history turns (`agent.yaml`) and result page size (`app.yaml`) moved to config; request-body caps and column-size field lengths stay in code | Moving every number | Behavioural limits are configurable; transport caps and schema sizes are not settings. |
 | Per-node latency on the dashboard | `node_latency` (average, p95, count per node) from `agent_steps` | Only in the audit tables | The guide asks for it on the dashboard; the audit already had it. |
 
+## Step 25: Live Deployment
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| One command | `docker compose up -d --build` runs `db` → `migrate` (the idempotent seed, exits) → `api` → `ui`, ordered by health checks and `service_completed_successfully` | Compose profiles; seeding inside the API start-up | One command from a fresh clone; the API never holds owner rights; a failed seed stops the API from starting. |
+| API image | Two stages on `python:3.12-slim`, virtual environment copied, non-root uid 10001, `APP_ENV=production`, tests and caches left out | One stage; Alpine | Smaller and without build tools; Alpine wheels for asyncpg/argon2 need compiling. |
+| UI image | Next.js standalone, non-root `node`, npm/yarn removed from the runtime | Shipping `node_modules` | Smaller and fewer tools for an attacker. |
+| Daily cost cap | `api.daily_cost_cap_usd` (2.00), sum of today's `agent_runs.estimated_cost_usd` (UTC), cached 15 s, 503 `DAILY_BUDGET_REACHED` before any LLM call | A counter in memory; a hard stop of the whole app | Survives restarts and uses data we already record; only new questions stop, history and admin pages keep working. |
+| Demo reset | `scripts/reset_demo.py`: dry run by default, `--yes` deletes app activity in one transaction, then re-runs the seed; never touches `public` | Dropping the database; `TRUNCATE` | Safe to run on the live demo; the seed restores demo users and the verified library exactly. |
+| Seed migrations URL | `run_migrations(settings)` passes the owner URL to Alembic | Alembic reading the environment | Found by the reset test: a seed for another database migrated the default one. |
+| Hosting constraint | The database must allow superuser (role creation, revoking `set_config`) | A managed Postgres without superuser | The access model relies on it (docs/access-control.md). |
+| Host | Railway (trial, then Hobby if needed), for a short reviewer demo | Render (managed Postgres has no superuser and is deleted after 30 days; free services sleep); Fly.io (more setup); a small VM with Caddy (server upkeep) | Keeps the full access model, HTTPS and dashboard-only secrets with the least work; chosen by the user for a few weeks of sharing. |
+| Railway settings | Dashboard settings plus `scripts/railway_env.py`, which prints the variable blocks with new random passwords (never written to disk) | `railway.json` (deprecated, new services cannot use it); `.railway/railway.ts` (needs the CLI and still cannot create the generated domain) | Fewest moving parts; every secret only in the dashboard. |
+| Empty hosted database | `seed --load-northwind` loads the public dump only when no Northwind table exists; refuses a partial one | Loading in the Postgres container (not possible on a managed template) | Same data as locally; never overwrites. |
+| Visitor address behind the UI | The UI forwards the proxy-appended `X-Forwarded-For` entry; the API uses it only with `api.trust_forwarded_for` (on for Railway, where the API is private) | Always trusting the header; per-UI-address limits | Otherwise ten failed logins from anyone would block every reviewer, and audit rows would all show the UI's address. |
+| Listen address | `API_HOST` variable (image default `0.0.0.0`, Railway `::`) | A custom start command in the dashboard | One variable fewer to get wrong; `::` reaches the private network on IPv6 and IPv4. |
+

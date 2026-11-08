@@ -9,16 +9,16 @@ rules: role, region and permissions always come from the API.
 Local development (API on the host):
 
 ```bash
-docker compose up -d                 # database
+docker compose up -d db              # database
 python scripts/run_api.py            # API on http://127.0.0.1:8000
 npm --prefix ui install              # once
 npm --prefix ui run dev              # UI on http://localhost:3000
 ```
 
-Whole stack in Docker (run `python -m scripts.seed` once from the host first):
+Whole stack in Docker (the `migrate` service runs the seed first):
 
 ```bash
-docker compose --profile app up -d --build   # db + api (8000) + ui (3000)
+docker compose up -d --build         # db, migrate + seed, api (8000), ui (3000)
 ```
 
 Checks:

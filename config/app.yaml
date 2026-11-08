@@ -42,6 +42,13 @@ api:
   version: "0.1.0"
   # Browser origins allowed by CORS (the Next.js UI).
   cors_origins: ["http://localhost:3000"]
+  # Public demo protection (Step 25): new questions stop for the rest of the UTC day once
+  # today's estimated LLM cost reaches this amount. 0 turns it off.
+  daily_cost_cap_usd: 2.0
+  # Use the client address the UI server forwards (X-Forwarded-For) for login limits and
+  # the audit log. Only turn on where the API has no public address (Railway:
+  # API__TRUST_FORWARDED_FOR=true); otherwise anyone could send a made-up address.
+  trust_forwarded_for: false
   rate_limits:
     questions_per_minute: 20
     logins_per_minute_per_ip: 10

@@ -13,6 +13,8 @@ RUN npm run build
 
 FROM node:24-alpine AS run
 WORKDIR /app
+# npm and yarn are not needed to run the standalone server.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \

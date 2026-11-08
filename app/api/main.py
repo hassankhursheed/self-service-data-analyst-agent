@@ -28,6 +28,7 @@ from app.core.config import Settings, get_settings
 from app.core.log_masking import install_log_masking
 from app.db.session import create_app_engine, create_session_factory
 from app.eval.runner import EvalRunner, pinned_llm_factory, require_llm_key
+from app.services.cost_cap import DailyCostCap
 from app.services.evaluation import EvaluationService
 from app.services.feedback import FeedbackService
 from app.services.metrics import MetricsService
@@ -90,6 +91,7 @@ def create_app(
                 library=VerifiedLibraryService(sessions, agent.deps.load_semantic),
                 metrics=MetricsService(sessions, settings.monitoring),
                 evaluation=evaluation,
+                cost_cap=DailyCostCap(sessions, settings.api.daily_cost_cap_usd),
                 question_limiter=SlidingWindowLimiter(limits.questions_per_minute),
                 login_limiter=SlidingWindowLimiter(limits.logins_per_minute_per_ip),
             )
