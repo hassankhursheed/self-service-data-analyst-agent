@@ -51,7 +51,11 @@ def test_test_users_match_brief_section_7() -> None:
     assert users["disabled.user"].is_active is False
 
 
-def test_demo_password_maps_username_to_environment_variable() -> None:
+def test_demo_password_maps_username_to_environment_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Independent of the environment (CI sets every DEMO_PASSWORD_* variable).
+    monkeypatch.delenv("DEMO_PASSWORD_SALES_EUROPE", raising=False)
     settings = Settings(
         _env_file=None,
         app_database_url=SecretStr("postgresql+asyncpg://a:b@h/d"),
