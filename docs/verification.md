@@ -48,7 +48,7 @@ checkpoints.
 | 25 | A change that breaks the SQL validator fails CI | PASS | Mutation check: the multiple-statements check disabled, `pytest tests/unit` then fails 3 tests (`test_multiple_statements_are_blocked`, `test_second_statement_hidden_after_a_comment_is_blocked`, `test_multi_statement_query_from_the_llm_is_rejected`); the CI `unit` job runs these on every push and pull request; file restored | — |
 | 26 | Every scenario in the audit log with its correlation ID and trace | PASS | audit tables: 32 of 32 correlation IDs found in app.agent_runs, app.questions or app.audit_log; 25 agent runs carry their LangSmith trace ID (= correlation ID); requests that never reach the agent (logins, refused tokens) are audit_log events | — |
 | 27 | The full evaluation run completes and produces the results table | PASS (Step 22) | Three full 60-case runs completed and produced [eval/RESULTS.md](../eval/RESULTS.md) and the README table; a new run would show the effect of the Step 26 fixes (on the free model plan it is slowed by rate limits) | run IDs in eval/RESULTS.md |
-| 28 | The live deployment works end to end with the demo accounts | Pending | Railway deployment by the owner ([deployment.md](deployment.md#live-deployment-railway)); then `python -m eval.verify_scenarios --api https://<api>` and a browser check with the demo accounts | — |
+| 28 | The live deployment works end to end with the demo accounts | PASS | Deployed on Railway on 2026-11-09 ([ui-production-3b38.up.railway.app](https://ui-production-3b38.up.railway.app)): the first `api` deploy loaded Northwind and ran the seed (`Seed complete`, 8 users, 18 verified examples); `/health` passes; the UI reaches the private API (an unknown user gets 401 INVALID_CREDENTIALS with a correlation ID); the owner signed in with the demo accounts in the browser. The API has no public domain, so `verify_scenarios --api` runs only against a local stack | `d7d51de9-f7d1-41a4-98ce-72d18500d714` |
 
 ### Problems found by the scenario runs and fixed
 
@@ -71,7 +71,7 @@ checkpoints.
 | Database ERD/schema, migrations, row-level security design | Done | [design/database-design.md](design/database-design.md), [northwind-er-diagram.png](northwind-er-diagram.png), `migrations/versions/`, [access-control.md](access-control.md) |
 | Seed script for data, roles, policies and test users | Done | `scripts/seed.py` (`python -m scripts.seed`), [data-setup.md](data-setup.md) |
 | Working FastAPI service, agent, UI and admin area with Docker Compose | Done | `docker compose up -d --build`; `app/`, `ui/`, `docker-compose.yml` |
-| Live deployment URL with demo accounts | Pending: Railway deploy by the owner | [deployment.md](deployment.md#live-deployment-railway) |
+| Live deployment URL with demo accounts | Done | [ui-production-3b38.up.railway.app](https://ui-production-3b38.up.railway.app); setup in [deployment.md](deployment.md#live-deployment-railway) |
 | API documentation (OpenAPI) and endpoint list | Done | `/docs` and `/openapi.json` while running; [api.md](api.md#endpoints) |
 | Semantic layer and business calendar configuration, with docs | Done | `config/semantic/semantic_layer.yaml`, `config/calendar.yaml`, [business-calendar.md](business-calendar.md), [sql-generation.md](sql-generation.md) |
 | Verified query library, at least 15 examples | Done (18) | `config/verified_queries.yaml`, [verified-queries.md](verified-queries.md) |

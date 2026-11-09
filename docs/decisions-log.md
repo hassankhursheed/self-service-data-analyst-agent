@@ -448,3 +448,16 @@ summary: docs/verification.md.
 | Rate limits | Live questions spaced 30 s apart (`--pause`) | Faster runs | The free Mistral plan refused bursts (HTTP 429), which made otherwise passing scenarios fail. |
 | Scenario 25 | Shown by breaking the validator's multiple-statements check: 3 unit tests fail (the CI `unit` job runs them on every push); file restored from git | Pushing a broken commit to GitHub | Same proof without a red commit in the history. |
 
+## Step 25: Live deployment on Railway
+
+Deployed on 2026-11-09 to https://ui-production-3b38.up.railway.app with the Railway MCP connector: project, Postgres, `api` and
+`ui` services and their settings created by the assistant; GitHub access and every secret
+(variables pasted in the Raw Editor) entered by the owner.
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Order of setup | Services created empty, settings and variables first, the GitHub repo connected last | Connecting the repo first | A connected repo builds at once; without its variables the first deploy would fail. |
+| Health check port | `PORT=8000` on `api` (also in `scripts/railway_env.py` and the deployment docs) | Changing the API to read `PORT` | Railway's health check calls `$PORT` and otherwise picks its own port, so the first deploy never became healthy. 8000 is also the port the UI calls; one variable fixes it without touching the app. |
+| Pre-deploy timeout | 900 s for the seed | Railway's default | The first deploy loads the Northwind dump; later seeds take seconds. |
+| Database version | Railway's Postgres template (PostgreSQL 18) | Pinning PostgreSQL 16 as in Compose | The dump, migrations and seed ran unchanged on 18; the template brings the volume, SSL and backups. |
+| Demo passwords | One set for the live and local copies (the owner's choice), kept in the gitignored `.env` | Separate local passwords | Simpler to demo; the accounts only see fictional data, and `scripts.railway_env` can issue new ones after the review. |

@@ -14,7 +14,8 @@ sample database). All data is sample data.
 
 ![Answer with a ranked list](docs/screenshots/04-answer-ranked-list.png)
 
-- **Live demo:** _added after the Railway deployment (docs/deployment.md)_
+- **Live demo:** [ui-production-3b38.up.railway.app](https://ui-production-3b38.up.railway.app) (Railway; demo accounts and
+  passwords from the owner on request)
 - **Docs:** [all documentation](#documentation) · [API](docs/api.md) ·
   [decisions log](docs/decisions-log.md) · [screenshots](docs/screenshots/README.md)
 

@@ -26,6 +26,8 @@ def api_variables(new: Callable[[int], str] = secrets.token_urlsafe) -> dict[str
         "RAILWAY_DOCKERFILE_PATH": "docker/api.Dockerfile",
         "APP_ENV": "production",
         "API_HOST": "::",
+        # Railway's health check calls $PORT; without it Railway picks its own port.
+        "PORT": "8000",
         "API__TRUST_FORWARDED_FOR": "true",
         "POSTGRES_USER": "${{Postgres.PGUSER}}",
         "POSTGRES_PASSWORD": "${{Postgres.PGPASSWORD}}",

@@ -26,13 +26,11 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 22: Evaluation Set and Experiments (Week 4, brief section 24)
 - [x] Step 23: Automated Tests and CI Pipeline (Week 3-4, brief section 25)
 - [x] Step 24: Security, Privacy and Performance Hardening (Week 4, brief sections 27, 28)
-- [ ] Step 25: Live Deployment (built and tested locally: production images, one-command
-  Compose, demo reset, daily cost cap, Railway setup in docs/deployment.md; left: the user
-  deploys on Railway, then the live HTTPS check with the demo accounts, scenario 28)
+- [x] Step 25: Live Deployment (Railway: https://ui-production-3b38.up.railway.app; scenario 28 checked)
 - [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A and B done;
   Part C: 25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a
-  mutation check, deliverables checklist in docs/verification.md; left: the live deployment
-  (scenario 28), the LangSmith trace screenshot and the demo recording)
+  mutation check, scenario 28 on the live deployment, deliverables checklist in
+  docs/verification.md; left: the LangSmith trace screenshot and the demo recording)
 
 ## What is left
 
@@ -41,12 +39,10 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   5 ungrounded (all date fragments). Follow-ups: dates as grounded context in the
   grounding check, a system-catalog rule in the question guardrails, a stronger model on a paid plan
   (region filtering in the SQL prompt was fixed in Step 26).
-- Step 25: the user creates the Railway project (docs/deployment.md), then the live HTTPS
-  URL is checked with the demo accounts (scenario 28).
-- Step 26: deploy to Railway, then run `python -m eval.verify_scenarios --api <live API>`
-  and check the live URL with the demo accounts (scenario 28); add the live URL to the
-  README; LangSmith trace screenshot; demo recording. A new evaluation run would show the
+- Step 26: LangSmith trace screenshot; demo recording. A new evaluation run would show the
   effect of the Step 26 fixes.
+- Live demo on Railway (trial credit): remove the project in the dashboard when the review
+  is over (docs/deployment.md, Stop spending).
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
   several API workers, alias-proof personal-column detection, a secret scanner in CI.
 - CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub

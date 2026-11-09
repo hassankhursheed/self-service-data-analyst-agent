@@ -29,7 +29,7 @@ def test_api_block_has_every_setting_with_fresh_values_and_db_references() -> No
 def test_variable_names_are_the_ones_settings_read() -> None:
     fields = {name.upper() for name in Settings.model_fields}
     for name in api_variables():
-        if name.startswith(("RAILWAY_", "API_HOST", "API__", "LANGSMITH_")):
+        if name.startswith(("RAILWAY_", "API_HOST", "API__", "LANGSMITH_")) or name == "PORT":
             continue
         assert name in fields, name
     assert demo_variable("sales.europe") == "DEMO_PASSWORD_SALES_EUROPE"
@@ -37,4 +37,6 @@ def test_variable_names_are_the_ones_settings_read() -> None:
 
 def test_ui_block_points_at_the_private_api_address() -> None:
     assert ui_variables()["API_BASE_URL"] == "http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8000"
+    # The health check port (PORT) is the port the API listens on and the UI calls.
+    assert ui_variables()["API_BASE_URL"].endswith(":" + api_variables()["PORT"])
     assert block({"A": "1", "B": "2"}) == "A=1\nB=2"

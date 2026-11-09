@@ -184,6 +184,7 @@ Open `https://<ui domain>/login` and sign in as `sales.europe`, `finance`, `oper
 | --- | --- |
 | `RAILWAY_DOCKERFILE_PATH=docker/api.Dockerfile` | the API Dockerfile is not at the repository root |
 | `API_HOST=::` | Railway's private network uses IPv6 (and IPv4 in new environments) |
+| `PORT=8000` (api) | Railway's health check calls `$PORT`; without it Railway picks its own port and `/health` is never reached |
 | `API__TRUST_FORWARDED_FOR=true` | the API is only reachable from the UI, so it may use the visitor address the UI forwards for login limits and the audit log |
 | `${{Postgres.*}}` references | Railway fills in the database host, user and password |
 
