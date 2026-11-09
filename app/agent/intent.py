@@ -12,6 +12,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.agent.config import IntentConfig, IntentPart
+from app.core.text import plain_text
 from app.semantic.calendar import (
     CalendarConfig,
     DateRange,
@@ -62,6 +63,16 @@ class IntentAnalysis(BaseModel):
     @classmethod
     def _blank_is_none(cls, value: str | None) -> str | None:
         return value.strip() or None if isinstance(value, str) else value
+
+    @field_validator("clarifying_question", "options", "metric_options")
+    @classmethod
+    def _plain(cls, value: object) -> object:
+        """Shown to the user as plain text (Step 26: "**revenue**" in a question)."""
+        if isinstance(value, str):
+            return plain_text(value)
+        if isinstance(value, list):
+            return [plain_text(v) if isinstance(v, str) else v for v in value]
+        return value
 
 
 class IntentOutcome(StrEnum):

@@ -16,7 +16,7 @@ from app.agent.nodes.sql_context import (
     question_text,
     schema_text,
 )
-from app.agent.sql_output import GeneratedSQL, check_against_context
+from app.agent.sql_output import GeneratedSQL, check_generated
 from app.agent.state import AgentState, SqlAttempt
 from app.core.enums import Confidence, NodeName, QueryKind, QuestionStatus
 from app.core.errors import AppError
@@ -64,7 +64,7 @@ def make_sql_generation_node(deps: AgentDeps) -> NodeFn:
             budget=budget,
             node=NodeName.SQL_GENERATION.value,
             max_regenerations=deps.agent_config.sql.max_regenerations,
-            check=lambda generated: check_against_context(generated, context),
+            check=lambda generated: check_generated(generated, context, state.date_range),
         )
         generated = reply.value
         attempt = SqlAttempt(

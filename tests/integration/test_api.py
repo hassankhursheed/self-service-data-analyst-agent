@@ -163,6 +163,22 @@ async def test_every_protected_route_refuses_missing_invalid_and_expired_tokens(
                 assert_error(response, 401, code)
 
 
+async def test_a_refused_token_is_audited_with_its_correlation_id(
+    make_app: AppFactory, owner_conn: psycopg.Connection
+) -> None:
+    """Step 26 (scenario 26): refused tokens appear in the audit log."""
+    async with running(make_app()) as client:
+        response = await client.get("/conversations", headers={"Authorization": "Bearer not-a-jwt"})
+    assert_error(response, 401, "INVALID_TOKEN")
+    correlation_id = response.headers[HEADER]
+    row = owner_conn.execute(
+        "SELECT event_type, target_id, details->>'reason' FROM app.audit_log "
+        "WHERE correlation_id = %s",
+        (correlation_id,),
+    ).fetchone()
+    assert row == ("token_rejected", "/conversations", "INVALID_TOKEN")
+
+
 async def test_non_admins_get_403_on_every_admin_route(
     make_app: AppFactory,
     settings: Settings,

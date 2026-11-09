@@ -37,7 +37,8 @@ BY_CATEGORY = QueryResult(
     truncated=False,
 )
 REVENUE_SQL = sql_reply(
-    "SELECT c.category_name, SUM(od.unit_price * od.quantity) AS revenue FROM orders o "
+    "SELECT c.category_name, SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue "
+    "FROM orders o "
     "JOIN order_details od ON od.order_id = o.order_id JOIN products p ON p.product_id = "
     "od.product_id JOIN categories c ON c.category_id = p.category_id GROUP BY 1",
     ["orders", "order_details", "products", "categories"],
@@ -338,7 +339,8 @@ async def test_blocked_response_carries_the_reason() -> None:
 
 def test_answers_are_plain_text_without_currency_signs() -> None:
     """Step 26 walk-through: the model wrote "**Thüringer Rostbratwurst** (€27,537.13)"."""
-    from app.agent.nodes.answer import AnswerDraft, plain_text
+    from app.agent.nodes.answer import AnswerDraft
+    from app.core.text import plain_text
 
     assert plain_text("**Thüringer Rostbratwurst** (€27,537.13)") == (
         "Thüringer Rostbratwurst (27,537.13)"

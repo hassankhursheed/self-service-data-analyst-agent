@@ -27,23 +27,15 @@ from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.masking import mask_text
 from app.core.prompts import load_prompt
+from app.core.text import plain_text
 from app.db.analytics import QueryResult
 from app.safety.access_policy import get_access_policy
 
 _ENTITY_NAMES = {"order_details": "order lines"}
 
 
-_MARKDOWN = re.compile(r"(\*\*|__|`)")
 # A detail that is only an identifier ("product_id 29", "ID: 29") adds noise to the list.
 _ID_DETAIL = re.compile(r"(^|[\s_])id\b", re.IGNORECASE)
-_CURRENCY = re.compile(r"[€$£¥]\s?(?=[\d(-])")
-
-
-def plain_text(text: str) -> str:
-    """The answer is shown as plain text: no Markdown markers and no currency signs, which
-    the Northwind data does not have (Step 26 walk-through: "**€27,537.13**")."""
-    return _CURRENCY.sub("", _MARKDOWN.sub("", text)).strip()
-
 
 MAX_ITEMS = 10
 

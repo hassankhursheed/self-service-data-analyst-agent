@@ -13,6 +13,7 @@ embedding model or extra service. See docs/verified-queries.md.
 
 import asyncio
 import math
+import re
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
@@ -107,6 +108,60 @@ def similarity(question: str, example: VerifiedExample) -> float:
     return len(q & e) / math.sqrt(len(q) * len(e))
 
 
+_ALIAS = re.compile(r"\b[a-z_][a-z0-9_]*\.")
+_AGGREGATE = re.compile(r"^[a-z_]+\((.*)\)$")
+_OPERATORS = set("*+-/")
+
+
+def _normalise_sql(text: str) -> str:
+    """Lower case, no table aliases (``od.``), no spaces: comparable SQL fragments."""
+    return re.sub(r"\s+", "", _ALIAS.sub("", text.lower()))
+
+
+def is_single_aggregate(definition: str) -> bool:
+    """``SUM(<expr>)``, ``COUNT(DISTINCT x)``: one aggregate call around the whole formula
+    (not ``SUM(a) / COUNT(b)`` and not ``COUNT(*) FILTER (...)``)."""
+    body = _normalise_sql(definition)
+    if not _AGGREGATE.match(body):
+        return False
+    depth = 0
+    for index, char in enumerate(body):
+        depth += {"(": 1, ")": -1}.get(char, 0)
+        if depth == 0 and char == ")":
+            return index == len(body) - 1
+    return False
+
+
+def uses_definition(sql: str, definition: str) -> bool:
+    """True when ``sql`` computes the metric with this definition.
+
+    The definition's inner expression (``SUM(<expr>)`` -> ``<expr>``) must appear on its
+    own, not as part of a longer formula: after ``revenue`` is redefined as
+    ``SUM(unit_price * quantity)``, an example with ``unit_price * quantity * (1 -
+    discount)`` no longer matches (Step 26, scenario 9).
+    """
+    body = _normalise_sql(definition)
+    inner = match.group(1) if (match := _AGGREGATE.match(body)) else body
+    text = _normalise_sql(sql)
+    start = text.find(inner)
+    while start != -1:
+        before = text[start - 1] if start > 0 else ""
+        after = text[start + len(inner)] if start + len(inner) < len(text) else ""
+        if before not in _OPERATORS and after not in _OPERATORS:
+            return True
+        start = text.find(inner, start + 1)
+    return False
+
+
+def is_current(example: VerifiedExample, layer: SemanticLayer) -> bool:
+    """An example is current when every metric it lists still has the definition it uses."""
+    for name in example.metrics:
+        metric = layer.metrics.get(name)
+        if metric is None or not uses_definition(example.sql, metric.definition):
+            return False
+    return True
+
+
 def find_verified_examples(
     question: str,
     role: RoleName,
@@ -117,9 +172,10 @@ def find_verified_examples(
 ) -> list[VerifiedExample]:
     """The most similar enabled examples this role may use, best first.
 
-    An example is offered only if it is enabled, lists the role, and its SQL passes the
+    An example is offered only if it is enabled, lists the role, its SQL passes the
     validator for this role against the current semantic layer (so a narrowed role or a
-    removed column also removes the example)."""
+    removed column also removes the example), and it still uses the current definition of
+    every metric it lists (so a changed definition retires outdated examples)."""
     if not config.enabled:
         return []
     scored = sorted(
@@ -134,7 +190,7 @@ def find_verified_examples(
     for score, example in scored:
         if score < config.min_score or len(chosen) >= config.max_examples:
             break
-        if validate(example.sql, role, layer, policy).allowed:
+        if is_current(example, layer) and validate(example.sql, role, layer, policy).allowed:
             chosen.append(example)
     return chosen
 

@@ -258,7 +258,7 @@ async def test_new_user_with_a_region_immediately_sees_only_that_region(
     assert (user.role, user.region) == (RoleName.SALES_MANAGER, RegionCode.EUROPE)
 
     sql = (
-        "SELECT c.country, count(*) AS orders FROM orders o "
+        "SELECT c.country, COUNT(DISTINCT o.order_id) AS orders FROM orders o "
         "JOIN customers c ON c.customer_id = o.customer_id GROUP BY c.country"
     )
     model = ScriptedModel(

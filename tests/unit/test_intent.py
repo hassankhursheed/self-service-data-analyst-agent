@@ -343,3 +343,14 @@ def test_assumptions_are_merged_once_each() -> None:
         "Last quarter is Q1 2025.",
         "Categories come from categories.",
     ]
+
+
+def test_clarifying_questions_are_plain_text() -> None:
+    analysis = IntentAnalysis.model_validate(
+        intent(
+            clarifying_question="Do you mean the highest **revenue** or **number of orders**?",
+            options=["**Revenue**", "`Orders`"],
+        )
+    )
+    assert analysis.clarifying_question == "Do you mean the highest revenue or number of orders?"
+    assert analysis.options == ["Revenue", "Orders"]

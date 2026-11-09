@@ -8,7 +8,7 @@ from app.agent.deps import AgentDeps, usage_of
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.nodes.n06_sql_generation import is_low_confidence
 from app.agent.nodes.sql_context import date_range_text, metrics_text, question_text, schema_text
-from app.agent.sql_output import GeneratedSQL, check_against_context
+from app.agent.sql_output import GeneratedSQL, check_generated
 from app.agent.state import AgentErrorInfo, AgentState, SqlAttempt
 from app.core.enums import NodeName, QueryKind, QuestionStatus
 from app.core.errors import AppError
@@ -60,7 +60,7 @@ def make_repair_node(deps: AgentDeps) -> NodeFn:
             budget=budget,
             node=NodeName.REPAIR.value,
             max_regenerations=config.max_regenerations,
-            check=lambda generated: check_against_context(generated, context),
+            check=lambda generated: check_generated(generated, context, state.date_range),
         )
         generated = reply.value
         attempt = SqlAttempt(

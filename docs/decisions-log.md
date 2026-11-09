@@ -432,3 +432,19 @@ Reviewed with the user screen by screen in the browser (desktop and phone width)
 | Phone layout | Logo in the phone header; sideways bar charts on phones; users as cards with full-size actions; two metric cards per row; review actions below the text; 36-40 px tap targets; scope and dataset in the menu drawer | Desktop tables scrolled sideways | Checked at 375 px: no page overflow on any screen. |
 | Code formatting | Hand-formatted long lines kept; Prettier changes reverted | Prettier at its 80-column default | The repository has no Prettier config; reformatting added about 1,000 lines of noise to the diff. |
 
+## Step 26 Part C: Scenario verification
+
+`eval/verify_scenarios.py` runs the 28 scenarios of brief section 30 against the running API
+(real model) or, for scenarios that need a misbehaving model (13, 16-20), with a scripted
+model on the real database, audit and checkpoints. Report: eval/SCENARIOS.md;
+summary: docs/verification.md.
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Scenario 10 finding | `check_period`: the SQL's dates must include the resolved period's first day and none may be after its last day (+1 day); otherwise the SQL is sent back (N-06 and N-09) | Trusting the period the model reports in its JSON | For "last quarter" (Q1 2025) the model wrote Q4 2024 dates while the answer was labelled Q1 2025: a wrong number under a correct label. Earlier dates stay allowed so comparisons with a previous period work. |
+| Scenario 9 finding | A verified example is offered only while it uses the current definition of every metric it lists (`uses_definition`: the definition's inner expression must appear on its own, aliases and spaces ignored) | Timestamps (every seed run refreshes `updated_at`); exact text match (two seeded examples phrase the formula differently) | After revenue was redefined the model copied the old formula from the examples, so the definition change had no effect. Outdated examples now retire themselves. |
+| Scenario 9 finding (2) | Metric formulas are binding: when the model lists a metric in `metrics_used`, a single-aggregate definition (`SUM(...)`, `COUNT(DISTINCT ...)`) must appear in the SQL, otherwise the SQL is sent back with the formula (`check_metric_formulas`); `sql_generation@v4` says definitions win over a word's usual meaning; test fixtures updated to follow the definitions | Prompt wording only; checking compound definitions such as average order value | With revenue redefined as gross revenue and no stale examples left, the model still added the discount because "the question implies net revenue". All 18 verified examples pass the check; compound formulas can be written in several valid ways, so they are not compared as text. |
+| Scenario 26 finding | Refused tokens are written to `app.audit_log` (`token_rejected`, path, reason, correlation ID, address) | Leaving them unaudited | The brief asks for every scenario in the audit log; refused tokens are a security event. The write never turns the 401 into a 500. |
+| Rate limits | Live questions spaced 30 s apart (`--pause`) | Faster runs | The free Mistral plan refused bursts (HTTP 429), which made otherwise passing scenarios fail. |
+| Scenario 25 | Shown by breaking the validator's multiple-statements check: 3 unit tests fail (the CI `unit` job runs them on every push); file restored from git | Pushing a broken commit to GitHub | Same proof without a red commit in the history. |
+

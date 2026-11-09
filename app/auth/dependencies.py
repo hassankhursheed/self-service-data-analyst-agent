@@ -28,12 +28,29 @@ def auth_service(request: Request) -> AuthService:
 
 
 async def current_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     service: Annotated[AuthService, Depends(auth_service)],
 ) -> AuthenticatedUser:
-    if credentials is None or credentials.scheme.lower() != "bearer" or not credentials.credentials:
-        raise InvalidToken("missing bearer token")
-    return await service.authenticate(credentials.credentials)
+    try:
+        if (
+            credentials is None
+            or credentials.scheme.lower() != "bearer"
+            or not credentials.credentials
+        ):
+            raise InvalidToken("missing bearer token")
+        return await service.authenticate(credentials.credentials)
+    except InvalidToken as err:
+        # Every refused token is audited with its correlation ID (Step 26, scenario 26).
+        from app.api.deps import client_ip
+
+        await service.record_rejected_token(
+            err.code,
+            request.url.path,
+            correlation_id=getattr(request.state, "correlation_id", None),
+            client_ip=client_ip(request),
+        )
+        raise
 
 
 async def admin_user(

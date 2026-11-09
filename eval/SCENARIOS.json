@@ -1,0 +1,258 @@
+[
+  {
+    "number": 1,
+    "title": "Login, wrong password, disabled user",
+    "passed": true,
+    "evidence": "finance 200; wrong password 401 INVALID_CREDENTIALS; disabled.user 401 INVALID_CREDENTIALS",
+    "correlation_ids": [
+      "8152b90b-8c48-4683-a4c3-7f17e95d0342",
+      "a68a9bab-20e8-4a8b-aa7b-94043c7dc438",
+      "007f129b-fa3d-45c8-8a41-cae2529a4bab"
+    ],
+    "automated_tests": "test_login_success_and_failure, test_disabled_user_is_rejected"
+  },
+  {
+    "number": 2,
+    "title": "Invalid and expired tokens refused",
+    "passed": true,
+    "evidence": "invalid 401 INVALID_TOKEN; expired 401 TOKEN_EXPIRED; every protected route is checked by the test",
+    "correlation_ids": [
+      "e80fa35f-7f3e-4cdd-ab08-57c621520569",
+      "02f79a39-3c32-468b-8684-c8ce7d124fc7"
+    ],
+    "automated_tests": "test_every_protected_route_refuses_missing_invalid_and_expired_tokens"
+  },
+  {
+    "number": 3,
+    "title": "No role refused before SQL",
+    "passed": true,
+    "evidence": "403 NO_ROLE; nodes run: N-01, N-11",
+    "correlation_ids": [
+      "8513e375-e8f9-420d-bce2-7d512899492d"
+    ],
+    "automated_tests": "test_no_role_is_rejected_and_no_later_node_runs"
+  },
+  {
+    "number": 4,
+    "title": "Sales manager: correct answer, chart and SQL for their region",
+    "passed": true,
+    "evidence": "ANSWERED; top 5 equal to the Europe totals in the database: True; chart bar; SQL shown",
+    "correlation_ids": [
+      "c78247fb-565d-4c27-a79e-e127ca7175c2"
+    ],
+    "automated_tests": "test_sales_manager_sees_only_their_region"
+  },
+  {
+    "number": 5,
+    "title": "Finance multi-join revenue question",
+    "passed": true,
+    "evidence": "ANSWERED; 8 categories equal to the database: True; joins in SQL: 3",
+    "correlation_ids": [
+      "3193eec6-f08a-4b99-a480-6c5ea5ee0fdd"
+    ],
+    "automated_tests": "test_finance_multi_join_revenue_question_returns_the_correct_rows"
+  },
+  {
+    "number": 6,
+    "title": "Last quarter resolves from the business date",
+    "passed": true,
+    "evidence": "Last quarter = 1 Jan to 31 Mar 2025 (business date 2025-05-06)",
+    "correlation_ids": [
+      "3049e53f-9b42-4d5a-b0ca-e2747d671b64"
+    ],
+    "automated_tests": "test_revenue_last_quarter_continues_with_the_resolved_range, test_first_day_of_a_quarter"
+  },
+  {
+    "number": 7,
+    "title": "Ambiguous question asks first, then answers",
+    "passed": true,
+    "evidence": "first CLARIFICATION_NEEDED (By 'best customers,' do you mean those with the highest **revenue**, **number of orders**, **average order value**, or another metric? Also, should I show the **top 10** or another number of customers?); after choosing an option: ANSWERED",
+    "correlation_ids": [
+      "e5ccc40d-a2e8-4ad8-9184-18a86266d2a5",
+      "e5ccc40d-a2e8-4ad8-9184-18a86266d2a5"
+    ],
+    "automated_tests": "test_clarify_resumes_the_paused_question"
+  },
+  {
+    "number": 8,
+    "title": "Follow-up 'now only for Germany'",
+    "passed": true,
+    "evidence": "ANSWERED; interpreted as: What was the revenue by country in 2024, but only for Germany?; Germany 2024 = 117320.16 found: True",
+    "correlation_ids": [
+      "2c815f23-cece-463a-9975-81baafe9b47b",
+      "b7e5bbf5-76a1-47b6-87aa-4022ce727c8d"
+    ],
+    "automated_tests": "test_follow_up_now_only_for_germany_gives_the_filtered_result"
+  },
+  {
+    "number": 9,
+    "title": "Changed metric definition used without code changes",
+    "passed": true,
+    "evidence": "revenue redefined as gross SUM(unit_price * quantity) (formula and description) for one question; the generated SQL has no discount term; definition restored",
+    "correlation_ids": [
+      "7217211f-85e3-4c2c-a347-b128731db669"
+    ],
+    "automated_tests": "test_changed_revenue_definition_reaches_the_retriever_without_code_changes"
+  },
+  {
+    "number": 10,
+    "title": "Similar question uses the verified example, correct result",
+    "passed": true,
+    "evidence": "verified examples used: 3; revenue 298491.552590101 = database 298491.55",
+    "correlation_ids": [
+      "3049e53f-9b42-4d5a-b0ca-e2747d671b64"
+    ],
+    "automated_tests": "test_scenario_10_a_similar_question_uses_the_verified_example"
+  },
+  {
+    "number": 11,
+    "title": "Not helpful answer reviewed and turned into an evaluation case",
+    "passed": true,
+    "evidence": "feedback 200; in review list: True; eval case 201",
+    "correlation_ids": [
+      "c78247fb-565d-4c27-a79e-e127ca7175c2",
+      "e51f969b-cbd2-43f0-9296-1865b9cff1cf"
+    ],
+    "automated_tests": "test_scenario_11_a_not_helpful_answer_becomes_an_eval_case"
+  },
+  {
+    "number": 12,
+    "title": "Delete request blocked with a clear reason",
+    "passed": true,
+    "evidence": "BLOCKED WRITE_REQUEST: I can only read data, so I can't change, add or delete anything.",
+    "correlation_ids": [
+      "61426c2e-a022-471d-9aba-4a74b588084c"
+    ],
+    "automated_tests": "test_delete_request_is_blocked_and_nothing_is_executed"
+  },
+  {
+    "number": 13,
+    "title": "Multiple statements rejected by validation",
+    "passed": true,
+    "evidence": "scripted model wrote 'SELECT 1; DELETE FROM orders' -> BLOCKED MULTIPLE_STATEMENTS",
+    "correlation_ids": [
+      "a26734ce-2d32-4b42-8970-d4fd4377dd29"
+    ],
+    "automated_tests": "test_multiple_statements_are_blocked"
+  },
+  {
+    "number": 14,
+    "title": "Hidden sensitive column blocked for operations",
+    "passed": true,
+    "evidence": "BLOCKED PERSONAL_DATA_REQUEST",
+    "correlation_ids": [
+      "0657a3d3-fcf2-4461-bc3e-f5b52346aaa9"
+    ],
+    "automated_tests": "test_hidden_column_is_blocked_for_a_role_without_access, test_hidden_sensitive_column_is_blocked_for_operations"
+  },
+  {
+    "number": 15,
+    "title": "Prompt injection still shows only the own region",
+    "passed": true,
+    "evidence": "ANSWERED; non-European countries in the result: none (Europe has 15 countries)",
+    "correlation_ids": [
+      "0df41fc1-74ec-4261-a359-912e59e8f682"
+    ],
+    "automated_tests": "test_ignore_your_rules_as_sales_europe_still_returns_only_europe"
+  },
+  {
+    "number": 16,
+    "title": "Failing SQL repaired within two attempts",
+    "passed": true,
+    "evidence": "first SQL fails in PostgreSQL, 1 repair -> ANSWERED; 408 orders = database 408",
+    "correlation_ids": [
+      "3a105c20-8ce3-4d39-9c38-513d4512effd"
+    ],
+    "automated_tests": "test_failed_sql_is_repaired_against_the_real_database"
+  },
+  {
+    "number": 17,
+    "title": "SQL fails three times -> FAILED, message, error record",
+    "passed": true,
+    "evidence": "FAILED: I couldn't build a working query for this question after several tries. Please try rephrasing it or asking something simpler.; agent_errors rows: 1",
+    "correlation_ids": [
+      "5cde5d30-acc3-448d-b914-d8d86ec040fa"
+    ],
+    "automated_tests": "test_three_failures_end_failed_with_a_helpful_message"
+  },
+  {
+    "number": 18,
+    "title": "Malformed model output handled safely",
+    "passed": true,
+    "evidence": "intent replies were not JSON twice -> FAILED: I could not produce a reliable answer to this question. Please try rephrasing it.; no SQL run",
+    "correlation_ids": [
+      "a43ffe81-b3d4-4562-835c-1396ee5b5d0d"
+    ],
+    "automated_tests": "test_malformed_output_twice_fails_safely"
+  },
+  {
+    "number": 19,
+    "title": "Retryable model error succeeds after a retry",
+    "passed": true,
+    "evidence": "first model call returned HTTP 503, retried -> ANSWERED",
+    "correlation_ids": [
+      "0b13ff5d-f726-4758-beee-2ea764df779b"
+    ],
+    "automated_tests": "test_retryable_error_succeeds_on_the_second_attempt"
+  },
+  {
+    "number": 20,
+    "title": "Query timeout gives a clear message",
+    "passed": true,
+    "evidence": "FAILED: The query took too long and was stopped. Try a narrower question. (200 ms statement timeout, cost check off for this run)",
+    "correlation_ids": [
+      "f62e9874-2f6c-46ba-86eb-dcd1c6081822"
+    ],
+    "automated_tests": "test_query_timeout_gives_a_clear_message"
+  },
+  {
+    "number": 21,
+    "title": "No rows explained honestly",
+    "passed": true,
+    "evidence": "ANSWERED; rows 1; answer: There were 0 orders shipped to Argentina in 2024.",
+    "correlation_ids": [
+      "92e665e5-a66f-4bd7-8a8c-1dddbeef4a1d"
+    ],
+    "automated_tests": "test_empty_result_gets_an_honest_message_and_no_llm_call"
+  },
+  {
+    "number": 22,
+    "title": "Empty and very long questions rejected",
+    "passed": true,
+    "evidence": "empty 400 QUESTION_EMPTY; 640 characters 400 QUESTION_TOO_LONG",
+    "correlation_ids": [
+      "90893f40-f9f6-4a80-b71f-e49be1537b6e",
+      "0a081637-e546-4e7f-8dd6-fb1ee5c7b066"
+    ],
+    "automated_tests": "test_empty_and_very_long_questions_are_rejected"
+  },
+  {
+    "number": 23,
+    "title": "Off-topic question politely declined",
+    "passed": true,
+    "evidence": "REJECTED OFF_TOPIC: Sorry, I can only help with questions about Northwind's sales, customers, products and shipping.",
+    "correlation_ids": [
+      "ba809f18-8a17-452e-8546-c53aa2c9c0bc"
+    ],
+    "automated_tests": "test_off_topic_question_is_politely_declined"
+  },
+  {
+    "number": 24,
+    "title": "New user with a region immediately sees only that region",
+    "passed": true,
+    "evidence": "user verify.2e9581 created 201 (Americas); countries in the answer: ['Canada', 'Mexico', 'USA']",
+    "correlation_ids": [
+      "e2b4fc12-7048-47ca-9b60-65a5a905ccec",
+      "9b342410-21c5-45fd-9f6c-723cb3db5bac"
+    ],
+    "automated_tests": "test_new_user_with_a_region_immediately_sees_only_that_region"
+  },
+  {
+    "number": 26,
+    "title": "Every scenario in the audit log with its correlation ID and trace",
+    "passed": true,
+    "evidence": "32 of 32 correlation IDs found in app.agent_runs, app.questions or app.audit_log; 25 agent runs carry their LangSmith trace ID (= correlation ID); requests that never reach the agent (logins, refused tokens) are audit_log events",
+    "correlation_ids": [],
+    "automated_tests": "test_answered_question_has_complete_linked_records, test_blocked_question_records_the_block_reason, test_failed_question_has_an_error_record_with_rerunnable_input"
+  }
+]

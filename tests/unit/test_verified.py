@@ -237,3 +237,15 @@ async def test_a_library_problem_does_not_fail_the_question() -> None:
     assert state.verified_examples == []
     prompt = " ".join(str(m.content) for m in model.calls_by_kind["sql"][0])
     assert "none" in prompt
+
+
+def test_an_example_using_an_outdated_metric_definition_is_not_offered() -> None:
+    """Step 26 (scenario 9): after revenue was redefined, the old examples kept the old formula."""
+    from app.semantic.verified import uses_definition
+
+    old_sql = "SELECT SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue FROM orders o"
+    assert uses_definition(old_sql, "SUM(od.unit_price * od.quantity * (1 - od.discount))")
+    assert not uses_definition(old_sql, "SUM(od.unit_price * od.quantity)")
+    case_sql = "SUM(CASE WHEN x THEN od.unit_price * od.quantity * (1 - od.discount) ELSE 0 END)"
+    assert uses_definition(case_sql, "SUM(od.unit_price * od.quantity * (1 - od.discount))")
+    assert uses_definition("COUNT(DISTINCT cu.customer_id)", "COUNT(DISTINCT c.customer_id)")

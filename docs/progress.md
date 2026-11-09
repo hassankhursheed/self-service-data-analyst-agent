@@ -29,10 +29,10 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [ ] Step 25: Live Deployment (built and tested locally: production images, one-command
   Compose, demo reset, daily cost cap, Railway setup in docs/deployment.md; left: the user
   deploys on Railway, then the live HTTPS check with the demo accounts, scenario 28)
-- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Part A done; Part B:
-  AskData name, logo, teal light/dark theme, phone layout, structured answers, README,
-  API endpoint list, demo script and 19 screenshots done; left: LangSmith trace
-  screenshot, live URL in the README, Part C: the 28 scenarios and the deliverables list)
+- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A and B done;
+  Part C: 25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a
+  mutation check, deliverables checklist in docs/verification.md; left: the live deployment
+  (scenario 28), the LangSmith trace screenshot and the demo recording)
 
 ## What is left
 
@@ -43,9 +43,10 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   (region filtering in the SQL prompt was fixed in Step 26).
 - Step 25: the user creates the Railway project (docs/deployment.md), then the live HTTPS
   URL is checked with the demo accounts (scenario 28).
-- Step 26: the LangSmith trace screenshot (needs the owner's LangSmith login), the live
-  URL in the README after deployment, and Part C (all 28 scenarios with correlation IDs,
-  Section 31 checklist). A fresh evaluation run would show the effect of the Step 26 fixes.
+- Step 26: deploy to Railway, then run `python -m eval.verify_scenarios --api <live API>`
+  and check the live URL with the demo accounts (scenario 28); add the live URL to the
+  README; LangSmith trace screenshot; demo recording. A new evaluation run would show the
+  effect of the Step 26 fixes.
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
   several API workers, alias-proof personal-column detection, a secret scanner in CI.
 - CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub

@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime as dt
+import logging
 import uuid
 
 from sqlalchemy import select
@@ -13,6 +14,8 @@ from app.core.enums import RegionCode, RoleName
 from app.core.errors import AppError
 from app.core.security import hash_password, verify_password
 from app.db.models import AuditLog, Role, User, UserRegion, UserRole
+
+logger = logging.getLogger(__name__)
 
 # Verified when the user does not exist, so a wrong username takes as long as a wrong
 # password and timing does not reveal which usernames exist.
@@ -108,6 +111,30 @@ class AuthService:
             expires_in=self.tokens.config.access_token_minutes * 60,
             user=identity,
         )
+
+    async def record_rejected_token(
+        self,
+        reason: str,
+        path: str,
+        *,
+        correlation_id: uuid.UUID | None = None,
+        client_ip: str | None = None,
+    ) -> None:
+        """Audit a refused token (brief scenario 2 and 26). Never raises: the 401 stands."""
+        try:
+            async with self.sessions() as session, session.begin():
+                session.add(
+                    AuditLog(
+                        correlation_id=correlation_id,
+                        event_type="token_rejected",
+                        target_type="endpoint",
+                        target_id=path[:64],
+                        details={"reason": reason},
+                        client_ip=client_ip,
+                    )
+                )
+        except Exception:  # the refusal must not turn into a 500
+            logger.warning("could not audit a rejected token", exc_info=True)
 
     async def authenticate(self, token: str) -> AuthenticatedUser:
         """Validate a bearer token and load the caller's current role and region."""

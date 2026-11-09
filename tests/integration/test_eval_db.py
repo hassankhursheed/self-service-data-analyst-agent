@@ -40,7 +40,7 @@ AMBIGUOUS = intent(
     options=["By revenue", "By number of orders"],
 )
 COUNT_SQL = sql_reply(
-    "SELECT count(*) AS orders FROM orders o "
+    "SELECT COUNT(DISTINCT o.order_id) AS orders FROM orders o "
     "WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'",
     ["orders"],
     metrics_used=["number_of_orders"],

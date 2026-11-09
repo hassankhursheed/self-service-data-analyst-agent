@@ -13,7 +13,8 @@ from tests.fakes import ONE_ROW, FakeExecutor, ScriptedModel, fake_deps, intent,
 S = QuestionStatus
 ORDERS_2024 = intent(summary="Number of orders in 2024", metric="number_of_orders")
 GOOD_SQL = sql_reply(
-    "SELECT count(*) AS orders FROM orders o WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'",  # noqa: E501
+    "SELECT COUNT(DISTINCT o.order_id) AS orders FROM orders o "
+    "WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'",
     ["orders"],
     metrics_used=["number_of_orders"],
     date_range={"from": "2024-01-01", "to": "2024-12-31"},
@@ -320,3 +321,69 @@ async def test_sql_prompt_drops_own_region_from_summary_and_assumptions() -> Non
     human = str(model.calls_by_kind["sql"][0][-1].content)
     assert "EUROPE region" not in human
     assert "The EUROPE region is already limited" not in prompt
+
+
+def test_sql_dates_must_match_the_resolved_period() -> None:
+    """Step 26 (scenario 10): "last quarter" was answered with Q4 2024 dates."""
+    import datetime as dt
+
+    from app.agent.sql_output import check_period
+    from app.semantic.calendar import DateRange, load_calendar, resolve_period
+
+    q1 = resolve_period("last quarter", load_calendar())
+    assert isinstance(q1, DateRange)
+    with pytest.raises(ValueError, match="use the period from 2025-01-01 to 2025-03-31"):
+        check_period("WHERE o.order_date BETWEEN '2024-10-01' AND '2024-12-31'", q1)
+    check_period("WHERE o.order_date BETWEEN '2025-01-01' AND '2025-03-31'", q1)
+    check_period("WHERE o.order_date >= '2025-01-01' AND o.order_date < '2025-04-01'", q1)
+    # a comparison with an earlier period is allowed
+    check_period(
+        "BETWEEN '2024-10-01' AND '2024-12-31' ... BETWEEN '2025-01-01' AND '2025-03-31'", q1
+    )
+    check_period("SELECT count(*) FROM orders", q1)  # no dates
+    check_period("WHERE o.order_date = '2020-01-01'", None)
+    assert dt.date(2025, 1, 1) == q1.from_date
+
+
+async def test_sql_with_the_wrong_period_is_sent_back() -> None:
+    wrong = sql_reply(
+        "SELECT count(*) AS orders FROM orders WHERE order_date BETWEEN '2023-01-01' AND '2023-12-31'",  # noqa: E501
+        ["orders"],
+    )
+    model = ScriptedModel(intent(time_phrase="2024"), sql=[wrong, GOOD_SQL])
+    state = await run(model, FakeExecutor())
+    assert state.status is S.ANSWERED
+    assert "use the period from 2024-01-01" in str(model.calls_by_kind["sql"][1][-1].content)
+
+
+async def test_a_metric_must_use_its_definition() -> None:
+    """Step 26 (scenario 9): the model replaced the defined formula with its own idea."""
+    own_idea = sql_reply(
+        "SELECT SUM(od.unit_price * od.quantity) AS revenue FROM orders o "
+        "JOIN order_details od ON od.order_id = o.order_id "
+        "WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'",
+        ["orders", "order_details"],
+        metrics_used=["revenue"],
+    )
+    defined = sql_reply(
+        "SELECT SUM(od.unit_price * od.quantity * (1 - od.discount)) AS revenue FROM orders o "
+        "JOIN order_details od ON od.order_id = o.order_id "
+        "WHERE o.order_date BETWEEN '2024-01-01' AND '2024-12-31'",
+        ["orders", "order_details"],
+        metrics_used=["revenue"],
+    )
+    model = ScriptedModel(intent(time_phrase="2024"), sql=[own_idea, defined])
+    state = await run(model, FakeExecutor())
+    assert state.status is S.ANSWERED
+    assert "compute revenue exactly as its definition says" in str(
+        model.calls_by_kind["sql"][1][-1].content
+    )
+
+
+def test_only_single_aggregate_definitions_are_compared() -> None:
+    from app.semantic.verified import is_single_aggregate
+
+    assert is_single_aggregate("SUM(od.unit_price * od.quantity * (1 - od.discount))")
+    assert is_single_aggregate("COUNT(DISTINCT o.order_id)")
+    assert not is_single_aggregate("SUM(a.x) / NULLIF(COUNT(DISTINCT o.order_id), 0)")
+    assert not is_single_aggregate("COUNT(*) FILTER (WHERE o.shipped_date > o.required_date)")
