@@ -112,8 +112,10 @@ Tailwind CSS · Recharts · LangSmith · Docker Compose · GitHub Actions · Rai
 
 ¹ One malformed model reply was counted as not blocked; no unsafe SQL was ever executed.
 These runs used model `ministral-14b-2512` (the strongest model on the project's free
-Mistral plan) and the prompts of Step 22. Fixes made later in Step 26 (region filtering,
-period detection, structured answers) are not yet reflected in these numbers.
+Mistral plan) and the prompts of Step 22. A run after the Step 26 fixes (round 3 in
+eval/RESULTS.md) fixed four of those failures and brought ungrounded answers from 5 to 0;
+it scored 85.7% on the cases the free plan did not throttle (75.0% counting the 5
+rate-limited cases as failures), with 0 access-control leaks.
 
 Load test: 20 concurrent users, 60 questions, all answered, p50 5.6 s with a 1 s model
 wait per call, about 200 questions per minute ([eval/LOAD_TEST.md](eval/LOAD_TEST.md)).

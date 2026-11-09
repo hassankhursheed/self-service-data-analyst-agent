@@ -461,3 +461,10 @@ Deployed on 2026-11-09 to https://ui-production-3b38.up.railway.app with the Rai
 | Pre-deploy timeout | 900 s for the seed | Railway's default | The first deploy loads the Northwind dump; later seeds take seconds. |
 | Database version | Railway's Postgres template (PostgreSQL 18) | Pinning PostgreSQL 16 as in Compose | The dump, migrations and seed ran unchanged on 18; the template brings the volume, SSL and backups. |
 | Demo passwords | One set for the live and local copies (the owner's choice), kept in the gitignored `.env` | Separate local passwords | Simpler to demo; the accounts only see fictional data, and `scripts.railway_env` can issue new ones after the review. |
+
+## Step 26: Evaluation round 3
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Reporting a throttled run | Publish it as round 3 with both figures: 75.0% counting the 8 rate-limited failures, 85.7% on the cases the model actually answered; name every rate-limited case | Re-running until a clean run; dropping the run | Honest and repeatable: the run is in the database and LangSmith; the free plan cannot run 60 cases without throttling. A clean comparison needs a paid plan or pauses between cases. |
+| M-06 scoring miss | Recorded, scorer left unchanged for now | Loosening the scorer in the same step | The values are right and only the quarter labels differ; changing scoring rules after seeing results needs its own step and a rerun of all rounds. |

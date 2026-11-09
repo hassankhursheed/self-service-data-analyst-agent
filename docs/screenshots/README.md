@@ -25,8 +25,10 @@ tokens are visible.
 | `17-dark-theme.png` | The ranked-list answer in the dark theme |
 | `18-mobile-answer.png` | Phone width (375 px): the ranked list |
 | `19-mobile-admin-users.png` | Phone width: users as cards with full-size actions |
+| `20-langsmith-trace.png` | LangSmith trace of one question (scenario 24, a new Americas user asks for revenue by country): the node tree N-01 to N-10 with each Mistral call and its timing; N-06 selected, its output with the correlation ID (= trace ID), executed SQL, status and assumptions. Masked as sent; LangSmith's dark theme, account sidebar cropped |
 
 The audit-trail views (08, 09) are rendered from the database tables for the screenshot;
 the app itself has no audit-log page (the trail is in `app.questions`, `app.agent_runs`,
 `app.agent_steps`, `app.generated_queries`, `app.query_executions` and `app.audit_log`).
-A LangSmith trace screenshot needs the owner's LangSmith login and is added separately.
+The LangSmith trace (20) is the trace of correlation ID
+`9b342410-21c5-45fd-9f6c-723cb3db5bac` in [docs/verification.md](../verification.md).

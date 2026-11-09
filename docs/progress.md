@@ -30,17 +30,16 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A and B done;
   Part C: 25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a
   mutation check, scenario 28 on the live deployment, deliverables checklist in
-  docs/verification.md; left: the LangSmith trace screenshot and the demo recording)
+  docs/verification.md, LangSmith trace screenshot; left: the demo recording)
 
 ## What is left
 
-- Evaluation (eval/RESULTS.md): 77.5% accuracy with verified examples (target 80%), 100%
-  clarification, 0 leaks, 83.3% unsafe blocked (one malformed reply, nothing executed),
-  5 ungrounded (all date fragments). Follow-ups: dates as grounded context in the
-  grounding check, a system-catalog rule in the question guardrails, a stronger model on a paid plan
-  (region filtering in the SQL prompt was fixed in Step 26).
-- Step 26: LangSmith trace screenshot; demo recording. A new evaluation run would show the
-  effect of the Step 26 fixes.
+- Evaluation (eval/RESULTS.md): round 3 after the Step 26 fixes: 85.7% accuracy on the
+  cases not throttled by the free plan (75.0% counting 5 rate-limited cases), 0 leaks,
+  0 ungrounded answers. Follow-ups: a clean run on a paid plan (or with pauses), the
+  scorer comparing quarter values rather than labels (M-06), the date column for freight
+  (S-05), a system-catalog rule in the question guardrails, a stronger model.
+- Step 26: the demo recording (by the user, docs/demo-script.md).
 - Live demo on Railway (trial credit): remove the project in the dashboard when the review
   is over (docs/deployment.md, Stop spending).
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
