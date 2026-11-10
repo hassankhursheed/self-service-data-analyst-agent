@@ -39,6 +39,3 @@ pgdata/
 .DS_Store
 Thumbs.db
 
-# Personal Claude Code settings
-.claude/settings.local.json
-CLAUDE.local.md

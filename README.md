@@ -15,7 +15,7 @@ sample database). All data is sample data.
 ![Answer with a ranked list](docs/screenshots/04-answer-ranked-list.png)
 
 - **Live demo:** [ui-production-3b38.up.railway.app](https://ui-production-3b38.up.railway.app) (Railway; demo accounts and
-  passwords from the owner on request)
+  login details on request)
 - **Docs:** [all documentation](#documentation) · [API](docs/api.md) ·
   [decisions log](docs/decisions-log.md) · [screenshots](docs/screenshots/README.md)
 
@@ -72,7 +72,7 @@ docker compose up -d --build  # db -> migrate + seed -> api -> ui
 Open http://localhost:3000 and sign in with a demo account (passwords are the
 `DEMO_PASSWORD_*` values you set in `.env`). The full setup guide, every environment
 variable, the live deployment, demo reset and rollback: [docs/deployment.md](docs/deployment.md).
-Development without Docker (Python 3.12, Node 24): [CLAUDE.md](CLAUDE.md#commands).
+Development without Docker (Python 3.12, Node 24): [docs/development.md](docs/development.md#commands).
 
 ## Demo accounts
 

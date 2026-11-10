@@ -78,8 +78,8 @@ checkpoints.
 | Evaluation dataset, scripts, results table from at least two experiments | Done (3 experiments) | `eval/cases.yaml` (60 cases), `eval/run_eval.py`, [eval/RESULTS.md](../eval/RESULTS.md), [evaluation.md](evaluation.md) |
 | SQL safety strategy and access-control strategy | Done | [sql-safety.md](sql-safety.md), [access-control.md](access-control.md), [guardrails.md](guardrails.md) |
 | Automated tests and the GitHub Actions CI pipeline | Done | `tests/unit`, `tests/integration`, `ui/src/**/*.test.tsx`, `.github/workflows/ci.yml`, [ci.md](ci.md) |
-| Setup and deployment guide | Done | [deployment.md](deployment.md), [README quick start](../README.md#quick-start-docker), [CLAUDE.md commands](../CLAUDE.md) |
+| Setup and deployment guide | Done | [deployment.md](deployment.md), [README quick start](../README.md#quick-start-docker), [development.md](development.md) |
 | Environment variable list without real secrets | Done | [deployment.md](deployment.md#environment-variables), `.env.example` |
 | Decisions and trade-offs log | Done | [decisions-log.md](decisions-log.md) |
 | Screenshots: UI, admin area, monitoring, audit log, traces | Done (20, with the LangSmith trace) | [screenshots/](screenshots/README.md) |
-| 10-15 minute recorded demo (3+ blocked or failure scenarios, 1 access-control attempt) | Script done; recording by the owner | [demo-script.md](demo-script.md) |
+| 10-15 minute recorded demo (3+ blocked or failure scenarios, 1 access-control attempt) | Done | [demo-script.md](demo-script.md) |

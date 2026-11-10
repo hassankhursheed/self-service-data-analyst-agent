@@ -167,7 +167,7 @@ What was chosen, what was rejected and why. Newest step last.
 | Personal data | Role-aware rules tied to columns in the access policy | Blocking any contact-related words | Sales managers may see their customers' contacts; operations may see supplier contacts. |
 | Classifier | Rules only, from `config/guardrails.yaml` | Small LLM classifier | Free, deterministic, testable; add a classifier only if evaluation shows misses. |
 | Data-change requests | Blocked at N-02 and again by the SQL validator | Only the validator | Cheaper (no LLM call) and gives a clear reason early. |
-| Commit messages | Short descriptive messages without "Step N" (user request); older messages rewritten locally | `Step N: <title>` | User preference; CLAUDE.md rule 9 updated. |
+| Commit messages | Short descriptive messages without "Step N"; older messages rewritten locally | `Step N: <title>` | Easier to read in the history. |
 
 ## Step 12: Intent, Ambiguity and Clarification
 
@@ -380,7 +380,7 @@ What was chosen, what was rejected and why. Newest step last.
 | Demo reset | `scripts/reset_demo.py`: dry run by default, `--yes` deletes app activity in one transaction, then re-runs the seed; never touches `public` | Dropping the database; `TRUNCATE` | Safe to run on the live demo; the seed restores demo users and the verified library exactly. |
 | Seed migrations URL | `run_migrations(settings)` passes the owner URL to Alembic | Alembic reading the environment | Found by the reset test: a seed for another database migrated the default one. |
 | Hosting constraint | The database must allow superuser (role creation, revoking `set_config`) | A managed Postgres without superuser | The access model relies on it (docs/access-control.md). |
-| Host | Railway (trial, then Hobby if needed), for a short reviewer demo | Render (managed Postgres has no superuser and is deleted after 30 days; free services sleep); Fly.io (more setup); a small VM with Caddy (server upkeep) | Keeps the full access model, HTTPS and dashboard-only secrets with the least work; chosen by the user for a few weeks of sharing. |
+| Host | Railway (trial, then Hobby if needed), for a short reviewer demo | Render (managed Postgres has no superuser and is deleted after 30 days; free services sleep); Fly.io (more setup); a small VM with Caddy (server upkeep) | Keeps the full access model, HTTPS and dashboard-only secrets with the least work; enough for a few weeks of sharing. |
 | Railway settings | Dashboard settings plus `scripts/railway_env.py`, which prints the variable blocks with new random passwords (never written to disk) | `railway.json` (deprecated, new services cannot use it); `.railway/railway.ts` (needs the CLI and still cannot create the generated domain) | Fewest moving parts; every secret only in the dashboard. |
 | Empty hosted database | `seed --load-northwind` loads the public dump only when no Northwind table exists; refuses a partial one | Loading in the Postgres container (not possible on a managed template) | Same data as locally; never overwrites. |
 | Visitor address behind the UI | The UI forwards the proxy-appended `X-Forwarded-For` entry; the API uses it only with `api.trust_forwarded_for` (on for Railway, where the API is private) | Always trusting the header; per-UI-address limits | Otherwise ten failed logins from anyone would block every reviewer, and audit rows would all show the UI's address. |
@@ -388,7 +388,7 @@ What was chosen, what was rejected and why. Newest step last.
 
 ## Step 26 Part A: Recommended extras
 
-Chosen by the user: EXPLAIN cost check, CSV export, alerts, log clean-up, load test.
+Chosen: EXPLAIN cost check, CSV export, alerts, log clean-up, load test.
 Not built: BIRD subset (spends credits, low value), LiteLLM fallback (new dependency and a
 risky change to the LLM layer), Langfuse (another account). Per-user rate limiting already
 existed (20 questions per minute per user, Step 18).
@@ -420,15 +420,15 @@ Found by walking through every role in the browser on the production build.
 
 ## Step 26 Part B: Product name, design and answer layout
 
-Reviewed with the user screen by screen in the browser (desktop and phone width).
+Reviewed screen by screen in the browser (desktop and phone width).
 
 | Topic | Chosen | Rejected | Why |
 | --- | --- | --- | --- |
-| Product name | **AskData**, Northwind Traders shown as the dataset ("Dataset: Northwind Traders", fictional note on login and in the menu) | "Northwind Analyst"; renaming the dataset | The brief requires the Northwind data; the product name should not tie the tool to one company. Chosen by the user. |
-| Logo | "Verified answer": a question bubble whose bars grow into an answer, with a check badge; SVG component and favicon | A bubble-to-chart mark; an app-icon tile | Says "ask" and "trusted answer"; crisp at 16 px. Chosen by the user from three drafts. |
-| Colours and theme | Teal brand scale taken from the logo; light, dark or system theme with a header switch (saved per browser); the dark theme lifted from near-black to slate-green after review; light theme for screenshots and demos | Indigo; dark only | Matches the logo; managers expect light interfaces; the user found the first dark theme too dark. |
+| Product name | **AskData**, Northwind Traders shown as the dataset ("Dataset: Northwind Traders", fictional note on login and in the menu) | "Northwind Analyst"; renaming the dataset | The brief requires the Northwind data; the product name should not tie the tool to one company. |
+| Logo | "Verified answer": a question bubble whose bars grow into an answer, with a check badge; SVG component and favicon | A bubble-to-chart mark; an app-icon tile | Says "ask" and "trusted answer"; crisp at 16 px. Chosen from three drafts. |
+| Colours and theme | Teal brand scale taken from the logo; light, dark or system theme with a header switch (saved per browser); the dark theme lifted from near-black to slate-green after review; light theme for screenshots and demos | Indigo; dark only | Matches the logo; managers expect light interfaces; the first dark theme was too dark. |
 | Trust cues | Scope chip ("Europe · read-only"), dataset label, "Verified against the data" badge (`verified` in the API: answered, grounded, not low confidence), progress steps while a question runs | Showing nothing until the answer arrives | Access control and verification are visible in the demo (brief §20). The steps follow typical timings because the API answers once; the last step stays active until the answer arrives. |
-| Answer layout | Structured output: the model returns `summary`, `items` (label, value, detail) and `sql_description`; the UI shows the summary, then the items as a ranked list (rank, name, value, bar), then badges, table, assumptions and SQL. Items must be rows of the result with the same value, names not ID columns, no ID-only details; otherwise sent back, then built from the rows | Product names inside a paragraph; rejecting answers that name rows (built first, then removed at the user's request); the model writing a list in prose | The user asked for text first and the products as a clear structured list. Checking every item against the result keeps the list exact. |
+| Answer layout | Structured output: the model returns `summary`, `items` (label, value, detail) and `sql_description`; the UI shows the summary, then the items as a ranked list (rank, name, value, bar), then badges, table, assumptions and SQL. Items must be rows of the result with the same value, names not ID columns, no ID-only details; otherwise sent back, then built from the rows | Product names inside a paragraph; rejecting answers that name rows (built first, then removed); the model writing a list in prose | Text first and the products as a clear structured list reads best. Checking every item against the result keeps the list exact. |
 | Phone layout | Logo in the phone header; sideways bar charts on phones; users as cards with full-size actions; two metric cards per row; review actions below the text; 36-40 px tap targets; scope and dataset in the menu drawer | Desktop tables scrolled sideways | Checked at 375 px: no page overflow on any screen. |
 | Code formatting | Hand-formatted long lines kept; Prettier changes reverted | Prettier at its 80-column default | The repository has no Prettier config; reformatting added about 1,000 lines of noise to the diff. |
 
@@ -450,9 +450,8 @@ summary: docs/verification.md.
 
 ## Step 25: Live deployment on Railway
 
-Deployed on 2026-11-09 to https://ui-production-3b38.up.railway.app with the Railway MCP connector: project, Postgres, `api` and
-`ui` services and their settings created by the assistant; GitHub access and every secret
-(variables pasted in the Raw Editor) entered by the owner.
+Deployed on 2026-11-09 to https://ui-production-3b38.up.railway.app project, Postgres, `api` and `ui` services and their settings
+created through the Railway dashboard and API; every secret was pasted in the Raw Editor.
 
 | Topic | Chosen | Rejected | Why |
 | --- | --- | --- | --- |
