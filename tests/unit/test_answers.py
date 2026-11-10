@@ -13,7 +13,7 @@ from app.agent.graph import Agent
 from app.agent.grounding import check_grounding, context_numbers, extract_numbers
 from app.agent.response import build_response
 from app.agent.state import AgentRequest, AgentState
-from app.core.enums import QuestionStatus, RoleName
+from app.core.enums import QuestionStatus, RegionCode, RoleName
 from app.core.errors import RetryableError
 from app.db.analytics import QueryResult
 from tests.fakes import FakeExecutor, ScriptedModel, fake_deps, intent, sql_reply
@@ -267,6 +267,40 @@ async def test_empty_result_gets_an_honest_message_and_no_llm_call() -> None:
     assert "broader question" in state.answer.text
     assert state.answer.chart.type == "none"
     assert model.calls_by_kind["answer"] == []
+
+
+async def test_all_null_result_is_answered_as_no_data_for_the_users_region() -> None:
+    """Step 26 demo: the Europe sales manager asked for USA revenue and got
+    "revenue = None"; it now reads as an empty result that names their region."""
+    nothing = QueryResult(columns=["revenue"], rows=[(None,)], row_count=1, truncated=False)
+    model = ScriptedModel(REVENUE_INTENT, sql=[REVENUE_SQL], answer=[GOOD])
+    state = await Agent(fake_deps(model, FakeExecutor(nothing))).run(
+        AgentRequest(
+            username="sales.europe",
+            role=RoleName.SALES_MANAGER,
+            region=RegionCode.EUROPE,
+            is_active=True,
+            question="What was the total revenue from customers in the USA in 2024?",
+        )
+    )
+    assert state.answer is not None
+    assert state.answer.source == "empty"
+    assert "None" not in state.answer.text
+    assert state.answer.text.startswith("No orders matched these filters")
+    assert "Europe region only" in state.answer.text
+    assert model.calls_by_kind["answer"] == []
+
+
+def test_a_row_with_a_value_is_not_empty() -> None:
+    from app.agent.nodes.answer import has_no_values
+
+    assert has_no_values(QueryResult(columns=["a"], rows=[], row_count=0, truncated=False))
+    assert has_no_values(
+        QueryResult(columns=["a", "b"], rows=[(None, None)], row_count=1, truncated=False)
+    )
+    assert not has_no_values(
+        QueryResult(columns=["a", "b"], rows=[(None, 0)], row_count=1, truncated=False)
+    )
 
 
 # --- response model ------------------------------------------------------------------------

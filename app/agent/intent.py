@@ -8,6 +8,7 @@ business calendar (Step 8), never the real date.
 
 from collections.abc import Sequence
 from enum import StrEnum
+from typing import get_args
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -56,6 +57,18 @@ class IntentAnalysis(BaseModel):
     def _null_is_empty(cls, value: object) -> object:
         """Some models write null for an empty list; both mean "nothing" (Step 22)."""
         return [] if value is None else value
+
+    @field_validator("missing", mode="before")
+    @classmethod
+    def _known_parts_only(cls, value: object) -> object:
+        """Drop missing parts outside the fixed list (Step 26 demo: the model wrote
+        "clarification", and the whole reply failed validation twice)."""
+        if not isinstance(value, list):
+            return value
+        known = set(get_args(IntentPart))
+        return [
+            item for item in value if not (isinstance(item, dict) and item.get("part") not in known)
+        ]
 
     @field_validator(
         "time_phrase", "metric", "grouping", "clarifying_question", "standalone_question"

@@ -61,6 +61,9 @@ BLOCK_MESSAGES: dict[BlockReason, str] = {
     ),
     BlockReason.WRITE_REQUEST: "I can only read data, so I can't change, add or delete anything.",
     BlockReason.PERSONAL_DATA_REQUEST: "That personal information is not available to your role.",
+    BlockReason.CREDENTIAL_REQUEST: (
+        "Passwords, keys and other login details are never available through AskData."
+    ),
     BlockReason.NO_DATA_ACCESS: "Your account has no access to business data.",
     BlockReason.NO_ALLOWED_DATA: (
         "I could not find data your role may use to answer this question."

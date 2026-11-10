@@ -12,6 +12,7 @@
 
 import re
 from decimal import Decimal
+from functools import lru_cache
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -22,13 +23,14 @@ from app.agent.grounding import check_grounding, context_numbers
 from app.agent.nodes.base import NodeFn, NodeUpdate, agent_node
 from app.agent.nodes.sql_context import date_range_text
 from app.agent.state import AgentState, Answer, AnswerItem
-from app.core.enums import Confidence, NodeName, QuestionStatus
+from app.core.enums import Confidence, NodeName, QuestionStatus, RegionCode
 from app.core.errors import AppError
 from app.core.llm import ainvoke_structured
 from app.core.masking import mask_text
 from app.core.prompts import load_prompt
 from app.core.text import plain_text
 from app.db.analytics import QueryResult
+from app.db.setup.northwind_data import load_regions
 from app.safety.access_policy import get_access_policy
 
 _ENTITY_NAMES = {"order_details": "order lines"}
@@ -221,11 +223,25 @@ def template_description(state: AgentState) -> str:
     return f"Reads {names}{period}."
 
 
-def empty_message(state: AgentState, suggestion: str) -> str:
+@lru_cache
+def region_name(code: RegionCode) -> str:
+    """Display name from config/regions.yaml ("Europe", "Rest of World")."""
+    return next(r.name for r in load_regions().regions if r.code == code)
+
+
+def has_no_values(result: QueryResult) -> bool:
+    """No rows, or rows whose cells are all NULL: an aggregate over nothing (Step 26 demo:
+    USA revenue asked by the Europe sales manager answered "revenue = None")."""
+    return result.row_count == 0 or all(cell is None for row in result.rows for cell in row)
+
+
+def empty_message(state: AgentState, suggestion: str, region_note: str | None = None) -> str:
     tables = state.generated.tables_used if state.generated else []
     entity = _ENTITY_NAMES.get(tables[0], tables[0].replace("_", " ")) if tables else "results"
     period = f" ({state.date_range.label})" if state.date_range else ""
-    return f"No {entity} matched these filters{period}. {suggestion}"
+    region = state.user.region if state.user else None
+    note = f" {region_note.format(region=region_name(region))}" if region and region_note else ""
+    return f"No {entity} matched these filters{period}.{note} {suggestion}"
 
 
 def make_answer_node(deps: AgentDeps) -> NodeFn:
@@ -246,8 +262,8 @@ def make_answer_node(deps: AgentDeps) -> NodeFn:
             config=config.chart,
             title=title,
         )
-        if result.row_count == 0:
-            text = empty_message(state, config.empty_suggestion)
+        if has_no_values(result):
+            text = empty_message(state, config.empty_suggestion, config.empty_region_note)
             answer = Answer(
                 text=text,
                 sql_description=template_description(state),

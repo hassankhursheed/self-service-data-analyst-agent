@@ -46,6 +46,9 @@ answer:
     this answer.
   empty_suggestion: >-
     Try a broader question, for example a longer period or fewer filters.
+  # Added for region-scoped users when nothing matched ({region} is the region name).
+  empty_region_note: >-
+    Your data access covers the {region} region only, so other regions are not included.
   chart:
     max_bars: 30
     max_line_points: 400

@@ -354,3 +354,16 @@ def test_clarifying_questions_are_plain_text() -> None:
     )
     assert analysis.clarifying_question == "Do you mean the highest revenue or number of orders?"
     assert analysis.options == ["Revenue", "Orders"]
+
+
+def test_unknown_missing_parts_are_dropped() -> None:
+    """Step 26 demo: the model listed a "clarification" part, and N-03 failed twice."""
+    analysis = IntentAnalysis.model_validate(
+        intent(
+            missing=[
+                {"part": "time_range", "reason": "no period"},
+                {"part": "clarification", "reason": "unusual question"},
+            ]
+        )
+    )
+    assert [m.part for m in analysis.missing] == ["time_range"]

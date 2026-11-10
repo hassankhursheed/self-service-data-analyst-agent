@@ -45,6 +45,7 @@ class AnswerConfig(BaseModel):
     max_regenerations: int = Field(ge=0, le=2)
     low_confidence_label: str
     empty_suggestion: str
+    empty_region_note: str
     chart: ChartConfig
 
 

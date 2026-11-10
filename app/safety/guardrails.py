@@ -1,6 +1,7 @@
 """Rule-based input guardrails (N-02). Patterns live in config/guardrails.yaml.
 
-Order of checks: length -> prompt injection -> data-change request -> personal data
+Order of checks: length -> prompt injection -> credential request -> data-change request
+-> personal data
 (role-aware) -> off-topic -> scope-override flag. The first failing check decides.
 """
 
@@ -46,13 +47,16 @@ class GuardrailsConfig(BaseModel):
 
     version: int = Field(ge=1)
     prompt_injection: list[str]
+    credential_request: list[str]
     scope_override: list[str]
     scope_override_notice: str
     write_request: list[str]
     personal_data: list[PersonalDataRule]
     off_topic: list[str]
 
-    @field_validator("prompt_injection", "scope_override", "write_request", "off_topic")
+    @field_validator(
+        "prompt_injection", "credential_request", "scope_override", "write_request", "off_topic"
+    )
     @classmethod
     def _valid_patterns(cls, values: list[str]) -> list[str]:
         for value in values:
@@ -120,6 +124,10 @@ def check_input(
     rule = _first_match(config.prompt_injection, text)
     if rule:
         return _refuse(text, QuestionStatus.BLOCKED, BlockReason.PROMPT_INJECTION, rule)
+
+    rule = _first_match(config.credential_request, text)
+    if rule:
+        return _refuse(text, QuestionStatus.BLOCKED, BlockReason.CREDENTIAL_REQUEST, rule)
 
     rule = _first_match(config.write_request, text)
     if rule:

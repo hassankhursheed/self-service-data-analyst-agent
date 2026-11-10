@@ -30,7 +30,9 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A and B done;
   Part C: 25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a
   mutation check, scenario 28 on the live deployment, deliverables checklist in
-  docs/verification.md, LangSmith trace screenshot; left: the demo recording)
+  docs/verification.md, LangSmith trace screenshot, demo video recorded with narration;
+  three issues found while recording fixed: password requests, empty-region wording,
+  unknown intent parts)
 
 ## What is left
 
@@ -39,7 +41,7 @@ The project is built in 26 steps. Titles for later steps are added when each ste
   0 ungrounded answers. Follow-ups: a clean run on a paid plan (or with pauses), the
   scorer comparing quarter values rather than labels (M-06), the date column for freight
   (S-05), a system-catalog rule in the question guardrails, a stronger model.
-- Step 26: the demo recording (by the user, docs/demo-script.md).
+- Step 26: redeploy to Railway after the fixes are committed (a push to main redeploys).
 - Live demo on Railway (trial credit): remove the project in the dashboard when the review
   is over (docs/deployment.md, Stop spending).
 - Security follow-ups (docs/security.md, What is left): shared rate-limit store before
