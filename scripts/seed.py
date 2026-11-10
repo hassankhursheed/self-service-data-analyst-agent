@@ -15,7 +15,8 @@ Steps (each safe to run again):
 7. sync the semantic layer into the catalog tables and check it against the database;
 8. sync the business calendar (config/calendar.yaml);
 9. create the LangGraph checkpoint tables in schema ``checkpoints`` (before the grants);
-10. add the seeded verified examples (config/verified_queries.yaml) that are not there yet.
+10. add the seeded verified examples (config/verified_queries.yaml) that are not there yet;
+11. refresh table statistics (ANALYZE) so query plans and the cost check are stable.
 """
 
 import argparse
@@ -36,6 +37,7 @@ from app.db.setup.northwind_data import (
     apply_date_shift,
     ensure_analytics_schema,
     load_regions,
+    refresh_statistics,
     sync_regions,
 )
 from app.db.setup.northwind_load import load_northwind_if_missing
@@ -104,6 +106,7 @@ def run_seed(settings: Settings | None = None, *, load_northwind: bool = False) 
         ensure_analytics_schema(conn)
         shifted_now = apply_date_shift(conn, settings.data_setup.date_shift_years)
         per_region = sync_regions(conn, regions)
+        refresh_statistics(conn)
         role_ids = sync_roles(conn, policy)
         user_count = sync_test_users(conn, users, role_ids, settings)
         views = setup_database_access(conn, settings, policy)

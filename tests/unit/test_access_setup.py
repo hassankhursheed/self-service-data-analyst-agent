@@ -124,3 +124,22 @@ def test_session_statements_come_from_enums_only() -> None:
     ]
     with pytest.raises(ReadonlyQueryError):
         session_statements(UserContext(username="a", role=RoleName.ADMIN), 1500, POLICY)
+
+
+def test_seed_refreshes_statistics_for_every_northwind_and_region_table() -> None:
+    """Plan costs must not depend on whether autovacuum has run yet (flaky CI cost check)."""
+    from app.db.northwind import NORTHWIND_TABLES
+    from app.db.setup.northwind_data import refresh_statistics
+
+    class Conn:
+        def __init__(self) -> None:
+            self.sql: list[str] = []
+
+        def execute(self, sql: str) -> None:
+            self.sql.append(sql)
+
+    conn = Conn()
+    tables = refresh_statistics(conn)  # type: ignore[arg-type]
+    assert conn.sql == [f"ANALYZE {t}" for t in tables]
+    assert {f"public.{t}" for t in NORTHWIND_TABLES} <= set(tables)
+    assert "analytics.country_region" in tables

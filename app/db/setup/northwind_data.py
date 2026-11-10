@@ -116,6 +116,22 @@ def applied_date_shift(conn: psycopg.Connection) -> int | None:
     return int(row[0]) if row else None
 
 
+STATISTICS_TABLES: tuple[str, ...] = ("analytics.sales_regions", "analytics.country_region")
+
+
+def refresh_statistics(conn: psycopg.Connection) -> list[str]:
+    """Run ANALYZE on the Northwind and region tables so query plans and the EXPLAIN cost
+    check (app/db/analytics.py) see real row counts. A freshly loaded database otherwise
+    plans with default estimates until autovacuum gets to it, and the same query could
+    pass the cost limit on one run and fail it on the next (CI, Step 26)."""
+    from app.db.northwind import NORTHWIND_TABLES
+
+    tables = [f"public.{t}" for t in NORTHWIND_TABLES] + list(STATISTICS_TABLES)
+    for table in tables:
+        conn.execute(f"ANALYZE {table}")
+    return tables
+
+
 def sync_regions(conn: psycopg.Connection, config: RegionsConfig) -> dict[str, int]:
     """Upsert the region mapping and its lookup views. Returns customers per region."""
     mapping = [(c, r.code.value) for r in config.regions for c in r.countries]
