@@ -14,7 +14,7 @@ answer shows how it was worked out.
 **Try it live:** [ui-production-3b38.up.railway.app](https://ui-production-3b38.up.railway.app)
 (login details on request)
 
-![AskData](docs/images/askdata-cover.png)
+![A sales manager asks for the top 5 products of 2024 and gets a ranked answer](docs/images/answer.png)
 
 ## The problem
 
@@ -40,10 +40,8 @@ and a wait. Letting an AI model answer directly from the database is tempting, b
 | **Fully traceable** | Every question, query and answer is logged with a reference ID. |
 
 <p>
-  <img src="docs/images/asks-instead-of-guessing.png" width="49%" alt="It asks instead of guessing">
-  <img src="docs/images/read-only.png" width="49%" alt="It can't change your data">
-  <img src="docs/images/access-control.png" width="49%" alt="Everyone sees only their own data">
-  <img src="docs/images/shows-its-working.png" width="49%" alt="Every answer shows its working">
+  <img src="docs/images/clarifying-question.png" width="49%" alt="A vague question gets a clarifying question with options">
+  <img src="docs/images/blocked-request.png" width="49%" alt="A request to delete data is blocked">
 </p>
 
 More screens, including the admin area and the phone layout:
