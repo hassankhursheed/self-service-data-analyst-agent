@@ -27,33 +27,32 @@ The project is built in 26 steps. Titles for later steps are added when each ste
 - [x] Step 23: Automated Tests and CI Pipeline (Week 3-4, brief section 25)
 - [x] Step 24: Security, Privacy and Performance Hardening (Week 4, brief sections 27, 28)
 - [x] Step 25: Live Deployment (Railway: https://ui-production-3b38.up.railway.app; scenario 28 checked)
-- [ ] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A and B done;
-  Part C: 25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a
-  mutation check, scenario 28 on the live deployment, deliverables checklist in
-  docs/verification.md, LangSmith trace screenshot, demo video recorded with narration;
-  three issues found while recording fixed: password requests, empty-region wording,
-  unknown intent parts)
+- [x] Step 26: Recommended Extras, Final Docs and Full Verification (Parts A, B and C:
+  25 of 25 automated scenarios pass with correlation IDs, scenario 25 shown by a mutation
+  check, scenario 28 on the live deployment, deliverables checklist in
+  docs/verification.md, LangSmith trace screenshot, narrated demo video; issues found
+  while recording fixed; public README; CI stable)
 
-## What is left
+All 26 steps are complete.
 
-- Evaluation (eval/RESULTS.md): round 3 after the Step 26 fixes: 85.7% accuracy on the
-  cases not throttled by the free plan (75.0% counting 5 rate-limited cases), 0 leaks,
-  0 ungrounded answers. Follow-ups: a clean run on a paid plan (or with pauses), the
-  scorer comparing quarter values rather than labels (M-06), the date column for freight
-  (S-05), a system-catalog rule in the question guardrails, a stronger model.
-- Step 26: redeploy to Railway after the fixes are committed (a push to main redeploys).
-- Live demo on Railway (trial credit): remove the project in the dashboard when the review
-  is over (docs/deployment.md, Stop spending).
-- Security follow-ups (docs/security.md, What is left): shared rate-limit store before
-  several API workers, alias-proof personal-column detection, a secret scanner in CI.
-- CI `live-eval` runs only once the `LLM_API_KEY` repository secret is added on GitHub
-  (Settings → Secrets and variables → Actions); until then it is skipped with a notice.
-- Done in Step 26: the live walk-through of every role and screen in the browser (desktop
-  and phone width) and the screenshots in `docs/screenshots/`.
-- Rate limits are in memory (one API process); a shared store is needed before running
-  several API workers.
-- Settled in Step 2 (see `docs/design/data-decisions.md`): +27-year date shift, business
-  reference date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
-- Still open:
-  - Model: `ministral-14b-2512` for the app and the evaluation (free credits refuse
-    Mistral Small / Medium). Revisit when a paid plan is available.
+## Open follow-ups
+
+Nothing below is required by the brief; these are the next improvements.
+
+- Accuracy: round 3 (eval/RESULTS.md) scored 85.7% on the cases the free model plan
+  answered (75.0% counting 5 rate-limited cases), with 0 leaks and 0 ungrounded answers.
+  Next: a stronger model on a paid plan (one setting in `config/llm.yaml`) and a clean run
+  without rate limits; the freight date column (S-05); the scorer comparing quarter values
+  rather than labels (M-06); a system-catalog rule in the question guardrails.
+- Scale: rate limits and alerts live in one API process; several API workers need a
+  shared store (docs/security.md).
+- Security: alias-proof personal-column detection; a secret scanner in CI.
+- Hosting: the Railway project runs on trial credit; remove it in the dashboard when it is
+  no longer needed (docs/deployment.md, Stop spending).
+
+## Settled decisions
+
+- Data (Step 2, `docs/design/data-decisions.md`): +27-year date shift, business reference
+  date 2025-05-06, region mapping (Rest of World = Brazil, Argentina, Venezuela).
+- Model: `ministral-14b-2512` for the app and the evaluation (the free plan refuses Mistral
+  Small and Medium).
