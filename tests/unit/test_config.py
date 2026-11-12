@@ -125,3 +125,14 @@ def test_env_example_lists_every_environment_variable() -> None:
     # Read by other services, not by the Python settings (the Next.js UI server).
     other_services = {"API_BASE_URL"}
     assert documented == {name.upper() for name in env_fields} | other_services
+
+
+def test_tests_never_send_anything_to_langsmith() -> None:
+    """tests/conftest.py blanks the LangSmith settings for every test run."""
+    from app.agent.tracing import tracing_enabled
+    from app.core.config import Settings
+    from app.eval.langsmith_sync import langsmith_configured
+
+    settings = Settings()
+    assert not tracing_enabled(settings)
+    assert not langsmith_configured(settings)

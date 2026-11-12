@@ -481,3 +481,9 @@ created through the Railway dashboard and API; every secret was pasted in the Ra
 | Topic | Chosen | Rejected | Why |
 | --- | --- | --- | --- |
 | Flaky `test_cross_join_is_refused_for_every_business_role` | The seed runs `ANALYZE` on the Northwind and region tables, so plans use real row counts from the start | Lowering the cost limit; retrying the test | In a freshly loaded CI database the planner sometimes had no statistics yet and estimated the Europe cross join under the 10,000 limit; with statistics it is about 13,900 every time. Real deployments get the same stable plans. |
+
+## Step 26: Tests never send data to LangSmith
+
+| Topic | Chosen | Rejected | Why |
+| --- | --- | --- | --- |
+| Test runs created LangSmith projects | `tests/conftest.py` sets `LANGSMITH_TRACING=false` and an empty `LANGSMITH_API_KEY` for every test run, with a unit test that checks both | Moving the CI live evaluation into one shared project | The 25 `eval-api-run-...` projects came from local `pytest` runs (an integration test starts a two-case evaluation through the admin API, and the local `.env` holds a LangSmith key), not from CI, which has no LangSmith key. Test questions were also being traced into the real project. Environment variables win over `.env`, so the switch applies everywhere. |
